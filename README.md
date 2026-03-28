@@ -1,131 +1,91 @@
-# 🚗 DEALER SOURCING BOT
+# 🚗 Dealer Sourcing MVP
 
-Bot de sourcing interno para dealer de carros premium. Busca carros em múltiplas plataformas (WebMotors, OLX, Google) com uma única query.
+Plataforma completa para gerenciamento de concessionária com 5 módulos: inventário, financeiro, CRM, despesas e busca inteligente de veículos.
+
+**Status:** ✅ Phase 2a Complete (Sourcing) | Phase 2b Ready (Deploy)
 
 ---
 
-## 🎯 Funcionalidades
+## 🎯 Features
 
-- ✅ **Motor de Busca Inteligente** - Busca em WebMotors, OLX, Google simultaneamente
-- ✅ **Dashboard Interativo** - Gerenciar buscas e veículos de interesse
-- ✅ **CRM Básico** - Salvar dados de clientes interessados
-- ✅ **Histórico Completo** - Todas as buscas e interesses persistem
-- ✅ **Score de Oportunidade** - Cada carro tem um score de 0-100
-- ✅ **Login/Autenticação** - JWT tokens seguros
+- ✅ **Estoque** - Gerenciar veículos: add, edit, delete, margin calculations
+- ✅ **Financeiro** - Revenue tracking, profit analysis, month comparisons
+- ✅ **CRM** - 15+ customer fields, complete customer lifecycle
+- ✅ **Gastos Gerais** - Expense tracking by category, status management
+- ✅ **Busca Inteligente** - Vehicle search with smart scoring (WebMotors, OLX, Marketplace, etc)
+- ✅ **Dashboard** - Real-time overview stats
+- ✅ **Autenticação** - JWT tokens, user-scoped data
+
+---
+
+---
+
+## 🚀 Production URLs
+
+- **Frontend:** https://dealer-sourcing.vercel.app
+- **Backend:** https://dealer-sourcing-api.onrender.com
+
+**Test Account:**
+- Email: `penteadojv1314@gmail.com`
+- Password: `Fontes13`
+
+---
+
+## ⚡ Quick Start (Local)
+
+```bash
+# Backend (port 3000)
+npm run dev:server
+
+# Frontend (port 5173) — new terminal
+npm run dev
+
+# Visit: http://localhost:5173
+```
 
 ---
 
 ## 🏗️ Stack Técnico
 
 ```
-Backend:    Node.js + Express.js
-Database:   PostgreSQL
-ORM:        pg (driver nativo)
+Backend:    Node.js 22 + Express.js
+Database:   PostgreSQL (Render free tier)
 Auth:       JWT + bcryptjs
-Scraping:   Puppeteer
-Frontend:   React (seu MVP refactored)
-Deploy:     Render.com (backend) + Vercel (frontend)
+Frontend:   React 18 + Vite + TailwindCSS
+Deploy:     Render (backend) + Vercel (frontend)
+CI/CD:      GitHub Actions → lint → build → deploy
 ```
 
 ---
 
-## 📋 Instalação & Setup
+## 📋 Local Setup
 
-### 1️⃣ **Pré-requisitos**
-
-- Node.js 18+ instalado
-- PostgreSQL 13+ instalado localmente OU conta em Railway/Render
-- Git
-
-### 2️⃣ **Clonar e Instalar**
+### Clone & Install
 
 ```bash
-# Clonar o repositório
-git clone <seu-repo>
+git clone https://github.com/mgabsilva9-boop/dealer-sourcing.git
 cd dealer-sourcing
-
-# Instalar dependências
 npm install
 ```
 
-### 3️⃣ **Configurar Banco de Dados**
-
-**Opção A: PostgreSQL Local**
+### Environment Variables
 
 ```bash
-# Criar banco de dados
-createdb dealer_sourcing
-
-# Copiar .env
 cp .env.example .env
-
-# Editar .env
-nano .env
-# DATABASE_URL=postgresql://user:password@localhost:5432/dealer_sourcing
+# Edit .env with your DATABASE_URL (Render provides free PostgreSQL)
 ```
 
-**Opção B: Railway.app (Recomendado)**
+### Start Servers
 
 ```bash
-# 1. Criar conta em Railway.app
-# 2. Criar novo PostgreSQL database
-# 3. Copiar connection string para .env
-```
+# Terminal 1: Backend (port 3000)
+npm run dev:server
 
-### 4️⃣ **Inicializar Schema**
-
-```bash
-# Criar arquivo init.js
-cat > init.js << 'EOF'
-import { initializeSchema } from './src/config/database.js';
-await initializeSchema();
-EOF
-
-# Executar
-node init.js
-
-# Deletar arquivo
-rm init.js
-```
-
-### 5️⃣ **Criar Usuário de Teste**
-
-```bash
-# Criar arquivo seed.js
-cat > seed.js << 'EOF'
-import { pool } from './src/config/database.js';
-import bcrypt from 'bcryptjs';
-
-const hashedPassword = await bcrypt.hash('senha123', 10);
-
-await pool.query(
-  'INSERT INTO users (email, password, name) VALUES ($1, $2, $3)',
-  ['seu@email.com', hashedPassword, 'Seu Nome']
-);
-
-console.log('✅ Usuário criado!');
-process.exit(0);
-EOF
-
-# Executar
-node seed.js
-rm seed.js
-```
-
-### 6️⃣ **Iniciar em Desenvolvimento**
-
-```bash
+# Terminal 2: Frontend (port 5173)
 npm run dev
 ```
 
-Output esperado:
-```
-╔════════════════════════════════════╗
-║  🚗 DEALER SOURCING BOT - BACKEND  ║
-║  🚀 Server rodando em porta 3000   ║
-║  ✅ Status: Online                 ║
-╚════════════════════════════════════╝
-```
+Visit: http://localhost:5173 → Login with test account above
 
 ---
 
@@ -211,56 +171,63 @@ O arquivo `src/frontend/App.jsx` contém o React refactored.
 
 ---
 
-## 🚀 Deploy em Produção
-
-### Backend (Render.com)
+## 🚀 Deployment (Auto)
 
 ```bash
-# 1. Criar conta em Render.com
-# 2. Novo Web Service → GitHub → seu repo
-# 3. Settings:
-#    - Runtime: Node
-#    - Build: npm install
-#    - Start: npm start
-#    - Environment Variables: adicionar DATABASE_URL, JWT_SECRET
-
-# 4. Deploy automático quando faz git push
+git push origin main
+  ↓
+GitHub Actions:
+  - npm run lint
+  - npm run build
+  - Deploy to Render (webhook)
+  ↓
+Live at:
+  - Backend: https://dealer-sourcing-api.onrender.com
+  - Frontend: https://dealer-sourcing.vercel.app
 ```
 
-### Frontend (Vercel)
+**First Deploy Steps:**
+1. Backend created at Render? Add `RENDER_DEPLOY_HOOK` to GitHub Secrets
+2. Frontend connected at Vercel? Add `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` to GitHub Secrets
+3. Next `git push` auto-deploys both
 
-```bash
-# 1. Criar conta em Vercel
-# 2. Import project → seu repo → next (não precisa de config)
-# 3. Env: VITE_API_URL=https://seu-backend.onrender.com
-# 4. Deploy!
-```
+See `DEPLOYMENT_SETUP.md` for detailed manual setup
 
 ---
 
-## 📊 API Endpoints Completos
+## 📊 API Endpoints
 
 ### **Auth**
-- `POST /auth/login` - Login
-- `POST /auth/register` - Registrar novo usuário
-- `GET /auth/me` - Dados do usuário atual
-- `POST /auth/logout` - Logout
+- `POST /auth/login` - Login (email + password)
+- `POST /auth/register` - Register new user
 
-### **Search**
-- `POST /search/query` - Buscar carros (WebMotors, OLX, Google)
-- `GET /search/results/:searchId` - Resultados de uma busca
+### **Inventory (Estoque)**
+- `GET /inventory/list` - List all vehicles
+- `POST /inventory/create` - Add vehicle
+- `GET /inventory/:id` - Get vehicle detail
+- `PUT /inventory/:id` - Update vehicle
+- `DELETE /inventory/:id` - Delete vehicle
 
-### **Vehicles**
-- `POST /vehicles/interested` - Salvar veículo de interesse
-- `GET /vehicles/interested` - Listar veículos salvos
-- `PUT /vehicles/interested/:id` - Atualizar status
-- `DELETE /vehicles/interested/:id` - Remover interesse
-- `GET /vehicles/:id` - Detalhe do veículo
+### **CRM (Clientes)**
+- `GET /crm/list` - List customers
+- `POST /crm/create` - Add customer
+- `GET /crm/:id` - Get customer detail
+- `PUT /crm/:id` - Update customer
+- `DELETE /crm/:id` - Delete customer
 
-### **History**
-- `GET /history` - Histórico de buscas
-- `GET /history/:searchId` - Detalhes de uma busca
-- `GET /history/stats/summary` - Estatísticas gerais
+### **Expenses (Gastos)**
+- `GET /expenses/list` - List expenses
+- `POST /expenses/create` - Add expense
+- `GET /expenses/:id` - Get expense detail
+- `PUT /expenses/:id` - Update expense
+- `DELETE /expenses/:id` - Delete expense
+- `GET /expenses/summary/by-category` - Totals by category
+
+### **Sourcing (Busca Inteligente)**
+- `GET /sourcing/list` - List all vehicles (sorted by score)
+- `GET /sourcing/search?make=X&model=Y&priceMin=Z&priceMax=W&kmMax=V&discountMin=U` - Search with filters
+- `GET /sourcing/:id` - Get vehicle detail
+- `POST /sourcing/:id/interested` - Mark as interested
 
 ---
 
@@ -292,12 +259,20 @@ page.setDefaultTimeout(30000); // 30 segundos
 
 ---
 
-## 📋 Próximos Passos
+## 📋 Done & Next
 
-- [ ] Dia 2: Deploy em Render + Vercel
-- [ ] Dia 3: Agentes AIOS revisam código
-- [ ] Dia 3: Testes finais
-- [ ] Pronto para usar! 🎉
+**Completed:**
+- ✅ Phase 1: Inventory, Financial, CRM modules
+- ✅ Phase 2a: Sourcing (intelligent vehicle search)
+- ✅ Phase 2b: Deployment infrastructure (Render + Vercel + GitHub Actions)
+- ✅ Project structure (utils, middleware, models, constants)
+
+**Optional Enhancements:**
+- [ ] Real web scraping (replace mock data)
+- [ ] Advanced filtering (saved searches)
+- [ ] WhatsApp integration (vendor communication)
+- [ ] Mobile app
+- [ ] Analytics dashboard
 
 ---
 
