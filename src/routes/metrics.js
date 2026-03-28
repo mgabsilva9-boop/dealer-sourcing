@@ -7,7 +7,7 @@
  */
 
 import express from 'express';
-import { poolMetrics, pool } from '../config/database.js';
+import { poolMetrics } from '../config/database.js';
 
 const router = express.Router();
 

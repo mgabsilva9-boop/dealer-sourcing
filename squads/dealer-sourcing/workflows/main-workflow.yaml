@@ -1,0 +1,240 @@
+name: "Phase 5+ Main Workflow - Dealer Sourcing"
+version: "1.0.0"
+description: |
+  Orchestration workflow for Phase 5+ development: JWT implementation,
+  monitoring, caching, and technical debt resolution.
+
+phases:
+  - name: "Phase 5: JWT & Monitoring"
+    duration_estimate: "8-10 hours"
+    critical: true
+    sequence:
+      - step: "STORY-501: JWT Implementation"
+        agent: "@dev (Dex)"
+        tasks:
+          - "Extract userId from JWT claims"
+          - "Update sourcing.js to use real user IDs"
+          - "Update tests with multi-user scenarios"
+          - "Validate RLS isolation"
+        effort: "2 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "40 integration tests pass"
+          - "RLS isolation verified with 2+ users"
+          - "No hardcoded UUIDs remain"
+
+      - step: "STORY-502: Connection Pool Monitoring"
+        agent: "@data-engineer (Dara)"
+        tasks:
+          - "Add pool metrics collection"
+          - "Create /metrics endpoint"
+          - "Implement pool exhaustion alerts"
+          - "Run load test with 50 concurrent users"
+          - "Document scaling strategy"
+        effort: "3-4 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "Metrics endpoint functional"
+          - "Alert threshold configured"
+          - "Load test completed"
+          - "Scaling documented"
+
+      - step: "Phase 5 QA Validation"
+        agent: "@qa (Quinn)"
+        tasks:
+          - "Regression test suite"
+          - "Performance regression check"
+          - "Security validation (JWT extraction)"
+          - "Sign-off on Phase 5"
+        effort: "2 hours"
+        depends_on: ["STORY-501", "STORY-502"]
+        blockers: null
+        success_criteria:
+          - "All regressions cleared"
+          - "Performance unchanged"
+          - "Security validated"
+
+  - name: "Phase 5+: Infrastructure & Caching"
+    duration_estimate: "12-15 hours"
+    critical: false
+    sequence:
+      - step: "STORY-503: Redis Cache Integration"
+        agent: "@dev (Dex)"
+        tasks:
+          - "Add Redis client configuration"
+          - "Create cache layer abstraction"
+          - "Update sourcing.js to use Redis"
+          - "Add Docker Compose Redis service"
+          - "Write cache tests"
+        effort: "4 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "Cache layer functional"
+          - "Tests passing with mock Redis"
+          - "Fallback behavior tested"
+
+      - step: "STORY-504: Schema Unification (UUID)"
+        agent: "@data-engineer (Dara)"
+        tasks:
+          - "Plan migration strategy"
+          - "Create migration scripts"
+          - "Update application queries"
+          - "Update RLS policies"
+          - "Dry-run & validation"
+        effort: "8 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "All tables use UUID PKs"
+          - "No query breakage"
+          - "RLS policies verified"
+          - "Rollback plan documented"
+
+      - step: "STORY-505: Consolidate API Clients"
+        agent: "@dev (Dex)"
+        tasks:
+          - "Create unified apiClient.js"
+          - "Migrate App.jsx"
+          - "Migrate SourcingList.jsx"
+          - "Remove old client files"
+          - "Test all endpoints"
+        effort: "3 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "Single API client in use"
+          - "No duplicate code"
+          - "All tests passing"
+          - "Storage key unified"
+
+  - name: "Phase 5++: Frontend & Scaling (Optional)"
+    duration_estimate: "10-12 hours"
+    critical: false
+    sequence:
+      - step: "STORY-506: Refactor Monolithic App.jsx"
+        agent: "@ux-design-expert"
+        tasks:
+          - "Analyze current structure"
+          - "Design modular component hierarchy"
+          - "Create feature-based folder structure"
+          - "Refactor incrementally"
+          - "Test UI functionality"
+        effort: "6 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "App.jsx < 20KB (split into modules)"
+          - "Component reusability increased"
+          - "Styling system defined"
+
+      - step: "STORY-507: Horizontal Scaling Prep"
+        agent: "@devops (Gage)"
+        tasks:
+          - "Plan horizontal scaling strategy"
+          - "Configure load balancing"
+          - "Update CI/CD for multi-instance"
+          - "Implement graceful shutdown"
+          - "Document scaling procedures"
+        effort: "4 hours"
+        depends_on: null
+        blockers: null
+        success_criteria:
+          - "Load balancer configured"
+          - "Multi-instance tested"
+          - "Procedures documented"
+
+error_handling:
+  - name: "Database Failure"
+    trigger: "Query timeout > 2s or connection pool exhaustion"
+    action: "Fallback to mock data (generateRealisticVehicles)"
+    notification: "Alert @data-engineer and @devops"
+    recovery: "Restart Render PostgreSQL service, wait 30s"
+
+  - name: "JWT Verification Failure"
+    trigger: "Invalid or expired token"
+    action: "Return 401 Unauthorized"
+    notification: "Log to security audit trail"
+    recovery: "User re-authenticates"
+
+  - name: "Cache Miss Cascade"
+    trigger: "Redis unavailable during high load"
+    action: "Fallback to in-memory cache (5-min TTL)"
+    notification: "Alert @dev and @devops"
+    recovery: "Restart Redis service or escalate to alternative cache"
+
+dependencies:
+  - story: "STORY-501"
+    requires: "Phase 4 complete"
+    reason: "JWT infrastructure must be in place"
+
+  - story: "STORY-502"
+    requires: "Connection pool configured"
+    reason: "Can only monitor existing pool"
+
+  - story: "STORY-504"
+    requires: "STORY-501"
+    reason: "User ID extraction needed for UUID migration"
+
+  - story: "STORY-506"
+    requires: "STORY-505"
+    reason: "After API consolidation, refactor UI"
+
+communication:
+  - phase: "Phase 5 Kickoff"
+    attendees: "@dev, @data-engineer, @qa, @pm"
+    duration: "30 min"
+    agenda:
+      - "Story prioritization (STORY-501 vs 502 parallelism)"
+      - "Risk assessment (JWT extraction impact)"
+      - "Timeline alignment (8-10 hours)"
+
+  - phase: "Phase 5 Midpoint"
+    attendees: "@dev, @data-engineer"
+    duration: "15 min"
+    agenda:
+      - "Progress update"
+      - "Blockers or risks"
+      - "Adjust timeline if needed"
+
+  - phase: "Phase 5 Sign-Off"
+    attendees: "@qa, @dev, @data-engineer, @pm"
+    duration: "30 min"
+    agenda:
+      - "QA validation results"
+      - "Sign-off gate decision"
+      - "Phase 5+ planning"
+
+metrics:
+  - name: "Phase 5 Completion Rate"
+    target: "100% of 3 stories"
+    measurement: "Story status (complete/blocked)"
+
+  - name: "Test Coverage"
+    target: "Maintain 40/40 passing tests + new ones"
+    measurement: "jest coverage output"
+
+  - name: "Performance"
+    target: "All endpoints maintain <1s response time"
+    measurement: "Load test results, Render metrics"
+
+  - name: "RLS Isolation"
+    target: "Multi-user RLS verified"
+    measurement: "Test results with different user IDs"
+
+success_criteria:
+  - "✅ All Phase 5 stories deployed to production"
+  - "✅ JWT extraction working with real user IDs"
+  - "✅ Pool monitoring operational"
+  - "✅ QA sign-off obtained"
+  - "✅ Stakeholder communication complete"
+  - "✅ Tech debt reduced from 8 items to 5"
+
+next_phase: "Phase 6: Horizontal Scaling & Advanced Caching"
+
+---
+
+Generated by: @aios-master (Orion)
+Created: 2026-03-28

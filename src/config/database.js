@@ -87,7 +87,7 @@ export const query = async (text, params = []) => {
  */
 export const checkConnection = async () => {
   try {
-    const result = await pool.query('SELECT NOW()');
+    await pool.query('SELECT NOW()');
     console.log('✅ Database connection verified');
     return true;
   } catch (error) {
