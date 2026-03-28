@@ -28,9 +28,3 @@ jobs:
       - name: Deploy Backend to Render
         if: success()
         run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-
-      - name: Deploy Frontend to Vercel
-        if: success()
-        run: |
-          npm install -g vercel
-          vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --project-id ${{ secrets.VERCEL_PROJECT_ID }}
