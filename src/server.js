@@ -90,9 +90,14 @@ app.use((req, res) => {
 
 async function startServer() {
   try {
-    // Testar conexão com banco
-    const result = await pool.query('SELECT NOW()');
-    console.log('✅ Banco de dados conectado:', result.rows[0]);
+    // Testar conexão com banco (não bloqueia se falhar - MVP mode)
+    try {
+      const result = await pool.query('SELECT NOW()');
+      console.log('✅ Banco de dados conectado:', result.rows[0]);
+    } catch (dbError) {
+      console.warn('⚠️ Banco não conectado - usando dados mockados (MVP mode)');
+      console.warn('   Erro:', dbError.message);
+    }
 
     // Iniciar servidor
     app.listen(PORT, () => {
@@ -106,7 +111,7 @@ async function startServer() {
       `);
     });
   } catch (err) {
-    console.error('❌ Erro ao inicializar servidor:', err);
+    console.error('❌ Erro crítico ao inicializar servidor:', err);
     process.exit(1);
   }
 }
