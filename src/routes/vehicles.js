@@ -27,12 +27,12 @@ router.post('/interested', authMiddleware, async (req, res) => {
        (user_id, vehicle_id, customer_name, customer_phone, customer_email, notes, status)
        VALUES ($1, $2, $3, $4, $5, $6, 'interested')
        RETURNING *`,
-      [req.user.id, vehicleId, customerName || '', customerPhone || '', customerEmail || '', notes || '']
+      [req.user.id, vehicleId, customerName || '', customerPhone || '', customerEmail || '', notes || ''],
     );
 
     res.status(201).json({
       message: 'Veículo salvo com sucesso',
-      interested: result.rows[0]
+      interested: result.rows[0],
     });
   } catch (error) {
     console.error('Erro ao salvar interesse:', error);
@@ -65,17 +65,17 @@ router.get('/interested', authMiddleware, async (req, res) => {
     const params = [req.user.id];
 
     if (status) {
-      sql += ` AND iv.status = $2`;
+      sql += ' AND iv.status = $2';
       params.push(status);
     }
 
-    sql += ` ORDER BY iv.saved_at DESC`;
+    sql += ' ORDER BY iv.saved_at DESC';
 
     const result = await query(sql, params);
 
     res.json({
       total: result.rows.length,
-      vehicles: result.rows
+      vehicles: result.rows,
     });
   } catch (error) {
     console.error('Erro ao listar interessados:', error);
@@ -99,7 +99,7 @@ router.put('/interested/:id', authMiddleware, async (req, res) => {
        SET status = $1, notes = COALESCE($2, notes)
        WHERE id = $3 AND user_id = $4
        RETURNING *`,
-      [status, notes, id, req.user.id]
+      [status, notes, id, req.user.id],
     );
 
     if (result.rows.length === 0) {
@@ -108,7 +108,7 @@ router.put('/interested/:id', authMiddleware, async (req, res) => {
 
     res.json({
       message: 'Status atualizado',
-      interested: result.rows[0]
+      interested: result.rows[0],
     });
   } catch (error) {
     console.error('Erro ao atualizar status:', error);
@@ -124,7 +124,7 @@ router.delete('/interested/:id', authMiddleware, async (req, res) => {
 
     const result = await query(
       'DELETE FROM interested_vehicles WHERE id = $1 AND user_id = $2 RETURNING id',
-      [id, req.user.id]
+      [id, req.user.id],
     );
 
     if (result.rows.length === 0) {
@@ -132,7 +132,7 @@ router.delete('/interested/:id', authMiddleware, async (req, res) => {
     }
 
     res.json({
-      message: 'Veículo removido com sucesso'
+      message: 'Veículo removido com sucesso',
     });
   } catch (error) {
     console.error('Erro ao deletar interesse:', error);
@@ -148,7 +148,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
     const result = await query(
       'SELECT * FROM found_vehicles WHERE id = $1',
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {

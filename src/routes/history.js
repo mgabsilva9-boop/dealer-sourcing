@@ -28,7 +28,7 @@ router.get('/', authMiddleware, async (req, res) => {
       GROUP BY s.id
       ORDER BY s.created_at DESC
       LIMIT 50`,
-      [req.user.id]
+      [req.user.id],
     );
 
     res.json({
@@ -38,8 +38,8 @@ router.get('/', authMiddleware, async (req, res) => {
         query: row.query,
         resultsCount: row.results_count,
         interestedCount: row.interested_count || 0,
-        createdAt: row.created_at
-      }))
+        createdAt: row.created_at,
+      })),
     });
   } catch (error) {
     console.error('Erro ao buscar histórico:', error);
@@ -56,7 +56,7 @@ router.get('/:searchId', authMiddleware, async (req, res) => {
     // Buscar informações da busca
     const searchResult = await query(
       'SELECT * FROM searches WHERE id = $1 AND user_id = $2',
-      [searchId, req.user.id]
+      [searchId, req.user.id],
     );
 
     if (searchResult.rows.length === 0) {
@@ -77,7 +77,7 @@ router.get('/:searchId', authMiddleware, async (req, res) => {
       LEFT JOIN interested_vehicles iv ON fv.id = iv.vehicle_id
       WHERE fv.search_id = $1
       ORDER BY fv.score DESC`,
-      [searchId]
+      [searchId],
     );
 
     res.json({
@@ -85,7 +85,7 @@ router.get('/:searchId', authMiddleware, async (req, res) => {
         id: search.id,
         query: search.query,
         resultsCount: search.results_count,
-        createdAt: search.created_at
+        createdAt: search.created_at,
       },
       vehicles: vehiclesResult.rows.map(row => ({
         id: row.id,
@@ -102,9 +102,9 @@ router.get('/:searchId', authMiddleware, async (req, res) => {
           id: row.interested_id,
           customerName: row.customer_name,
           customerPhone: row.customer_phone,
-          status: row.interest_status
-        } : null
-      }))
+          status: row.interest_status,
+        } : null,
+      })),
     });
   } catch (error) {
     console.error('Erro ao buscar detalhes:', error);
@@ -126,7 +126,7 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
       LEFT JOIN found_vehicles fv ON s.id = fv.search_id
       LEFT JOIN interested_vehicles iv ON fv.id = iv.vehicle_id
       WHERE s.user_id = $1`,
-      [req.user.id]
+      [req.user.id],
     );
 
     const stats = statsResult.rows[0];
@@ -135,7 +135,7 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
       totalSearches: parseInt(stats.total_searches) || 0,
       totalVehiclesFound: parseInt(stats.total_vehicles_found) || 0,
       totalInterested: parseInt(stats.total_interested) || 0,
-      lastSearch: stats.last_search || null
+      lastSearch: stats.last_search || null,
     });
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);

@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     res.json({
@@ -51,8 +51,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
   } catch (error) {
     console.error('Erro ao fazer login:', error);
@@ -76,7 +76,7 @@ router.post('/register', async (req, res) => {
     // Inserir usuário
     const result = await query(
       'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [email, hashedPassword, name]
+      [email, hashedPassword, name],
     );
 
     const user = result.rows[0];
@@ -85,12 +85,12 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     res.status(201).json({
       token,
-      user
+      user,
     });
   } catch (error) {
     console.error('Erro ao registrar usuário:', error);

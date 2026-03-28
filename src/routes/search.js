@@ -25,7 +25,7 @@ router.post('/query', authMiddleware, async (req, res) => {
     // Salvar busca no banco
     const searchResult = await dbQuery(
       'INSERT INTO searches (user_id, query) VALUES ($1, $2) RETURNING id',
-      [req.user.id, queryText]
+      [req.user.id, queryText],
     );
 
     const searchId = searchResult.rows[0].id;
@@ -52,8 +52,8 @@ router.post('/query', authMiddleware, async (req, res) => {
             vehicle.km || 0,
             vehicle.image || '',
             vehicle.link,
-            vehicle.score || 50
-          ]
+            vehicle.score || 50,
+          ],
         );
       } catch (err) {
         console.error('Erro ao salvar veículo:', err);
@@ -63,7 +63,7 @@ router.post('/query', authMiddleware, async (req, res) => {
     // Atualizar contagem de resultados
     await dbQuery(
       'UPDATE searches SET results_count = $1 WHERE id = $2',
-      [vehicles.length, searchId]
+      [vehicles.length, searchId],
     );
 
     console.log(`✅ Busca concluída: ${vehicles.length} veículos encontrados\n`);
@@ -80,8 +80,8 @@ router.post('/query', authMiddleware, async (req, res) => {
         km: v.km,
         image: v.image,
         link: v.link,
-        score: v.score
-      }))
+        score: v.score,
+      })),
     });
   } catch (error) {
     console.error('❌ Erro ao fazer busca:', error);
@@ -100,11 +100,11 @@ router.get('/results/:searchId', authMiddleware, async (req, res) => {
       `SELECT * FROM found_vehicles
        WHERE search_id = $1
        ORDER BY score DESC`,
-      [searchId]
+      [searchId],
     );
 
     res.json({
-      vehicles: result.rows
+      vehicles: result.rows,
     });
   } catch (error) {
     console.error('Erro ao buscar resultados:', error);

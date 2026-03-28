@@ -18,7 +18,7 @@ export const searchWebMotors = async (query) => {
     // Inicializar Puppeteer
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -34,7 +34,7 @@ export const searchWebMotors = async (query) => {
 
     // Aguardar carregamento de resultados
     await page.waitForSelector('.car-item, [data-test="vehicle-card"]', {
-      timeout: 5000
+      timeout: 5000,
     }).catch(() => {
       console.log('⚠️ Seletor não encontrado, tentando alternativa...');
     });
@@ -44,7 +44,7 @@ export const searchWebMotors = async (query) => {
       const items = document.querySelectorAll('.car-item, [data-test="vehicle-card"], .vehicle-item');
       const result = [];
 
-      items.forEach((item, index) => {
+      items.forEach((item, _index) => {
         try {
           // Tentar extrair dados (múltiplos seletores possíveis)
           const title = item.querySelector('h2, .title, .vehicle-title')?.textContent || '';
@@ -60,7 +60,7 @@ export const searchWebMotors = async (query) => {
               km: extractNumber(kmText),
               image,
               link,
-              platform: 'WebMotors'
+              platform: 'WebMotors',
             });
           }
         } catch (e) {
@@ -89,13 +89,13 @@ export const searchWebMotors = async (query) => {
 export const searchOLX = async (query) => {
   let browser;
   try {
-    const { make, model, priceMax } = parseQuery(query);
+    const { make, model } = parseQuery(query);
 
     console.log(`🔍 Buscando em OLX: ${query}`);
 
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
     const page = await browser.newPage();
@@ -111,7 +111,7 @@ export const searchOLX = async (query) => {
 
     // Aguardar carregamento
     await page.waitForSelector('[data-testid="ad-item"], .ad, .listing-item', {
-      timeout: 5000
+      timeout: 5000,
     }).catch(() => {
       console.log('⚠️ Seletor não encontrado');
     });
@@ -134,7 +134,7 @@ export const searchOLX = async (query) => {
               km: 0,
               image,
               link,
-              platform: 'OLX'
+              platform: 'OLX',
             });
           }
         } catch (e) {
@@ -170,7 +170,7 @@ function parseQuery(query) {
     model: '',
     priceMax: null,
     year: null,
-    km: null
+    km: null,
   };
 
   // Extrair marca (primeira palavra)
@@ -225,7 +225,7 @@ function extractNumber(text) {
 /**
  * Construir URL WebMotors
  */
-function buildWebMotorsUrl({ make, model, priceMax, year, km }) {
+function buildWebMotorsUrl({ make, model, priceMax, year, _km }) {
   const params = new URLSearchParams();
 
   if (make) params.append('marca', make);
@@ -247,7 +247,7 @@ export const searchAllPlatforms = async (query) => {
     // Buscar em paralelo
     const [webMotorsResults, olxResults] = await Promise.all([
       searchWebMotors(query).catch(() => []),
-      searchOLX(query).catch(() => [])
+      searchOLX(query).catch(() => []),
     ]);
 
     // Combinar resultados
@@ -255,13 +255,13 @@ export const searchAllPlatforms = async (query) => {
 
     // Remover duplicatas (mesmo link)
     const uniqueVehicles = Array.from(
-      new Map(allVehicles.map(v => [v.link, v])).values()
+      new Map(allVehicles.map(v => [v.link, v])).values(),
     );
 
     // Calcular score
     const vehiclesWithScore = uniqueVehicles.map(v => ({
       ...v,
-      score: calculateScore(v, query)
+      score: calculateScore(v, query),
     }));
 
     // Ordenar por score descente
@@ -303,5 +303,5 @@ function calculateScore(vehicle, query) {
 export default {
   searchWebMotors,
   searchOLX,
-  searchAllPlatforms
+  searchAllPlatforms,
 };

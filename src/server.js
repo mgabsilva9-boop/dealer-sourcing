@@ -30,7 +30,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // CORS
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
 }));
 
 // Logger simples
@@ -45,7 +45,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -58,12 +58,12 @@ app.use('/history', historyRoutes);
 
 // ===== ERROR HANDLING =====
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('❌ Erro:', err);
 
   res.status(err.status || 500).json({
     error: err.message || 'Erro interno do servidor',
-    status: err.status || 500
+    status: err.status || 500,
   });
 });
 
