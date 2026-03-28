@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: dealer-sourcing-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dealer-sourcing-db
+          property: connectionString
+      - key: JWT_SECRET
+        scope: general
+        sync: false
+
+  - type: pserv
+    name: dealer-sourcing-db
+    runtime: postgres15
+    plan: free
+    ipAllowList: []
