@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI } from "./api.js";
+import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI } from "./api.js";
 
 const C = {
   bg: "#f5f6f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
@@ -369,6 +369,9 @@ export default function App() {
   const [balMonth, setBalMonth] = useState("2026-02");
   const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0] });
   const [loaded, setLoaded] = useState(false);
+  const [sourcing, setSourcing] = useState([]);
+  const [sourcingFilters, setSourcingFilters] = useState({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" });
+  const [sourcingLoading, setSourcingLoading] = useState(false);
 
   // Carregar vehicles, customers e expenses do backend
   useEffect(function() {
@@ -400,9 +403,39 @@ export default function App() {
         console.error('Erro ao carregar despesas:', err);
         setExpenses(INIT_EXPENSES);
       }
+      try {
+        const sourcingData = await sourcingAPI.list();
+        if (sourcingData && sourcingData.results) {
+          setSourcing(sourcingData.results);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar sourcing:', err);
+      }
       setLoaded(true);
     })();
   }, [user]);
+
+  var searchSourcing = function() {
+    setSourcingLoading(true);
+    (async function() {
+      try {
+        const filters = {};
+        if (sourcingFilters.make) filters.make = sourcingFilters.make;
+        if (sourcingFilters.model) filters.model = sourcingFilters.model;
+        if (sourcingFilters.priceMin) filters.priceMin = Number(sourcingFilters.priceMin);
+        if (sourcingFilters.priceMax) filters.priceMax = Number(sourcingFilters.priceMax);
+        if (sourcingFilters.kmMax) filters.kmMax = Number(sourcingFilters.kmMax);
+        if (sourcingFilters.discountMin) filters.discountMin = Number(sourcingFilters.discountMin);
+        const result = await sourcingAPI.search(filters);
+        if (result && result.results) {
+          setSourcing(result.results);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar sourcing:', err);
+      }
+      setSourcingLoading(false);
+    })();
+  };
 
   var upd = useCallback(function(id, field, val) {
     // Atualizar localmente primeiro
@@ -646,8 +679,27 @@ export default function App() {
         {/* SOURCING */}
         {tab === "sourcing" && <div>
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>Busca Inteligente IA</h2>
+          <Card style={{ padding: 20, marginBottom: 20 }}>
+            <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, textTransform: "uppercase", color: C.textDim }}>Filtros</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+              <input placeholder="Marca" value={sourcingFilters.make} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { make: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+              <input placeholder="Modelo" value={sourcingFilters.model} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { model: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+              <input placeholder="Preco min" type="number" value={sourcingFilters.priceMin} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { priceMin: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+              <input placeholder="Preco max" type="number" value={sourcingFilters.priceMax} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { priceMax: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+              <input placeholder="KM max" type="number" value={sourcingFilters.kmMax} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { kmMax: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+              <input placeholder="Desconto min" type="number" value={sourcingFilters.discountMin} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { discountMin: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <button onClick={searchSourcing} disabled={sourcingLoading} style={{ padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: sourcingLoading ? "default" : "pointer", opacity: sourcingLoading ? 0.6 : 1 }}>
+                {sourcingLoading ? "Buscando..." : "Buscar"}
+              </button>
+              <button onClick={function() { setSourcingFilters({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" }); setSourcing([]); }} style={{ padding: "10px 16px", background: C.surfaceAlt, color: C.textMid, border: "1px solid " + C.border, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Limpar
+              </button>
+            </div>
+          </Card>
           <div style={{ display: "grid", gap: 12 }}>
-            {SOURCING.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} style={{ padding: "18px 22px" }}>
+            {sourcing.length === 0 ? <Card style={{ padding: "40px 20px", textAlign: "center" }}><div style={{ color: C.textDim, fontSize: 14 }}>Nenhum veiculo encontrado. Use o filtro acima para buscar.</div></Card> : sourcing.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} style={{ padding: "18px 22px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", alignItems: "center", gap: 14 }}>
                 <div><div style={{ fontWeight: 600, fontSize: 14 }}>{s.make} {s.model} {s.year}</div><div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{s.platform} | {s.location} | {s.km.toLocaleString()} km</div></div>
                 <div><div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase" }}>Preco</div><div style={{ fontWeight: 700, fontSize: 14, marginTop: 2 }}>R$ {(s.price/1000).toFixed(0)}K</div></div>

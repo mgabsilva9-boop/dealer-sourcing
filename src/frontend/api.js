@@ -193,6 +193,35 @@ export const searchAPI = {
   },
 };
 
+// ─── SOURCING API (busca inteligente)
+export const sourcingAPI = {
+  async list() {
+    return fetchAPI('/sourcing/list');
+  },
+
+  async search(filters) {
+    const params = new URLSearchParams();
+    if (filters.make) params.append('make', filters.make);
+    if (filters.model) params.append('model', filters.model);
+    if (filters.priceMin) params.append('priceMin', filters.priceMin);
+    if (filters.priceMax) params.append('priceMax', filters.priceMax);
+    if (filters.kmMax) params.append('kmMax', filters.kmMax);
+    if (filters.discountMin) params.append('discountMin', filters.discountMin);
+    return fetchAPI(`/sourcing/search?${params.toString()}`);
+  },
+
+  async get(id) {
+    return fetchAPI(`/sourcing/${id}`);
+  },
+
+  async markInterested(id) {
+    return fetchAPI(`/sourcing/${id}/interested`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
+};
+
 // ─── HISTORY API
 export const historyAPI = {
   async get() {

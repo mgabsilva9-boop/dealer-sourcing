@@ -16,6 +16,7 @@ import historyRoutes from './routes/history.js';
 import inventoryRoutes from './routes/inventory.js';
 import crmRoutes from './routes/crm.js';
 import expensesRoutes from './routes/expenses.js';
+import sourcingRoutes from './routes/sourcing.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -67,6 +68,7 @@ app.use('/history', historyRoutes);
 app.use('/inventory', inventoryRoutes);
 app.use('/crm', crmRoutes);
 app.use('/expenses', expensesRoutes);
+app.use('/sourcing', sourcingRoutes);
 
 // ===== ERROR HANDLING =====
 
