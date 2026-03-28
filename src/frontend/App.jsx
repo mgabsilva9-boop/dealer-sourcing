@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError } from "./api.js";
+import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI } from "./api.js";
 
 const C = {
   bg: "#f5f6f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
@@ -68,6 +68,8 @@ const sLabel = (s) => s >= 90 ? "Excelente" : s >= 75 ? "Bom" : "Risco";
 var totalCosts = function(v) { var co = v.costs || {}; var keys = Object.keys(co); var sum = 0; for (var i = 0; i < keys.length; i++) { sum += Number(co[keys[i]]) || 0; } return sum; };
 const vProfit = (v) => (v.soldPrice || v.salePrice || 0) - totalCosts(v);
 const vMargin = (v) => { const sale = v.soldPrice || v.salePrice || 0; return sale > 0 ? ((vProfit(v) / sale) * 100).toFixed(1) : "0.0"; };
+const cR = (vehicles) => vehicles.filter(v => v.status === "sold").reduce((a, v) => a + (Number(v.soldPrice || v.salePrice) || 0), 0);
+const cCost = (vehicles) => vehicles.reduce((a, v) => a + totalCosts(v), 0);
 
 const statusMap = { available: { label: "Disponivel", color: C.green, bg: C.greenBg }, reserved: { label: "Reservado", color: C.yellow, bg: C.yellowBg }, sold: { label: "Vendido", color: C.blue, bg: C.blueBg }, maintenance: { label: "Recondicionamento", color: C.red, bg: C.redBg }, documentation: { label: "Documentacao", color: C.purple, bg: "#f5f3ff" }, transit: { label: "Em Transito", color: C.cyan, bg: "#ecfeff" } };
 const expStatusMap = { paid: { label: "Pago", color: C.green, bg: C.greenBg }, pending: { label: "Pendente", color: C.yellow, bg: C.yellowBg }, urgent: { label: "Urgente", color: C.red, bg: C.redBg }, overdue: { label: "Atrasado", color: C.red, bg: C.redBg } };
@@ -145,19 +147,47 @@ function LoginScreen({ onLogin }) {
 // ─── VEHICLE FORM ───────────────────────────────────────────────────
 function VehicleForm({ onAdd, onCancel }) {
   const [f, setF] = useState({ make: "", model: "", year: 2024, salePrice: 0, fipePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   var inp = { width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" };
   var lbl = { fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" };
-  var submit = function() {
+  var submit = async function() {
     if (!f.make || !f.model) return;
-    var costs = { "Compra do veiculo": Number(f.compra) || 0 };
-    if (Number(f.viagem)) costs["Viagem"] = Number(f.viagem);
-    if (Number(f.combustivel)) costs["Combustivel"] = Number(f.combustivel);
-    if (Number(f.documentacao)) costs["Documentacao"] = Number(f.documentacao);
-    if (Number(f.funilaria)) costs["Funilaria"] = Number(f.funilaria);
-    if (Number(f.lavagem)) costs["Lavagem"] = Number(f.lavagem);
-    if (Number(f.vistoria)) costs["Vistoria"] = Number(f.vistoria);
-    if (Number(f.comissao)) costs["Comissao"] = Number(f.comissao);
-    onAdd({ id: Date.now(), make: f.make, model: f.model, year: Number(f.year), purchasePrice: Number(f.compra) || 0, salePrice: Number(f.salePrice) || 0, fipePrice: Number(f.fipePrice) || 0, mileage: Number(f.mileage) || 0, status: "available", daysInStock: 0, location: f.location, costs: costs, motor: f.motor, potencia: f.potencia, features: f.features });
+    setLoading(true);
+    setError("");
+    try {
+      var costs = { "Compra do veiculo": Number(f.compra) || 0 };
+      if (Number(f.viagem)) costs["Viagem"] = Number(f.viagem);
+      if (Number(f.combustivel)) costs["Combustivel"] = Number(f.combustivel);
+      if (Number(f.documentacao)) costs["Documentacao"] = Number(f.documentacao);
+      if (Number(f.funilaria)) costs["Funilaria"] = Number(f.funilaria);
+      if (Number(f.lavagem)) costs["Lavagem"] = Number(f.lavagem);
+      if (Number(f.vistoria)) costs["Vistoria"] = Number(f.vistoria);
+      if (Number(f.comissao)) costs["Comissao"] = Number(f.comissao);
+      var vehicleData = {
+        make: f.make,
+        model: f.model,
+        year: Number(f.year),
+        purchasePrice: Number(f.compra) || 0,
+        salePrice: Number(f.salePrice) || 0,
+        fipePrice: Number(f.fipePrice) || 0,
+        mileage: Number(f.mileage) || 0,
+        location: f.location,
+        status: "available",
+        motor: f.motor,
+        potencia: f.potencia,
+        features: f.features,
+        costs: costs
+      };
+      var result = await inventoryAPI.create(vehicleData);
+      if (result && result.vehicle) {
+        onAdd(result.vehicle);
+      }
+    } catch (err) {
+      setError(err instanceof APIError ? err.message : "Erro ao adicionar veiculo");
+    } finally {
+      setLoading(false);
+    }
   };
   var set = function(key, val) { var u = {}; u[key] = val; setF(Object.assign({}, f, u)); };
   return <Card style={{ padding: 22, marginBottom: 16 }}>
@@ -185,9 +215,10 @@ function VehicleForm({ onAdd, onCancel }) {
       <div><label style={lbl}>Vistoria</label><input type="number" value={f.vistoria} onChange={function(e) { set("vistoria", e.target.value); }} style={inp} /></div>
       <div><label style={lbl}>Motor / Features</label><input value={f.motor} onChange={function(e) { set("motor", e.target.value); }} style={inp} placeholder="2.8L Diesel..." /></div>
     </div>
+    {error && <div style={{ padding: 12, background: C.redBg, border: "1px solid " + C.red, borderRadius: 8, color: C.red, fontSize: 12, fontWeight: 500, marginBottom: 12 }}>{error}</div>}
     <div style={{ display: "flex", gap: 10 }}>
-      <button onClick={submit} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar ao Estoque</button>
-      <button onClick={onCancel} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+      <button onClick={submit} disabled={loading} style={{ padding: "10px 24px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}>{loading ? "Adicionando..." : "Adicionar ao Estoque"}</button>
+      <button onClick={onCancel} disabled={loading} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1 }}>Cancelar</button>
     </div>
   </Card>;
 }
@@ -203,7 +234,16 @@ function CrmTab({ customers, setCustomers }) {
   if (selC) {
     var c = customers.find(function(x) { return x.id === selC; });
     if (!c) { setSelC(null); return null; }
-    var updC = function(field, val) { setCustomers(function(p) { return p.map(function(x) { return x.id === c.id ? Object.assign({}, x, { [field]: val }) : x; }); }); };
+    var updC = function(field, val) {
+      setCustomers(function(p) { return p.map(function(x) { return x.id === c.id ? Object.assign({}, x, { [field]: val }) : x; }); });
+      (async function() {
+        try {
+          await crmAPI.update(c.id, { [field]: val });
+        } catch (err) {
+          console.error('Erro ao atualizar cliente:', err);
+        }
+      })();
+    };
     return <div>
       <button onClick={function() { setSelC(null); }} style={{ background: C.surface, border: "1px solid " + C.border, color: C.textMid, padding: "7px 16px", borderRadius: 8, cursor: "pointer", marginBottom: 18, fontSize: 12 }}>Voltar</button>
       <Card style={{ padding: 28 }}>
@@ -252,11 +292,27 @@ function CrmTab({ customers, setCustomers }) {
           <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Observacoes</div>
           <textarea value={c.notes || ""} onChange={function(e) { updC("notes", e.target.value); }} style={{ width: "100%", minHeight: 80, padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box", resize: "vertical", background: C.surface, lineHeight: 1.6 }} />
         </Card>
+        <button onClick={async function() { if (confirm("Tem certeza que deseja deletar este cliente?")) { try { await crmAPI.delete(c.id); setCustomers(function(p) { return p.filter(function(x) { return x.id !== c.id; }); }); setSelC(null); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ width: "100%", padding: "12px 16px", background: C.redBg, color: C.red, border: "1px solid " + C.red, borderRadius: 8, cursor: "pointer", marginTop: 16, fontSize: 13, fontWeight: 600 }}>Deletar Cliente</button>
       </Card>
     </div>;
   }
 
-  var addC = function() { if (!form.name) return; setCustomers(function(p) { return p.concat([Object.assign({}, form, { id: Date.now(), purchaseValue: Number(form.purchaseValue) || 0 })]); }); setForm({ name: "", phone: "", email: "", cpf: "", vehicleBought: "", purchaseDate: "", purchaseValue: 0, notes: "", style: "", region: "", collector: false, birthday: "", profession: "", referral: "", contactPref: "WhatsApp" }); setAdding(false); };
+  var addC = function() {
+    if (!form.name) return;
+    (async function() {
+      try {
+        var customerData = { name: form.name, phone: form.phone, email: form.email, cpf: form.cpf, vehicleBought: form.vehicleBought, purchaseDate: form.purchaseDate, purchaseValue: Number(form.purchaseValue) || 0, notes: form.notes, style: form.style, region: form.region, collector: form.collector, birthday: form.birthday, profession: form.profession, referral: form.referral, contactPref: form.contactPref };
+        var result = await crmAPI.create(customerData);
+        if (result && result.customer) {
+          setCustomers(function(p) { return p.concat([result.customer]); });
+          setForm({ name: "", phone: "", email: "", cpf: "", vehicleBought: "", purchaseDate: "", purchaseValue: 0, notes: "", style: "", region: "", collector: false, birthday: "", profession: "", referral: "", contactPref: "WhatsApp" });
+          setAdding(false);
+        }
+      } catch (err) {
+        alert("Erro ao adicionar cliente: " + (err instanceof APIError ? err.message : err.message));
+      }
+    })();
+  };
 
   return <div>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -308,33 +364,94 @@ export default function App() {
   const [showCosts, setShowCosts] = useState(false);
   const [invFilter, setInvFilter] = useState("active");
   const [addingV, setAddingV] = useState(false);
+  const [addingExp, setAddingExp] = useState(false);
   const [finSub, setFinSub] = useState("overview");
   const [balMonth, setBalMonth] = useState("2026-02");
+  const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0] });
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(function() { (async function() {
-    try { var r = await window.storage.get("garagem-data"); if (r && r.value) { var d = JSON.parse(r.value); if (d.version === 2 && d.vehicles) { setVehicles(d.vehicles); if (d.customers) setCustomers(d.customers); if (d.expenses) setExpenses(d.expenses); } } } catch(e) {}
-    setLoaded(true);
-  })(); }, []);
-
-  useEffect(function() { if (!loaded) return; (async function() {
-    try { await window.storage.set("garagem-data", JSON.stringify({ version: 2, vehicles: vehicles, customers: customers, expenses: expenses })); } catch(e) {}
-  })(); }, [vehicles, customers, expenses, loaded]);
+  // Carregar vehicles, customers e expenses do backend
+  useEffect(function() {
+    (async function() {
+      try {
+        const vehiclesData = await inventoryAPI.list();
+        if (vehiclesData && vehiclesData.vehicles) {
+          setVehicles(vehiclesData.vehicles);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar estoque:', err);
+        setVehicles(INIT_VEHICLES);
+      }
+      try {
+        const customersData = await crmAPI.list();
+        if (customersData && customersData.customers) {
+          setCustomers(customersData.customers);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar clientes:', err);
+        setCustomers(INIT_CRM);
+      }
+      try {
+        const expensesData = await expensesAPI.list();
+        if (expensesData && expensesData.expenses) {
+          setExpenses(expensesData.expenses);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar despesas:', err);
+        setExpenses(INIT_EXPENSES);
+      }
+      setLoaded(true);
+    })();
+  }, [user]);
 
   var upd = useCallback(function(id, field, val) {
-    setVehicles(function(p) { return p.map(function(v) { return v.id === id ? Object.assign({}, v, { [field]: val }) : v; }); });
-    if (selV && selV.id === id) setSelV(function(p) { return Object.assign({}, p, { [field]: val }); });
-  }, [selV]);
+    // Atualizar localmente primeiro
+    setVehicles(function(p) {
+      return p.map(function(v) {
+        return v.id === id ? Object.assign({}, v, { [field]: val }) : v;
+      });
+    });
+    if (selV && selV.id === id) {
+      setSelV(function(p) {
+        return Object.assign({}, p, { [field]: val });
+      });
+    }
+    // Enviar para backend
+    (async function() {
+      try {
+        const vehicle = vehicles.find(v => v.id === id);
+        if (vehicle) {
+          await inventoryAPI.update(id, Object.assign({}, vehicle, { [field]: val }));
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar veículo:', err);
+      }
+    })();
+  }, [selV, vehicles]);
 
   var updCost = useCallback(function(id, costField, val) {
-    setVehicles(function(p) { return p.map(function(v) {
-      if (v.id !== id) return v;
-      var newCosts = Object.assign({}, v.costs || {}, { [costField]: val });
-      var updates = { costs: newCosts };
-      if (costField === "Compra do veiculo") updates.purchasePrice = val;
-      return Object.assign({}, v, updates);
-    }); });
-  }, []);
+    setVehicles(function(p) {
+      return p.map(function(v) {
+        if (v.id !== id) return v;
+        var newCosts = Object.assign({}, v.costs || {}, { [costField]: val });
+        var updates = { costs: newCosts };
+        if (costField === "Compra do veiculo") updates.purchasePrice = val;
+        return Object.assign({}, v, updates);
+      });
+    });
+    // Enviar para backend
+    (async function() {
+      try {
+        const vehicle = vehicles.find(v => v.id === id);
+        if (vehicle) {
+          const updatedCosts = Object.assign({}, vehicle.costs || {}, { [costField]: val });
+          await inventoryAPI.update(id, Object.assign({}, vehicle, { costs: updatedCosts }));
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar custos:', err);
+      }
+    })();
+  }, [vehicles]);
 
   if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
 
@@ -521,6 +638,7 @@ export default function App() {
                 <div style={{ fontSize: 13, color: C.blue, fontWeight: 600 }}>Vendido para {sv.soldTo} em {sv.soldDate ? new Date(sv.soldDate).toLocaleDateString("pt-BR") : "---"}</div>
                 {sv.docs && sv.docs.length > 0 && <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>{sv.docs.map(function(d, i) { return <Tag key={i} color={C.accent} bg={C.accentLight}>{d}</Tag>; })}</div>}
               </div>}
+              <button onClick={async function() { if (confirm("Tem certeza que deseja deletar este veiculo?")) { try { await inventoryAPI.delete(sv.id); setVehicles(function(p) { return p.filter(function(v) { return v.id !== sv.id; }); }); setSelV(null); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ width: "100%", padding: "12px 16px", background: C.redBg, color: C.red, border: "1px solid " + C.red, borderRadius: 8, cursor: "pointer", marginTop: 16, fontSize: 13, fontWeight: 600 }}>Deletar Veiculo</button>
             </div>
           </Card>
         </div>}
@@ -562,18 +680,72 @@ export default function App() {
         {tab === "financial" && <div>
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>Financeiro</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-            <Stat label="Receita Total" value={fmtFull(cR(allF))} accent />
-            <Stat label="Custo Total" value={fmtFull(cCost(allF))} />
+            <Stat label="Receita Vendas" value={fmtFull(cR(allF))} accent />
+            <Stat label="Custo Estoque" value={fmtFull(cCost(allF))} />
             <Stat label="Lucro Bruto" value={fmtFull(totalProfit)} sub={soldV.length > 0 ? "Margem: " + ((totalProfit / (cR(allF) || 1)) * 100).toFixed(1) + "%" : "Sem vendas"} />
+            <Stat label="Despesas" value={fmtFull(expenses.reduce((a, e) => a + (e.amount || 0), 0))} />
           </div>
+          {finSub === "overview" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <Card style={{ padding: 22 }}>
+              <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600 }}>Resumo {thisMonth}</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Lucro Este Mes</span><span style={{ fontSize: 16, fontWeight: 700, color: profitThisMonth > 0 ? C.green : C.red }}>{fmtFull(profitThisMonth)}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Veiculos Vendidos</span><span style={{ fontSize: 16, fontWeight: 700 }}>{soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}><span style={{ fontSize: 12, color: C.textDim }}>Media Lucro/Venda</span><span style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length > 0 ? fmtFull(profitThisMonth / soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length) : "—"}</span></div>
+            </Card>
+            <Card style={{ padding: 22 }}>
+              <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600 }}>Comparacao</h3>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Lucro Mes Passado</span><span style={{ fontSize: 16, fontWeight: 700, color: profitLastMonth > 0 ? C.green : C.red }}>{fmtFull(profitLastMonth)}</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}><span style={{ fontSize: 12, color: C.textDim }}>Variacao</span><span style={{ fontSize: 16, fontWeight: 700, color: (profitThisMonth - profitLastMonth) > 0 ? C.green : C.red }}>{(profitThisMonth - profitLastMonth) > 0 ? "+" : ""}{fmtFull(profitThisMonth - profitLastMonth)}</span></div>
+            </Card>
+          </div>}
         </div>}
 
         {/* GASTOS GERAIS */}
         {tab === "expenses" && <div>
-          <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>Gastos Gerais</h2>
-          <Card style={{ padding: 20, textAlign: "center", color: C.textDim }}>
-            Modulo de gastos em desenvolvimento. Configure via dashboard.
-          </Card>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Gastos Gerais</h2>
+            <button onClick={function() { setAddingExp(!addingExp); }} style={{ padding: "8px 18px", background: addingExp ? C.redBg : C.accent, color: addingExp ? C.red : "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{addingExp ? "Cancelar" : "+ Nova Despesa"}</button>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14, marginBottom: 20 }}>
+            <Stat label="Total Despesas" value={fmtFull(expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0))} accent />
+            <Stat label="Pendente" value={fmtFull(expenses.filter(e => e.status !== "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
+            <Stat label="Pago" value={fmtFull(expenses.filter(e => e.status === "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
+          </div>
+          {addingExp && <Card style={{ padding: 22, marginBottom: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Categoria</label><select value={expForm.category} onChange={function(e) { setExpForm(Object.assign({}, expForm, { category: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option>Operacional</option><option>Aluguel</option><option>Financiamento</option><option>IPVA</option><option>Seguro</option></select></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Descricao</label><input value={expForm.description} onChange={function(e) { setExpForm(Object.assign({}, expForm, { description: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Valor</label><input type="number" value={expForm.amount} onChange={function(e) { setExpForm(Object.assign({}, expForm, { amount: Number(e.target.value) || 0 })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Data</label><input type="date" value={expForm.date} onChange={function(e) { setExpForm(Object.assign({}, expForm, { date: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Status</label><select value={expForm.status} onChange={function(e) { setExpForm(Object.assign({}, expForm, { status: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="pending">Pendente</option><option value="paid">Pago</option><option value="urgent">Urgente</option></select></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={async function() { if (!expForm.category || !expForm.amount) return; try { var result = await expensesAPI.create(expForm); if (result && result.expense) { setExpenses(function(p) { return p.concat([result.expense]); }); setExpForm({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0] }); setAddingExp(false); } } catch (err) { alert("Erro ao adicionar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar Despesa</button>
+              <button onClick={function() { setAddingExp(false); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+            </div>
+          </Card>}
+          <div style={{ display: "grid", gap: 12 }}>
+            {expenses.length > 0 ? expenses.map(function(e) {
+              var st = expStatusMap[e.status] || { label: e.status, color: C.textDim, bg: C.surfaceAlt };
+              return <Card key={e.id} style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14 }}>{e.category}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{e.description || "Sem descricao"} — {e.date ? new Date(e.date).toLocaleDateString("pt-BR") : "---"}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: C.red }}>{fmtFull(Number(e.amount))}</div>
+                    <Tag color={st.color} bg={st.bg}>{st.label}</Tag>
+                  </div>
+                  <button onClick={async function() { if (confirm("Deletar esta despesa?")) { try { await expensesAPI.delete(e.id); setExpenses(function(p) { return p.filter(function(x) { return x.id !== e.id; }); }); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ padding: "4px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Del</button>
+                </div>
+              </Card>;
+            }) : <Card style={{ padding: 20, textAlign: "center", color: C.textDim }}>
+              Nenhuma despesa registrada
+            </Card>}
+          </div>
         </div>}
 
         {tab === "crm" && <CrmTab customers={customers} setCustomers={setCustomers} />}
