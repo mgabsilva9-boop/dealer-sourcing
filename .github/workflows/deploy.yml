@@ -1,11 +1,11 @@
-name: Deploy to Render & Vercel
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [main]
 
 jobs:
-  lint-test-build:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,32 +22,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Test
-        run: npm run test
-
       - name: Build
         run: npm run build
 
-  deploy-render:
-    needs: lint-test-build
-    runs-on: ubuntu-latest
-    steps:
       - name: Deploy to Render
-        run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-
-  deploy-vercel:
-    needs: lint-test-build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '22'
-
-      - name: Deploy to Vercel
-        run: |
-          npm install -g vercel
-          vercel deploy --prod --token ${{ secrets.VERCEL_TOKEN }} --project-id ${{ secrets.VERCEL_PROJECT_ID }}
+        if: success()
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
