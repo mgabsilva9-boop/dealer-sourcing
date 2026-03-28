@@ -17,6 +17,7 @@ import inventoryRoutes from './routes/inventory.js';
 import crmRoutes from './routes/crm.js';
 import expensesRoutes from './routes/expenses.js';
 import sourcingRoutes from './routes/sourcing.js';
+import metricsRoutes from './routes/metrics.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -58,6 +59,10 @@ app.get('/health', (req, res) => {
     uptime: process.uptime(),
   });
 });
+
+// ===== METRICS (STORY-502) =====
+
+app.use('/metrics', metricsRoutes);
 
 // ===== ROTAS =====
 
@@ -116,7 +121,10 @@ async function startServer() {
   }
 }
 
-// Iniciar
-startServer();
+// Iniciar (only if not being imported for testing)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer();
+}
 
+export { app, startServer };
 export default app;
