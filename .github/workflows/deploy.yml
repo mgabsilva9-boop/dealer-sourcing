@@ -1,62 +1,51 @@
-name: Deploy Backend to Render
+name: Deploy to Render & Vercel
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-
-env:
-  NODE_VERSION: '22'
-  NPM_VERSION: '10'
 
 jobs:
-  test-and-build:
+  lint-test-build:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [22.x]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
-      - name: Run linter
-        run: npm run lint || true
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
 
       - name: Build
-        run: npm run build || echo "No build script"
+        run: npm run build
 
-      - name: Health check endpoint
-        run: |
-          echo "Validating source code..."
-          node -c src/server.js
-
+  deploy-render:
+    needs: lint-test-build
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to Render
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
-          curl https://api.render.com/deploy/${{ secrets.RENDER_DEPLOY_HOOK_ID }}
+          curl -X POST https://api.render.com/deploy/srv-${{ secrets.RENDER_SERVICE_ID }}?key=${{ secrets.RENDER_API_KEY }}
+
+  deploy-vercel:
+    needs: lint-test-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Deploy to Vercel
+        uses: vercel/action@main
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          prod: true
