@@ -20,7 +20,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify('1.0.0'),
     'process.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL || 'https://dealer-sourcing-backend.onrender.com'
+      process.env.VITE_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://dealer-sourcing-backend.onrender.com')
     ),
   }
 })
