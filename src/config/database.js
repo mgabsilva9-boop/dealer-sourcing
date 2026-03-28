@@ -12,7 +12,10 @@ const { Pool } = pg;
 // Criar pool de conexões
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  // Opcional: configurações adicionais
+  // Configurações para Railway via proxy público
+  ssl: {
+    rejectUnauthorized: false, // Railway via proxy público requer SSL
+  },
   max: 20,                    // Máximo de conexões simultâneas
   idleTimeoutMillis: 30000,   // Timeout de inatividade
   connectionTimeoutMillis: 2000,

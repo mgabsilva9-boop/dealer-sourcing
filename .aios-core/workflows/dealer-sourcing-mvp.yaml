@@ -1,0 +1,143 @@
+---
+name: dealer-sourcing-mvp-orchestration
+version: 1.0.0
+description: Orquestração paralela + sequencial para MVP do Dealer Sourcing Bot
+created: 2026-03-27
+status: active
+
+workflow:
+  project: dealer-sourcing
+  deadline: 2026-03-31
+  mode: parallel-with-convergence
+
+  stages:
+    # STAGE 1: Análise Paralela (sem dependências)
+    - name: parallel-analysis
+      type: parallel
+      timeout: 45m
+      agents:
+        - agent: "@qa"
+          task: "*code-review dealer-sourcing"
+          mode: light
+          output: docs/qa/code-review-{timestamp}.md
+
+        - agent: "@dev"
+          task: "*improve-code-quality src/"
+          mode: yolo
+          output: docs/dev/optimization-{timestamp}.md
+
+        - agent: "@architect"
+          task: "*validate dealer-sourcing"
+          mode: interactive
+          output: docs/architect/validation-{timestamp}.md
+
+        - agent: "@devops"
+          task: "*ci-cd dealer-sourcing"
+          mode: yolo
+          output: docs/devops/ci-cd-setup-{timestamp}.md
+
+    # STAGE 2: Convergência e Orquestração
+    - name: convergence
+      type: sequential
+      depends_on: [parallel-analysis]
+      timeout: 30m
+      steps:
+        - step: wait-all-agents
+          description: "Aguarda conclusão de todos os agentes paralelos"
+
+        - step: master-consolidate
+          agent: "@aios-master"
+          task: "*analyze-framework dealer-sourcing"
+          description: "Consolida outputs e identifica bloqueadores"
+
+        - step: create-deployment-manifest
+          agent: "@aios-master"
+          task: "*create-doc deployment-manifest"
+          description: "Cria manifesto final de deployment"
+
+    # STAGE 3: Deployment
+    - name: deployment
+      type: sequential
+      depends_on: [convergence]
+      timeout: 60m
+      steps:
+        - step: backend-render
+          agent: "@devops"
+          task: "*deploy-render dealer-sourcing-backend"
+          description: "Deploy backend em Render"
+          requires_manual: true
+
+        - step: frontend-vercel
+          agent: "@devops"
+          task: "*deploy-vercel dealer-sourcing-frontend"
+          description: "Deploy frontend em Vercel"
+          requires_manual: true
+
+        - step: webhook-github
+          agent: "@devops"
+          task: "*setup-webhook github dealer-sourcing"
+          description: "Configura webhook para auto-deploy"
+          requires_manual: true
+
+    # STAGE 4: Validação Final
+    - name: final-validation
+      type: sequential
+      depends_on: [deployment]
+      timeout: 30m
+      steps:
+        - step: health-check-backend
+          command: "curl https://dealer-sourcing-backend.onrender.com/health"
+
+        - step: login-test
+          description: "Testa login no frontend"
+
+        - step: search-test
+          description: "Testa busca end-to-end"
+
+  # Definição de Squad
+  squad:
+    name: dealer-sourcing-delivery-squad
+    members:
+      - agent: "@aios-master"
+        role: orchestrator
+        status: active
+
+      - agent: "@qa"
+        role: quality-assurance
+        status: standby
+
+      - agent: "@dev"
+        role: developer
+        status: standby
+
+      - agent: "@architect"
+        role: architect
+        status: standby
+
+      - agent: "@devops"
+        role: infrastructure
+        status: standby
+
+  # Configurações
+  config:
+    parallel_mode: true
+    max_retries: 2
+    timeout_per_agent: 45m
+    output_location: docs/aios-workflow-outputs/
+    logging_level: verbose
+    notifications: enabled
+
+  # Success Criteria
+  success_criteria:
+    - All parallel agents complete without CRITICAL issues
+    - @aios-master consolidates findings
+    - Backend deployed to Render
+    - Frontend deployed to Vercel
+    - CI/CD webhook configured
+    - Health checks pass
+
+  # Escalation Rules
+  escalation:
+    critical_blocker: "@aios-master"
+    timeout_threshold: 50m
+    manual_intervention_required: deployment-phase

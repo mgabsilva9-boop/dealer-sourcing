@@ -1,0 +1,119 @@
+---
+squad_id: dealer-sourcing-delivery-squad
+squad_name: "Dealer Sourcing MVP Delivery Squad"
+created: 2026-03-27
+version: 1.0.0
+status: active
+mode: full-autonomous
+
+# Orquestrador Central
+orchestrator:
+  agent: "@aios-master"
+  role: "Orquestra workflow paralelo e convergência"
+  status: active
+
+# Membros do Squad
+members:
+  - id: qa-agent
+    agent: "@qa"
+    role: "Quality Assurance & Code Review"
+    responsibilities:
+      - Code review dealer-sourcing
+      - Quality gate validation
+      - Risk assessment
+    task: "*code-review dealer-sourcing"
+    status: ready
+    priority: high
+
+  - id: dev-agent
+    agent: "@dev"
+    role: "Developer & Code Optimization"
+    responsibilities:
+      - Optimize code quality
+      - Improve performance
+      - Technical debt resolution
+    task: "*improve-code-quality src/"
+    status: ready
+    priority: high
+
+  - id: architect-agent
+    agent: "@architect"
+    role: "System Architect & Validation"
+    responsibilities:
+      - Validate architecture
+      - Design review
+      - Integration points
+    task: "*validate dealer-sourcing"
+    status: ready
+    priority: high
+
+  - id: devops-agent
+    agent: "@devops"
+    role: "Infrastructure & CI/CD"
+    responsibilities:
+      - CI/CD setup and validation
+      - Deployment preparation
+      - GitHub Actions configuration
+    task: "*ci-cd dealer-sourcing"
+    status: ready
+    priority: high
+
+# Workflow Association
+workflow: dealer-sourcing-mvp.yaml
+
+# Synchronization Points
+sync_points:
+  - stage: parallel-analysis
+    timeout: 45m
+    agents: [qa-agent, dev-agent, architect-agent, devops-agent]
+    action: wait_all_complete
+
+  - stage: convergence
+    timeout: 30m
+    agents: [orchestrator]
+    action: consolidate_and_create_manifest
+
+  - stage: deployment
+    timeout: 60m
+    agents: [devops-agent]
+    action: execute_deployment
+
+  - stage: final-validation
+    timeout: 30m
+    agents: [qa-agent]
+    action: validate_endpoints
+
+# Communication
+communication:
+  channel: "Outputs consolidados em docs/aios-workflow-outputs/"
+  notifications: enabled
+  reporting: verbose
+
+# Autonomy Level
+autonomy:
+  level: "FULL"
+  mode: "YOLO - Minimal intervention required"
+  user_approval_needed:
+    - deployment-phase: manual
+    - critical-blockers: escalate-to-user
+
+# Success Metrics
+metrics:
+  - code_quality_score: "> 80"
+  - test_coverage: "> 80%"
+  - architecture_validation: "PASS"
+  - ci_cd_status: "ACTIVE"
+  - deployment_status: "SUCCESS"
+
+# Timeline
+timeline:
+  start: 2026-03-27
+  deadline: 2026-03-31
+  estimated_duration: 4-5 days
+  critical_path: deployment-phase
+
+# Escalation
+escalation_policy:
+  default: "@aios-master"
+  critical: user-intervention
+  timeout_threshold: 50m

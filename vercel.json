@@ -1,22 +1,22 @@
 {
   "version": 2,
   "name": "dealer-sourcing-frontend",
-  "builds": [
-    {
-      "src": "src/frontend/App.jsx",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "env": {
     "VITE_API_URL": "@vite_api_url"
-  }
+  },
+  "routes": [
+    {
+      "src": "^/api/(.*)",
+      "dest": "https://dealer-sourcing-backend.onrender.com/api/$1",
+      "headers": {
+        "Cache-Control": "no-cache"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
