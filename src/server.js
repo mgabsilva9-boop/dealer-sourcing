@@ -13,6 +13,9 @@ import authRoutes from './routes/auth.js';
 import searchRoutes from './routes/search.js';
 import vehiclesRoutes from './routes/vehicles.js';
 import historyRoutes from './routes/history.js';
+import inventoryRoutes from './routes/inventory.js';
+import crmRoutes from './routes/crm.js';
+import expensesRoutes from './routes/expenses.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -61,6 +64,9 @@ app.use('/auth', authRoutes);
 app.use('/search', searchRoutes);
 app.use('/vehicles', vehiclesRoutes);
 app.use('/history', historyRoutes);
+app.use('/inventory', inventoryRoutes);
+app.use('/crm', crmRoutes);
+app.use('/expenses', expensesRoutes);
 
 // ===== ERROR HANDLING =====
 

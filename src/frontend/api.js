@@ -65,7 +65,7 @@ export const authAPI = {
   },
 };
 
-// ─── VEHICLES API
+// ─── VEHICLES API (Sourcing - carros de interesse)
 export const vehiclesAPI = {
   async search(brand, model) {
     return fetchAPI('/vehicles/search', {
@@ -81,28 +81,105 @@ export const vehiclesAPI = {
     });
   },
 
+  async interestedList() {
+    return fetchAPI('/vehicles/interested');
+  },
+};
+
+// ─── INVENTORY API (Estoque da concessionária)
+export const inventoryAPI = {
   async list() {
-    return fetchAPI('/vehicles/list');
+    return fetchAPI('/inventory/list');
   },
 
   async create(vehicleData) {
-    return fetchAPI('/vehicles/create', {
+    return fetchAPI('/inventory/create', {
       method: 'POST',
       body: JSON.stringify(vehicleData),
     });
   },
 
+  async get(id) {
+    return fetchAPI(`/inventory/${id}`);
+  },
+
   async update(id, vehicleData) {
-    return fetchAPI(`/vehicles/${id}`, {
+    return fetchAPI(`/inventory/${id}`, {
       method: 'PUT',
       body: JSON.stringify(vehicleData),
     });
   },
 
   async delete(id) {
-    return fetchAPI(`/vehicles/${id}`, {
+    return fetchAPI(`/inventory/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// ─── CRM API (Clientes)
+export const crmAPI = {
+  async list() {
+    return fetchAPI('/crm/list');
+  },
+
+  async create(customerData) {
+    return fetchAPI('/crm/create', {
+      method: 'POST',
+      body: JSON.stringify(customerData),
+    });
+  },
+
+  async get(id) {
+    return fetchAPI(`/crm/${id}`);
+  },
+
+  async update(id, customerData) {
+    return fetchAPI(`/crm/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(customerData),
+    });
+  },
+
+  async delete(id) {
+    return fetchAPI(`/crm/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ─── EXPENSES API (Despesas)
+export const expensesAPI = {
+  async list() {
+    return fetchAPI('/expenses/list');
+  },
+
+  async create(expenseData) {
+    return fetchAPI('/expenses/create', {
+      method: 'POST',
+      body: JSON.stringify(expenseData),
+    });
+  },
+
+  async get(id) {
+    return fetchAPI(`/expenses/${id}`);
+  },
+
+  async update(id, expenseData) {
+    return fetchAPI(`/expenses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(expenseData),
+    });
+  },
+
+  async delete(id) {
+    return fetchAPI(`/expenses/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async summary() {
+    return fetchAPI('/expenses/summary/by-category');
   },
 };
 
