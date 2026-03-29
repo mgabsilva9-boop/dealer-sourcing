@@ -1,9 +1,9 @@
 /**
  * GET /api/sourcing/search
- * Search vehicles with filters
+ * Search vehicles with filters from Neon PostgreSQL
  */
 
-import { searchWithFilters } from '../../src/utils/scrapers.js';
+import { query } from '../lib/db.js';
 
 const validateNumber = (value, min = 0, max = Infinity) => {
   if (value === null || value === undefined) return null;
@@ -24,7 +24,6 @@ export default async function handler(req, res) {
     const priceMin = validateNumber(req.query.priceMin, 0, 1000000);
     const priceMax = validateNumber(req.query.priceMax, 0, 1000000);
     const kmMax = validateNumber(req.query.kmMax, 0, 999999);
-    const discountMin = validateNumber(req.query.discountMin, -100, 100);
     const limit = validateNumber(req.query.limit || 20, 1, 100);
     const offset = validateNumber(req.query.offset || 0, 0, Infinity);
 
@@ -32,27 +31,68 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'priceMin cannot be greater than priceMax' });
     }
 
-    const results = await searchWithFilters({
-      make,
-      model,
-      priceMin,
-      priceMax,
-      kmMax,
-      discountMin,
-    });
+    // Build dynamic WHERE clause
+    let whereConditions = [];
+    let params = [];
+    let paramCount = 1;
 
-    results.sort((a, b) => b.score - a.score);
-    const total = results.length;
-    const paginated = results.slice(offset, offset + limit);
+    if (make) {
+      whereConditions.push(`vehicle_data->>'make' = $${paramCount++}`);
+      params.push(make);
+    }
+
+    if (model) {
+      whereConditions.push(`vehicle_data->>'model' = $${paramCount++}`);
+      params.push(model);
+    }
+
+    if (priceMin !== null) {
+      whereConditions.push(`(vehicle_data->>'price')::NUMERIC >= $${paramCount++}`);
+      params.push(priceMin);
+    }
+
+    if (priceMax !== null) {
+      whereConditions.push(`(vehicle_data->>'price')::NUMERIC <= $${paramCount++}`);
+      params.push(priceMax);
+    }
+
+    if (kmMax !== null) {
+      whereConditions.push(`(vehicle_data->>'km')::INTEGER <= $${paramCount++}`);
+      params.push(kmMax);
+    }
+
+    // Add limit/offset
+    const limitParam = paramCount++;
+    const offsetParam = paramCount++;
+    params.push(limit);
+    params.push(offset);
+
+    const whereClause = whereConditions.length > 0 ? 'WHERE ' + whereConditions.join(' AND ') : '';
+
+    // Fetch results
+    const results = await query(
+      `SELECT id, vehicle_id, vehicle_data, notes, status, saved_at
+       FROM interested_vehicles
+       ${whereClause}
+       ORDER BY saved_at DESC
+       LIMIT $${limitParam} OFFSET $${offsetParam}`,
+      params
+    );
+
+    // Get total count
+    const countQuery = `SELECT COUNT(*) as total FROM interested_vehicles ${whereClause}`;
+    const countParams = params.slice(0, params.length - 2); // Exclude limit/offset
+    const countResult = await query(countQuery, countParams);
 
     res.json({
-      total,
+      total: parseInt(countResult[0].total),
       limit,
       offset,
-      results: paginated,
+      filters: { make, model, priceMin, priceMax, kmMax },
+      results,
     });
   } catch (error) {
-    console.error('Error searching vehicles:', error);
+    console.error('[GET /api/sourcing/search]', error.message);
     res.status(400).json({ error: error.message || 'Invalid search parameters' });
   }
 }

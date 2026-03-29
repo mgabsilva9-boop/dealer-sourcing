@@ -1,7 +1,9 @@
 /**
  * GET /api/sourcing/favorites
- * Get user's favorites (will use Neon DB in production)
+ * Get user's saved vehicles from Neon PostgreSQL
  */
+
+import { query } from '../lib/db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -10,17 +12,35 @@ export default async function handler(req, res) {
 
   const limit = parseInt(req.query.limit) || 20;
   const offset = parseInt(req.query.offset) || 0;
-  const status = req.query.status || null;
+  const status = req.query.status || 'interested';
+  const userId = req.user?.id || '550e8400-e29b-41d4-a716-446655440000';
 
-  // Mock response for MVP
-  // In production, this would query Neon PostgreSQL with RLS
-  const mockFavorites = {
-    total: 0,
-    limit,
-    offset,
-    status_filter: status,
-    results: [], // Empty for MVP - will connect to DB later
-  };
+  try {
+    // Fetch favorites with pagination
+    const results = await query(
+      `SELECT id, user_id, vehicle_id, vehicle_data, notes, status, saved_at, updated_at
+       FROM interested_vehicles
+       WHERE user_id = $1 AND status = $2
+       ORDER BY saved_at DESC
+       LIMIT $3 OFFSET $4`,
+      [userId, status, limit, offset]
+    );
 
-  res.json(mockFavorites);
+    // Get total count
+    const countResult = await query(
+      'SELECT COUNT(*) as total FROM interested_vehicles WHERE user_id = $1 AND status = $2',
+      [userId, status]
+    );
+
+    res.json({
+      total: parseInt(countResult[0].total),
+      limit,
+      offset,
+      status_filter: status,
+      results,
+    });
+  } catch (error) {
+    console.error('[GET /api/sourcing/favorites]', error.message);
+    res.status(500).json({ error: 'Failed to fetch favorites' });
+  }
 }
