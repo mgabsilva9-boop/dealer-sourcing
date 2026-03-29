@@ -121,8 +121,11 @@ async function startServer() {
   }
 }
 
-// Iniciar (only if not being imported for testing)
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Iniciar servidor
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+
+if (process.argv[1] === __filename || process.argv[1].endsWith('src/server.js')) {
   startServer();
 }
 
