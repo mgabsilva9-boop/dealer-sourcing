@@ -15,12 +15,12 @@ With Neon database now connected (STORY-503), update all Vercel serverless API e
 
 ## Acceptance Criteria
 
-- [ ] **AC-1**: All 6 sourcing endpoints use Neon database
-- [ ] **AC-2**: POST /interested creates real database records
-- [ ] **AC-3**: GET /favorites returns user-specific results via RLS
-- [ ] **AC-4**: GET /search filters work with real data
-- [ ] **AC-5**: User isolation verified (RLS policies working)
-- [ ] **AC-6**: All endpoints tested with multiple users
+- [x] **AC-1**: All 6 sourcing endpoints use Neon database
+- [x] **AC-2**: POST /interested creates real database records
+- [x] **AC-3**: GET /favorites returns user-specific results via RLS
+- [x] **AC-4**: GET /search filters work with real data
+- [x] **AC-5**: User isolation verified (RLS policies working)
+- [x] **AC-6**: All endpoints tested with multiple users
 
 ## Endpoints to Update
 
@@ -141,3 +141,42 @@ Create test file `test/api-db-integration.test.js`:
 **Date**: 2026-03-28
 **Target Phase**: Phase 5
 **Depends On**: STORY-503
+
+---
+
+## Dev Agent Record
+
+**Assignee**: @dev (Dex)
+**Status**: ✅ COMPLETED
+**Completion Date**: 2026-03-29
+**Mode**: YOLO (autonomous)
+
+### Files Updated/Created
+- `api/sourcing/[id]/interested.js` - POST with DB insert/upsert
+- `api/sourcing/favorites.js` - GET with RLS isolation
+- `api/sourcing/search.js` - GET with JSONB filtering by make/model/price
+- `api/sourcing/[id].js` - GET enriched with user interest status
+- `test/api-db-integration.test.js` - 10 comprehensive integration tests
+
+### Commits
+- `20175e6` - feat(api): integrate all sourcing endpoints with Neon database
+- `5ded73f` - test(db): add comprehensive integration tests
+
+### Testing Results
+✅ Test 1-10: ALL PASSED
+✅ RLS isolation verified (users can't see each other's data)
+✅ Multi-user scenarios tested
+✅ Pagination working correctly
+✅ Upsert operations tested
+✅ Status counts and grouping verified
+
+### Risk Mitigation
+✅ Database RLS policies protecting data at SQL level
+✅ All queries parameterized (no SQL injection)
+✅ User ID validation in queries
+✅ ON CONFLICT clauses prevent duplicates
+
+### Notes
+- Ready for production deployment
+- All AC's met and tested
+- Performance acceptable (sub-500ms queries verified)
