@@ -39,9 +39,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
 
-    // Gerar JWT
+    // Gerar JWT com dealership_id (crítico para RLS)
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      {
+        id: user.id,
+        email: user.email,
+        dealership_id: user.dealership_id, // CRÍTICO para RLS
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' },
     );
@@ -52,6 +56,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        dealership_id: user.dealership_id,
       },
     });
   } catch (error) {
@@ -73,17 +78,34 @@ router.post('/register', async (req, res) => {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Inserir usuário
+    // IMPORTANTE: Novo usuário precisa de dealership_id
+    // Por padrão, atribuir à primeira dealership (Loja A)
+    const dealershipResult = await query(
+      'SELECT id FROM dealerships ORDER BY created_at LIMIT 1'
+    );
+    const dealership_id = dealershipResult.rows[0]?.id;
+
+    if (!dealership_id) {
+      return res.status(500).json({
+        error: 'Nenhuma loja configurada no sistema'
+      });
+    }
+
+    // Inserir usuário com dealership_id
     const result = await query(
-      'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [email, hashedPassword, name],
+      'INSERT INTO users (email, password, name, dealership_id) VALUES ($1, $2, $3, $4) RETURNING id, email, name, dealership_id',
+      [email, hashedPassword, name, dealership_id],
     );
 
     const user = result.rows[0];
 
-    // Gerar JWT
+    // Gerar JWT com dealership_id (crítico para RLS)
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      {
+        id: user.id,
+        email: user.email,
+        dealership_id: user.dealership_id, // CRÍTICO para RLS
+      },
       process.env.JWT_SECRET,
       { expiresIn: '7d' },
     );
