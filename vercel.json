@@ -1,15 +1,23 @@
 {
   "version": 2,
-  "name": "dealer-sourcing-frontend",
+  "name": "dealer-sourcing-fullstack",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
   "env": {
-    "VITE_API_URL": "https://dealer-sourcing-api.onrender.com"
+    "NODE_ENV": "production",
+    "VITE_API_URL": "@vite_api_url"
   },
   "routes": [
     {
       "src": "^/api/(.*)",
-      "dest": "https://dealer-sourcing-backend.onrender.com/api/$1",
+      "dest": "/api/$1",
       "headers": {
         "Cache-Control": "no-cache"
       }
