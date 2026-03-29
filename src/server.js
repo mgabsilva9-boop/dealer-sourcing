@@ -3,6 +3,7 @@
  * Server principal do aplicativo
  */
 
+import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -122,7 +123,6 @@ async function startServer() {
 }
 
 // Iniciar servidor
-import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 
 if (process.argv[1] === __filename || process.argv[1].endsWith('src/server.js')) {
