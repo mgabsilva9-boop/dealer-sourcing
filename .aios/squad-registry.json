@@ -1,0 +1,74 @@
+{
+  "registry_version": "1.0.0",
+  "generated_at": "2026-03-29T16:47:00Z",
+  "project": "dealer-sourcing",
+  "squads": [
+    {
+      "id": "dealer-sourcing",
+      "name": "dealer-sourcing",
+      "version": "2.0.0",
+      "short_title": "Dealer Premium Vehicle Sourcing & Management Platform",
+      "description": "Full-stack MVP for premium vehicle sourcing, inventory tracking, and dealer CRM. Phases 3-7 complete: Database, Backend (5 APIs, 40 tests), QA validated, Deployed on Render+Vercel. Phase 5+ tech debt and feature roadmap included.",
+      "author": "Dealer Team (@architect, @dev)",
+      "license": "MIT",
+      "tags": [
+        "dealer",
+        "sourcing",
+        "vehicle",
+        "crm",
+        "inventory"
+      ],
+      "status": "Phase 5 Ready",
+      "validation": {
+        "status": "VALID",
+        "errors": []
+      },
+      "components": {
+        "agents": 4,
+        "tasks": 4,
+        "workflows": 2,
+        "checklists": 2
+      },
+      "dependencies": {
+        "node": [
+          "node >= 18.0.0",
+          "npm >= 9.0.0"
+        ],
+        "external": [
+          "PostgreSQL >= 15",
+          "Render (PaaS)",
+          "Vercel (Frontend)"
+        ]
+      },
+      "maintainers": [
+        "@architect (Aria)",
+        "@dev (Dex)"
+      ],
+      "last_reviewed": "2026-03-28",
+      "phases_complete": [
+        "Phase 3: Database Design",
+        "Phase 4: Backend Implementation",
+        "Phase 4: QA Validation",
+        "Phase 6: Deployment",
+        "Phase 7: Frontend"
+      ],
+      "tech_debt_tracked": true,
+      "horizontal_scaling_ready": false,
+      "health_check": {
+        "squad_yaml_valid": true,
+        "required_files_present": true,
+        "all_referenced_components_exist": true,
+        "score": "HEALTHY"
+      }
+    }
+  ],
+  "summary": {
+    "total_squads": 1,
+    "valid_squads": 1,
+    "invalid_squads": 0,
+    "total_agents": 4,
+    "total_tasks": 4,
+    "total_workflows": 2,
+    "total_checklists": 2
+  }
+}

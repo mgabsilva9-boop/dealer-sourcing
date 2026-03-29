@@ -1,0 +1,153 @@
+================================================================================
+ESTRUTURA DE DIRETORIOS - DEALER-SOURCING SQUADS
+================================================================================
+
+ARQUIVOS ENCONTRADOS:
+
+./.aios-core/
+├── squad-dealer-sourcing.yaml ✅ [v1.0.0, orchestrator: @aios-master]
+└── workflows/
+    └── dealer-sourcing-mvp.yaml ✅ [v1.0.0, parallel-with-convergence]
+
+./squads/
+└── dealer-sourcing/
+    ├── README.md ✅ [squad status, phase 4 QA pass, phase 5 roadmap]
+    ├── squad.yaml ✅ [v2.0.0, AIOS format_version: v2]
+    ├── config/
+    │   └── tech-stack.md ✅ [8.5KB, stack details]
+    └── workflows/
+        └── main-workflow.yaml ✅ [7.5KB, phase 5+ orchestration]
+
+~/.claude/commands/
+├── AIOS/
+│   └── [AIOS framework core - nao inspecionado]
+└── squadCreator/
+    ├── squad-creator.md ✅ [v2.5, squad architect]
+    ├── agents/
+    │   ├── squad-architect.md ✅
+    │   ├── pedro-valerio.md ✅
+    │   └── oalanicolas.md ✅
+    └── tasks/
+        ├── create-squad.md ✅
+        ├── create-agent.md ✅
+        ├── create-task.md ✅
+        ├── create-template.md ✅
+        ├── create-workflow.md ✅
+        ├── validate-squad.md ✅
+        ├── analyze-determinism.md ✅
+        ├── update-mind.md ✅
+        ├── refresh-registry.md ✅
+        ├── squad-analytics.md ✅
+        ├── sync-ide-command.md ✅
+        ├── qa-after-creation.md ✅
+        ├── deep-research-pre-agent.md ✅
+        ├── discover-tools.md ✅
+        ├── collect-sources.md ✅
+        ├── auto-acquire-sources.md ✅
+        ├── extract-sop.md ✅
+        ├── extract-voice-dna.md ✅
+        ├── extract-thinking-dna.md ✅
+        └── install-commands.md ✅
+
+================================================================================
+ARQUIVOS FALTANTES (Referenciados em squad.yaml mas nao existem)
+================================================================================
+
+./squads/dealer-sourcing/
+├── agents/
+│   ├── architect.md [FALTANTE - referenciado em squad.yaml]
+│   ├── dev.md [FALTANTE - referenciado em squad.yaml]
+│   ├── data-engineer.md [FALTANTE - referenciado em squad.yaml]
+│   └── ux-design-expert.md [FALTANTE - referenciado em squad.yaml]
+├── tasks/
+│   ├── sourcing-list.md [FALTANTE - referenciado em squad.yaml]
+│   ├── sourcing-search.md [FALTANTE - referenciado em squad.yaml]
+│   ├── mark-interested.md [FALTANTE - referenciado em squad.yaml]
+│   └── generate-report.md [FALTANTE - referenciado em squad.yaml]
+├── workflows/
+│   └── phase5-rollout.yaml [FALTANTE - referenciado em squad.yaml]
+├── checklists/
+│   ├── deployment-checklist.md [FALTANTE - referenciado em squad.yaml]
+│   └── phase5-readiness.md [FALTANTE - referenciado em squad.yaml]
+└── config/
+    ├── coding-standards.md [FALTANTE - referenciado em squad.yaml]
+    └── source-tree.md [FALTANTE - referenciado em squad.yaml]
+
+./.aios-core/
+├── development/ [DIRETORIO NAO EXISTE]
+│   ├── agents/
+│   ├── tasks/
+│   └── scripts/
+├── schemas/ [DIRETORIO NAO EXISTE]
+│   └── squad-schema.json
+
+================================================================================
+REFERENCIAS CRUZADAS (squad.yaml → arquivos reais)
+================================================================================
+
+components.agents:
+  ✅ "agents/architect.md" → NOT FOUND
+  ✅ "agents/dev.md" → NOT FOUND
+  ✅ "agents/data-engineer.md" → NOT FOUND
+  ✅ "agents/ux-design-expert.md" → NOT FOUND
+
+components.tasks:
+  ✅ "tasks/sourcing-list.md" → NOT FOUND
+  ✅ "tasks/sourcing-search.md" → NOT FOUND
+  ✅ "tasks/mark-interested.md" → NOT FOUND
+  ✅ "tasks/generate-report.md" → NOT FOUND
+
+components.workflows:
+  ✅ "workflows/main-workflow.yaml" → FOUND (7.5 KB)
+  ✅ "workflows/phase5-rollout.yaml" → NOT FOUND
+
+components.checklists:
+  ✅ "checklists/deployment-checklist.md" → NOT FOUND
+  ✅ "checklists/phase5-readiness.md" → NOT FOUND
+
+config:
+  ✅ "config/coding-standards.md" → NOT FOUND
+  ✅ "config/tech-stack.md" → FOUND (8.5 KB)
+  ✅ "config/source-tree.md" → NOT FOUND
+
+================================================================================
+TAMANHOS DE ARQUIVO
+================================================================================
+
+./squads/dealer-sourcing/README.md: 11 KB
+./squads/dealer-sourcing/squad.yaml: 2.2 KB
+./squads/dealer-sourcing/config/tech-stack.md: 8.5 KB
+./squads/dealer-sourcing/workflows/main-workflow.yaml: 7.5 KB
+
+./.aios-core/squad-dealer-sourcing.yaml: 2.7 KB
+./.aios-core/workflows/dealer-sourcing-mvp.yaml: 3.9 KB
+
+TOTAL ESPAÇO UTILIZADO: ~39 KB (muito minimo)
+
+================================================================================
+RESUMO ESTRUTURAL
+================================================================================
+
+Diretorios Criados:
+  ✅ ./squads/dealer-sourcing/ (criado)
+  ✅ ./squads/dealer-sourcing/config/ (criado)
+  ✅ ./squads/dealer-sourcing/workflows/ (criado)
+  ✅ ./.aios-core/ (criado)
+  ✅ ./.aios-core/workflows/ (criado)
+
+Diretorios NAO Criados:
+  ✗ ./squads/dealer-sourcing/agents/ (referenciado em squad.yaml, nao criado)
+  ✗ ./squads/dealer-sourcing/tasks/ (referenciado em squad.yaml, nao criado)
+  ✗ ./squads/dealer-sourcing/checklists/ (referenciado em squad.yaml, nao criado)
+  ✗ ./.aios-core/development/ (estrutura esperada, nao criado)
+  ✗ ./.aios-core/development/agents/ (esperado, nao criado)
+  ✗ ./.aios-core/development/tasks/ (esperado, nao criado)
+  ✗ ./.aios-core/development/scripts/ (esperado, nao criado)
+  ✗ ./.aios-core/schemas/ (esperado, nao criado)
+
+Arquivos Criados: 6 (README, squad.yaml x2, tech-stack.md, main-workflow.yaml x2)
+Arquivos Referenciados NAO Criados: 12
+
+Taxa de Completude: 4 de 16 arquivos (25%)
+
+================================================================================

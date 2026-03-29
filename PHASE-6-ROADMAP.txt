@@ -1,0 +1,220 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    DEALER-SOURCING PHASE 6 ROADMAP                         ║
+║          Build Performance, Reliability & Scalability (2-3 weeks)          ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+PHASE 5 BASELINE (Achieved)
+──────────────────────────────────────────────────────────────────────────────
+  ✅ Multi-tenant JWT authentication
+  ✅ Connection pool monitoring (20 connections)
+  ✅ 50 concurrent users supported (97%+ success)
+  ✅ Response time: 150-200ms avg, 300-400ms p95
+  ✅ All 27 tests passing (85% confidence)
+
+
+PHASE 6 TARGETS (2-3 weeks)
+──────────────────────────────────────────────────────────────────────────────
+
+  📊 PERFORMANCE
+    Response Time P95:  300-400ms  →  <200ms          (2x faster!)
+    Throughput:         12.5 req/s →  25+ req/sec     (2x capacity)
+    Cache Hit Ratio:    N/A        →  60%+            (new feature)
+
+  📈 SCALABILITY
+    Concurrent Users:   50         →  100+            (2x scale)
+    Pool Connections:   20         →  50 (max)        (via PgBouncer)
+    Connection Mode:    Direct     →  Pooled          (multiplexing)
+
+  🛡️ RELIABILITY
+    Error Rate:         ~3%        →  <0.1%           (30x better)
+    Uptime SLA:         99.5%      →  99.9%           (higher)
+    Monitoring:         Basic      →  Real-time       (Grafana)
+    Alerting:           None       →  Automated       (Slack/Email)
+
+  🎯 QUALITY
+    Test Coverage:      27 tests   →  70+ tests       (80%+ coverage)
+    Bundle Size:        77KB       →  <50KB           (35% smaller)
+    Lighthouse:         ~75        →  >90             (better UX)
+    Code Debt:          2 API      →  1 unified       (cleaner)
+
+
+WORKSTREAMS (Parallel Execution)
+──────────────────────────────────────────────────────────────────────────────
+
+  WORKSTREAM 1: CACHING LAYER (Redis)
+  ┌──────────────────────────────────────────────────────────────┐
+  │ Lead: @dev (Dex)          Duration: 12-16 hours              │
+  │ STORY-601: Redis Integration (6-8h)                          │
+  │   └─ redis.js module, health checks, graceful degradation    │
+  │ STORY-602: Cache Invalidation (6-8h)                         │
+  │   └─ Cache GET endpoints, TTL strategy, invalidation logic   │
+  │ Impact: 40-50% latency reduction on repeated queries         │
+  └──────────────────────────────────────────────────────────────┘
+                            ↓ (depends on)
+  WORKSTREAM 2: CONNECTION POOLING (PgBouncer)
+  ┌──────────────────────────────────────────────────────────────┐
+  │ Lead: @data-engineer (Dara)  Duration: 10-14 hours          │
+  │ STORY-603: PgBouncer Setup (6-8h)                            │
+  │   └─ Docker container, pool config, connection routing       │
+  │ STORY-604: Pool Monitoring (4-6h)                            │
+  │   └─ Metrics export, alert thresholds, scaling logic         │
+  │ Impact: Support 100+ concurrent users (2x Phase 5)           │
+  └──────────────────────────────────────────────────────────────┘
+                            ↓ (depends on)
+  WORKSTREAM 3: MONITORING & ALERTING (Grafana)
+  ┌──────────────────────────────────────────────────────────────┐
+  │ Lead: @devops (Gage)         Duration: 12-18 hours          │
+  │ STORY-605: Prometheus Metrics (6-8h)                         │
+  │   └─ /api/metrics endpoint, query latency, cache stats       │
+  │ STORY-606: Grafana Dashboard (6-10h)                         │
+  │   └─ Real-time dashboard, alert rules, Slack integration     │
+  │ Impact: Real-time visibility, incident detection <1min       │
+  └──────────────────────────────────────────────────────────────┘
+                            ↓ (independent)
+  WORKSTREAM 4: FRONTEND REFACTORING
+  ┌──────────────────────────────────────────────────────────────┐
+  │ Lead: @ux-design-expert       Duration: 20-30 hours         │
+  │ STORY-607: API Client Consolidation (4-6h)                   │
+  │   └─ Merge api.js + sourcingAPI.js → unified apiClient.js    │
+  │ STORY-608: Component Architecture (16-24h)                   │
+  │   └─ App.jsx 77KB → 8 components, custom hooks, tests        │
+  │ Impact: Maintainable, testable, scalable UI code             │
+  └──────────────────────────────────────────────────────────────┘
+
+
+TIMELINE (Wall-Clock 2-3 weeks)
+──────────────────────────────────────────────────────────────────────────────
+
+  WEEK 1: INFRASTRUCTURE SETUP
+  Mon-Tue: STORY-601 (Redis) + STORY-603 (PgBouncer) parallel setup
+  Wed-Thu: STORY-605 (Prometheus metrics)
+  Fri:     Integration testing, blockers resolution
+
+  WEEK 2: FEATURE IMPLEMENTATION
+  Mon-Tue: STORY-602 (Cache strategy) + STORY-604 (Pool monitoring)
+  Wed-Thu: STORY-606 (Dashboard) + STORY-607 (API client consolidation)
+  Fri:     Load test Phase 1 (50 concurrent users)
+
+  WEEK 3: FRONTEND & VALIDATION
+  Mon-Wed: STORY-608 (Frontend component refactoring)
+  Thu-Fri: Load test Phase 2 (100 concurrent users), QA, sign-off
+           Production deployment
+
+
+SUCCESS METRICS (PHASE 6 GATE)
+──────────────────────────────────────────────────────────────────────────────
+
+  STORY-601: Redis connected, health check working, no cache errors
+  STORY-602: 60%+ hit ratio, invalidation logic tested, response <100ms
+  STORY-603: PgBouncer running, app connected via pooler, stable
+  STORY-604: Pool metrics exported, alerts triggering correctly
+  STORY-605: /api/metrics Prometheus format, 30-day retention
+  STORY-606: Grafana dashboard live, alerts in Slack, all rules tested
+  STORY-607: Single apiClient.js works, 0 functional changes
+  STORY-608: App.jsx <15KB, 15+ component tests, Lighthouse >90
+
+  LOAD TEST VALIDATION:
+    100 concurrent users
+    p95 latency <200ms (down from 300-400ms)
+    Success rate >99%
+    Pool utilization 70-85%
+    Error rate <0.1%
+
+  PHASE 6 GATE: PASS
+    All 8 stories signed-off
+    Load test passed
+    Ready for production
+
+
+PHASE 6 DELIVERABLES
+──────────────────────────────────────────────────────────────────────────────
+
+  DOCUMENTATION (NEW)
+    PHASE-6-PRD.md (complete PRD, 2000+ lines)
+    PHASE-6-SUMMARY.md (executive summary)
+    STORY-601.md through STORY-608.md (8 detailed stories)
+    PHASE-6-QUICK-START.md (team guide)
+    SCALING-STRATEGY-PHASE-6.md (how to scale further)
+    MONITORING-GUIDE.md (dashboard usage)
+    FRONTEND-ARCHITECTURE.md (component guide)
+
+  CODE (NEW/MODIFIED)
+    src/lib/redis.js (new - Redis client)
+    src/lib/prometheus-metrics.js (new - metrics export)
+    docker-compose.yml (new - PgBouncer + Grafana)
+    grafana/dashboards/dealer-sourcing.json (new - dashboard)
+    src/frontend/apiClient.js (new - unified client)
+    src/frontend/components/* (new - refactored architecture)
+    src/routes/*.js (modified - with caching)
+
+  TESTS (NEW)
+    test/cache.unit.js (8+ cache tests)
+    test/redis.integration.js (Redis tests)
+    test/api-client.test.js (API client tests)
+    test/components/*.test.jsx (15+ component tests)
+    test/load/100-concurrent-users.js (load test scenario)
+
+  MONITORING (NEW)
+    /api/metrics (Prometheus endpoint)
+    /api/cache/health (Redis health check)
+    /api/pool/health (PgBouncer health check)
+    Grafana dashboard (real-time visualization)
+    Alert rules (Slack notifications)
+
+
+AFTER PHASE 6 (PHASE 7 & BEYOND)
+──────────────────────────────────────────────────────────────────────────────
+
+  Phase 7 Options (pick based on business priority):
+    GraphQL API (modern API)
+    TypeScript migration (type safety)
+    Advanced search (Elasticsearch)
+    Real-time sync (WebSockets)
+    Mobile app (React Native)
+
+  Scaling to 1000+ users:
+    Horizontal scaling (multiple Node.js instances)
+    Redis replication (multi-region)
+    Database sharding (by tenant)
+    CDN for static assets
+    Edge caching (Cloudflare)
+
+
+TEAM & EFFORT
+──────────────────────────────────────────────────────────────────────────────
+
+  @dev (Dex)              14-20 hours (STORY-601, 602, 607)
+  @data-engineer (Dara)   10-14 hours (STORY-603, 604)
+  @devops (Gage)          12-18 hours (STORY-605, 606)
+  @ux-design-expert       16-24 hours (STORY-608)
+  @pm (Morgan)             2-4 hours  (coordination)
+
+  TOTAL: 90-120 hours across 5 agents
+
+
+HOW TO GET STARTED
+──────────────────────────────────────────────────────────────────────────────
+
+  1. Read this roadmap (you're doing it!)
+  2. Read PHASE-6-QUICK-START.md (5 min)
+  3. Read PHASE-6-PRD.md (20 min)
+  4. Attend Phase 6 kickoff meeting (30 min)
+  5. Read your assigned STORY-6XX.md (30 min)
+  6. Start building!
+
+
+QUESTIONS?
+──────────────────────────────────────────────────────────────────────────────
+
+  Technical details → PHASE-6-PRD.md (Part 3)
+  Your story details → docs/stories/STORY-6XX.md
+  Executive view → PHASE-6-SUMMARY.md
+  Day-to-day guide → PHASE-6-QUICK-START.md
+  Team Slack → #phase-6 channel
+
+
+═══════════════════════════════════════════════════════════════════════════════
+    Phase 6 Status: READY FOR EXECUTION
+    Target Completion: 2026-04-18 (3 weeks from start)
+    Next Action: Schedule Phase 6 kickoff, distribute docs to team
+═══════════════════════════════════════════════════════════════════════════════
