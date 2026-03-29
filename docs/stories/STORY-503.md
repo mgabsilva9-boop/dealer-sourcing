@@ -1,106 +1,109 @@
-# STORY-503: Redis Cache Integration for Horizontal Scaling
+# STORY-503: Neon PostgreSQL Integration - Connect Vercel to Database
 
-**Phase**: Phase 5+
-**Assignee**: @dev + @devops
-**Story Points**: 8
-**Priority**: LOW
+**Phase**: Phase 5
+**Assignee**: @data-engineer
+**Story Points**: 5
+**Priority**: CRITICAL
 **Status**: Ready for Development
-**Gate**: Tracked as LOW-001 in Phase 4 QA Review
+**Gate**: Infrastructure blocking all API operations
 
 ---
 
 ## Summary
 
-Current in-memory cache is lost on deployment or process restart. For horizontal scaling (multiple instances), need distributed Redis cache. MVP works fine with single process, but Phase 5+ requires this for reliability.
+Vercel serverless deployment requires managed PostgreSQL database. Phase 5 MVP pivoted from Render to Vercel full-stack architecture. Neon PostgreSQL provides serverless Postgres with RLS support. This story connects Vercel API routes to Neon database with proper schema, migrations, and RLS policies.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1**: Redis client initialized on startup
-- [ ] **AC-2**: Vehicle cache stored in Redis with 5-min TTL
-- [ ] **AC-3**: Cache layer abstraction (works with/without Redis)
-- [ ] **AC-4**: Fallback to in-memory if Redis unavailable
-- [ ] **AC-5**: Tests pass with Redis mocked
+- [ ] **AC-1**: Neon project created (us-east-1 region, PostgreSQL 15)
+- [ ] **AC-2**: CONNECTION_STRING obtained and added to Vercel environment variables
+- [ ] **AC-3**: Database schema initialized (interested_vehicles, search_queries tables)
+- [ ] **AC-4**: RLS policies enabled and verified for user isolation
+- [ ] **AC-5**: Connection pool configured and tested from Vercel serverless functions
+- [ ] **AC-6**: /api/health endpoint returns 200 OK with database connectivity confirmed
 
 ## Tasks
 
-### Task 1: Add Redis client to config
-```javascript
-// src/config/redis.js
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+### Task 1: Create Neon PostgreSQL Project
+1. Go to https://neon.tech
+2. Sign in with GitHub
+3. Create project: `dealer-sourcing-db`
+4. Region: `us-east-1`
+5. PostgreSQL version: `15`
+6. Copy CONNECTION_STRING
 
-redis.on('connect', () => console.log('Redis connected'));
-redis.on('error', (err) => console.error('Redis error:', err));
+**Location**: Neon dashboard
+**Effort**: 5 min
 
-module.exports = redis;
+### Task 2: Add DATABASE_URL to Vercel Environment Variables
+1. Log into Vercel dashboard
+2. Select `dealer-sourcing` project
+3. Settings → Environment Variables
+4. Add `DATABASE_URL = [paste-neon-connection-string]`
+5. Trigger redeployment (automatic)
+
+**Location**: Vercel dashboard
+**Effort**: 3 min
+
+### Task 3: Initialize Database Schema
+Execute in Neon SQL Editor:
+
+```sql
+CREATE TABLE interested_vehicles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  vehicle_id TEXT NOT NULL,
+  vehicle_data JSONB,
+  notes TEXT,
+  status VARCHAR(50) DEFAULT 'interested',
+  saved_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, vehicle_id)
+);
+
+CREATE TABLE search_queries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  query_params JSONB,
+  results_count INTEGER,
+  searched_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE interested_vehicles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY user_isolation ON interested_vehicles
+  FOR ALL
+  USING (user_id = current_setting('app.current_user_id')::UUID)
+  WITH CHECK (user_id = current_setting('app.current_user_id')::UUID);
+
+CREATE INDEX idx_interested_vehicles_user_id ON interested_vehicles(user_id);
+CREATE INDEX idx_search_queries_user_id ON search_queries(user_id);
 ```
 
-**Location**: `src/config/redis.js` (new)
-**Effort**: 20 min
-
-### Task 2: Create cache layer abstraction
-```javascript
-// src/services/cache.js
-async function getVehicles(query = '') {
-  const cacheKey = `vehicles:${query}`;
-  const cached = await cache.get(cacheKey);
-  if (cached) return JSON.parse(cached);
-
-  const vehicles = await scrapeMultiplePlatforms(query);
-  await cache.setex(cacheKey, 300, JSON.stringify(vehicles));
-  return vehicles;
-}
-```
-
-**Location**: `src/services/cache.js` (new)
-**Effort**: 40 min
-
-### Task 3: Update sourcing.js to use cache layer
-- Replace in-memory cache with cache service
-- Maintain fallback behavior
-- Add cache metrics
-
-**Location**: `src/routes/sourcing.js`
-**Effort**: 30 min
-
-### Task 4: Add Redis to Docker Compose & environment config
-- Redis service configuration
-- Environment variable `REDIS_URL`
-- Connection pooling settings
-
-**Location**: `docker-compose.yml`, `.env.example`
-**Effort**: 20 min
-
-### Task 5: Tests with Redis mock
-- Mock redis client in tests
-- Verify cache hit/miss behavior
-- Test TTL expiration
-
-**Location**: `test/integration/cache.test.js` (new)
-**Effort**: 40 min
+**Location**: Neon SQL Editor
+**Effort**: 10 min
 
 ## Dependencies
 
-- Cache abstraction can be implemented independently
-- Requires Redis infrastructure (local or cloud)
-- No breaking changes to current API
+- Vercel full-stack deployment (in progress)
+- JWT auth middleware in place (STORY-501)
 
 ## Definition of Done
 
-✅ Redis client functional
-✅ Cache layer abstraction working
-✅ Tests pass with mock Redis
-✅ Fallback behavior tested
-✅ Documentation updated
+✅ Neon project created and accessible
+✅ DATABASE_URL in Vercel environment variables
+✅ Schema created with RLS policies
+✅ /api/health endpoint shows database connected
+✅ RLS isolation verified with test data
 
-## Notes
+## Risk Assessment
 
-- Redis overhead: ~$10-20/month for small deployment
-- Alternative: use Memcached (simpler, good for this use case)
-- Monitor cache hit rate in production
-- Consider cache warming strategy
+**Risk Level**: MEDIUM
+- Critical for MVP (blocks all data operations)
+- RLS requires careful testing
 
 ---
 
-**Created By**: @aios-master (Orion)
+**Created By**: @sm (River)
 **Date**: 2026-03-28
-**Target Phase**: Phase 5+
+**Target Phase**: Phase 5

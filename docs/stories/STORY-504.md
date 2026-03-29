@@ -1,108 +1,143 @@
-# STORY-504: Unify Database Schema - UUID vs INTEGER Keys
+# STORY-504: API Endpoints Integration - Connect Serverless Functions to Database
 
-**Phase**: Phase 5+
-**Assignee**: @data-engineer
-**Story Points**: 13
-**Priority**: LOW
-**Status**: Ready for Development
-**Gate**: Tracked as LOW-002 in Phase 4 QA Review
+**Phase**: Phase 5
+**Assignee**: @dev
+**Story Points**: 8
+**Priority**: CRITICAL
+**Status**: Blocked by STORY-503 (Neon setup)
+**Gate**: All client-facing API operations
 
 ---
 
 ## Summary
 
-Dual schema problem: 6 tables use UUID primary keys (modern, secure), 4 tables use INTEGER foreign keys (legacy, incompatible). This creates confusion and limits horizontal scaling. Phase 5+ needs unified schema strategy.
-
-## Current State
-- **UUID tables**: users, vehicles_cache, interested_vehicles, search_queries, vehicle_validations, migrations
-- **INTEGER tables**: inventory, customers, expenses, transactions (these use integer FKs to vehicles)
+With Neon database now connected (STORY-503), update all Vercel serverless API endpoints to use real database instead of mock data. This enables true multi-user operation with RLS isolation.
 
 ## Acceptance Criteria
 
-- [ ] **AC-1**: All tables migrated to UUID primary keys
-- [ ] **AC-2**: Foreign key relationships consistent
-- [ ] **AC-3**: Zero-downtime migration with rollback plan
-- [ ] **AC-4**: Application code updated for new schema
-- [ ] **AC-5**: RLS policies still functional post-migration
+- [ ] **AC-1**: All 6 sourcing endpoints use Neon database
+- [ ] **AC-2**: POST /interested creates real database records
+- [ ] **AC-3**: GET /favorites returns user-specific results via RLS
+- [ ] **AC-4**: GET /search filters work with real data
+- [ ] **AC-5**: User isolation verified (RLS policies working)
+- [ ] **AC-6**: All endpoints tested with multiple users
+
+## Endpoints to Update
+
+1. **GET /api/sourcing/list** - Query interested_vehicles
+2. **GET /api/sourcing/search** - Filter vehicles by criteria
+3. **GET /api/sourcing/[id]** - Fetch single vehicle
+4. **POST /api/sourcing/[id]/interested** - Insert into interested_vehicles
+5. **GET /api/sourcing/favorites** - Return user's saved vehicles
+6. **GET /api/health** - Verify database connected
 
 ## Tasks
 
-### Task 1: Plan migration strategy
-- Decide: migrate all to UUID or revert to INTEGER?
-- **Recommendation**: Migrate to UUID for security + consistency
-- Plan rollback sequence
-- Identify breaking changes
+### Task 1: Update POST /api/sourcing/[id]/interested
+```javascript
+import { query } from '../db.js';
 
-**Effort**: 2 hours
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-### Task 2: Create migration script (INTEGER → UUID)
-```sql
--- Phase 1: Create UUID columns
-ALTER TABLE inventory ADD COLUMN id_uuid UUID DEFAULT gen_random_uuid();
--- Phase 2: Migrate data
-UPDATE inventory SET id_uuid = gen_random_uuid();
--- Phase 3: Drop old, rename new
-ALTER TABLE inventory DROP CONSTRAINT inventory_pkey;
-ALTER TABLE inventory DROP COLUMN id;
-ALTER TABLE inventory RENAME COLUMN id_uuid TO id;
-ALTER TABLE inventory ADD PRIMARY KEY (id);
+  const { id } = req.query;
+  const { notes } = req.body || {};
+  const userId = req.user?.id || '550e8400-e29b-41d4-a716-446655440000';
+
+  if (!id) {
+    return res.status(400).json({ error: 'Vehicle ID is required' });
+  }
+
+  try {
+    const result = await query(
+      `INSERT INTO interested_vehicles (user_id, vehicle_id, notes)
+       VALUES ($1, $2, $3)
+       RETURNING id, user_id, vehicle_id, notes, saved_at`,
+      [userId, id, notes || '']
+    );
+
+    res.status(201).json(result[0]);
+  } catch (error) {
+    console.error('Error marking vehicle:', error);
+    res.status(500).json({ error: 'Failed to mark vehicle as interested' });
+  }
+}
 ```
 
-**Location**: `db/migrations/003_unify-schema-uuid.sql`
-**Effort**: 2 hours
+**Effort**: 20 min
 
-### Task 3: Update application code
-- Update all queries referencing id columns
-- Verify ORMs/query builders handle UUID
-- Update seed data
+### Task 2: Update GET /api/sourcing/favorites
+Query database instead of mock:
+```javascript
+const results = await query(
+  'SELECT * FROM interested_vehicles WHERE user_id = $1 LIMIT $2 OFFSET $3',
+  [userId, limit, offset]
+);
+```
 
-**Location**: `src/routes/*.js`, `src/models/*.js`
-**Effort**: 3 hours
+**Effort**: 15 min
 
-### Task 4: Update RLS policies for UUID
-- Ensure policies work with UUID comparison
-- Test user isolation post-migration
+### Task 3: Update GET /api/sourcing/search
+Add database filter support for make, model, price range:
+```javascript
+let whereClause = 'WHERE user_id = $1';
+let params = [userId];
+if (req.query.make) {
+  whereClause += ' AND vehicle_data->>\'make\' = $' + (params.length + 1);
+  params.push(req.query.make);
+}
+// ... repeat for model, price, km
+```
 
-**Location**: `db/migrations/003_unify-schema-uuid.sql` (RLS section)
-**Effort**: 1 hour
+**Effort**: 25 min
 
-### Task 5: Migration dry-run & validation
-- Test on staging with real data
-- Measure downtime
-- Validate all queries still work
-- Document rollback procedure
+### Task 4: Integration Tests for Database Operations
+Create test file `test/api-db-integration.test.js`:
+- Test multi-user isolation
+- Test concurrent inserts
+- Test RLS enforcement
+- 10+ test cases
 
-**Effort**: 2 hours
+**Effort**: 45 min
+
+### Task 5: Manual QA - Verify User Isolation
+1. Create 2 test users in Neon
+2. User A marks 3 vehicles as interested
+3. User B queries /favorites → should see 0 results
+4. User B marks 1 vehicle → sees own record only
+
+**Effort**: 15 min
 
 ## Dependencies
 
-- Must have rollback plan (critical data)
-- Requires maintenance window or zero-downtime strategy
-- All queries must be validated post-migration
+**Blocks**: Nothing (final feature story)
+**Blocked by**: STORY-503 (Neon + schema)
 
 ## Definition of Done
 
-✅ All tables use UUID primary keys
-✅ Foreign key relationships intact
-✅ RLS policies verified
-✅ No query breakage
-✅ Rollback plan documented
+✅ All 6 endpoints query real database
+✅ RLS isolation verified across users
+✅ Integration tests pass (10+ cases)
+✅ No mock data returned from /api/*
+✅ Response times acceptable (<500ms)
 
-## Risks
+## Risk Assessment
 
-- Large tables (if any) may cause downtime
-- Application query changes could introduce bugs
-- Need comprehensive testing post-migration
+**Risk Level**: MEDIUM
+- First real production data flow
+- RLS misconfiguration could leak data
+- Concurrent user testing essential
 
-## Notes
-
-- UUID adds ~16 bytes per row (not significant)
-- Benefits: security (no sequential IDs), distributed systems compatibility
-- If reverting to INTEGER: need justification (rarely recommended)
-- Consider ULID as alternative (sortable UUID)
+**Mitigation**:
+- Test RLS with SQL before deploying
+- Load test with 5+ concurrent users
+- Monitor /api/health during launch
 
 ---
 
-**Created By**: @aios-master (Orion)
+**Created By**: @sm (River)
 **Date**: 2026-03-28
-**Target Phase**: Phase 5+
+**Target Phase**: Phase 5
+**Depends On**: STORY-503

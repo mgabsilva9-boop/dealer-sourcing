@@ -37,3 +37,4 @@ tmp/
 .local-chromium/
 
 .vercel
+.env*.local
