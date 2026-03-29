@@ -123,11 +123,7 @@ async function startServer() {
 }
 
 // Iniciar servidor
-const __filename = fileURLToPath(import.meta.url);
-
-if (process.argv[1] === __filename || process.argv[1].endsWith('src/server.js')) {
-  startServer();
-}
+startServer();
 
 export { app, startServer };
 export default app;
