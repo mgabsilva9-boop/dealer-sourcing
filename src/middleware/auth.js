@@ -19,8 +19,18 @@ export const authMiddleware = (req, res, next) => {
     // Verificar e decodificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Adicionar dados do usuário ao request
-    req.user = decoded;
+    // Extrair user ID from JWT claims (standard 'sub' or custom 'user_id')
+    const userId = decoded.sub || decoded.user_id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID not found in token' });
+    }
+
+    // Adicionar dados do usuário ao request com explicit user ID
+    req.user = {
+      ...decoded,
+      id: userId, // Ensure consistent access via req.user.id
+    };
 
     next();
   } catch (error) {

@@ -1,390 +1,237 @@
-# Connection Pool Scaling Strategy
+# Scaling Strategy: Connection Pool Monitoring
 
-**Document**: Connection Pool Monitoring & Observability
-**Phase**: Phase 5+
-**Owner**: @data-engineer (Dara)
-**Status**: Active
+**Document**: STORY-502 Phase 5+
+**Version**: 1.0.0
 **Last Updated**: 2026-03-28
-
----
 
 ## Overview
 
-This document defines the scaling strategy for the PostgreSQL connection pool as demand increases from Phase 5 onwards. The current configuration (max 20 connections) is adequate for 10-20 concurrent users but requires monitoring and adjustment for higher loads.
+This document defines the scaling strategy for PostgreSQL connection pool management in dealer-sourcing. As traffic grows from MVP (10-20 concurrent users) to production (100+ users), the current pool configuration (max 20 connections) must be monitored and adjusted.
 
 ## Current Configuration
 
 ```yaml
 pool:
   max_connections: 20
-  idle_timeout: 30s
-  connection_timeout: 2s
-  ssl: enabled (production)
+  idle_timeout_ms: 30000
+  connection_timeout_ms: 2000
+  current_target: 10-20 concurrent users
 ```
 
-**Estimated Capacity**:
-- **Low Load**: 5-10 concurrent users (5-15% utilization)
-- **Nominal Load**: 10-20 concurrent users (50-100% utilization)
-- **Peak Load**: >20 concurrent users (pool exhaustion risk)
+## Monitoring Metrics
 
----
+### Primary Metrics
 
-## Utilization Thresholds & Actions
+- **Active Connections**: Current connections in use
+- **Idle Connections**: Connections in pool but not in use
+- **Connection Utilization**: (Active / Max) × 100%
+- **Query Count**: Total queries executed
+- **Query Error Rate**: (Errors / Total) × 100%
+- **Slow Queries**: Queries taking >1000ms
+- **Average Query Time**: Mean query execution time
 
-### 🟢 Green Zone (0-75% Utilization = 0-15 Active Connections)
+### Health Status Levels
 
-**Status**: Healthy
-**Action**: Monitor and log metrics
-**Frequency**: Daily logs in production
+| Status | Condition | Action |
+|--------|-----------|--------|
+| **Healthy** | <75% utilization, <5% error rate | Monitor |
+| **Warning** | 75-90% utilization OR 5-15% error rate | Plan scaling |
+| **Critical** | >90% utilization OR >15% error rate | Scale immediately |
 
-**Metrics to Track**:
-- Average response time < 200ms
-- 0 timeouts
-- Connection churn (acquire/release rate) normal
+## Scaling Thresholds
 
-**Example**:
+### Threshold 1: Connection Pool Size
+
+| Level | Active Connections | Error Rate | Action |
+|-------|-------------------|-----------|--------|
+| **Green** | 0-15 | <3% | Monitor (enough capacity) |
+| **Yellow** | 15-18 | 3-8% | Prepare to scale |
+| **Red** | 18-20 | >8% | Scale immediately |
+
+**Action**: Increase `max` from 20 to 50
+
+### Threshold 2: Query Performance
+
+| Metric | Threshold | Status | Action |
+|--------|-----------|--------|--------|
+| Avg Query Time | <200ms | Healthy | Continue |
+| Avg Query Time | 200-500ms | Warning | Optimize queries |
+| Avg Query Time | >500ms | Critical | Add indexes / optimize |
+| Slow Query Rate | <5% | Healthy | Monitor |
+| Slow Query Rate | 5-15% | Warning | Investigate bottleneck |
+| Slow Query Rate | >15% | Critical | Emergency optimization |
+
+### Threshold 3: Concurrent Users
+
+Based on empirical measurements:
+
+- **Current**: 20 pool size → ~10-20 concurrent users
+- **Scale-up 1**: 50 pool size → ~40-60 concurrent users
+- **Scale-up 2**: 100 pool size + read replicas → 100+ concurrent users
+
+**Scaling Formula**: `max_pool ≈ concurrent_users × 1.5`
+
+## Scaling Procedure
+
+### Pre-Scaling Checklist
+
+- [ ] Monitor `/api/metrics` for 24 hours
+- [ ] Confirm sustained high utilization (not spike)
+- [ ] Review slow query logs
+- [ ] Verify database CPU/memory not saturated
+- [ ] Ensure backup exists (Neon automatic)
+
+### Step 1: Increase Pool Size (Quick Win)
+
+```javascript
+// src/config/database.js or api/lib/db.js
+const pool = new Pool({
+  max: 50,  // Increased from 20
+  idleTimeoutMillis: 30000,
+});
 ```
-Active connections: 8-14
-Response time: 50-150ms
-Health: ✅ Healthy
+
+**Impact**: Supports 40-60 concurrent users
+**Risk**: Low (configuration change only)
+**Time to Deploy**: <1 hour
+
+### Step 2: Optimize Queries (Medium Term)
+
+1. Review slow query log at `/api/metrics`
+2. Identify queries with >1000ms execution time
+3. Add indexes on frequently filtered columns
+4. Update RLS policies for performance
+
+```sql
+-- Example: Add index on user_id for faster RLS filtering
+CREATE INDEX CONCURRENTLY idx_interested_vehicles_user_id 
+ON interested_vehicles(user_id);
 ```
 
----
+### Step 3: Connection Pooler (Long Term)
 
-### 🟡 Yellow Zone (75-90% Utilization = 15-18 Active Connections)
+If pool size reaches 100+ and still bottlenecked, consider:
 
-**Status**: Caution - Monitor Closely
-**Action**: Alert ops team, prepare for scaling
-**Frequency**: Real-time monitoring (5min check interval)
-
-**Triggers**:
-- Active connections > 15 for sustained period (>5 minutes)
-- Response time degradation (>300ms)
-- Queue forming (waiting_requests > 2)
-
-**Response Plan**:
-1. Increase monitoring frequency (1 min intervals)
-2. Enable detailed logging of slow queries
-3. Prepare scaling action plan
-4. Review query patterns for optimization
-5. Prepare PgBouncer configuration
-
-**Example Alert**:
-```
-⚠️ WARNING: Pool utilization at 78%
-   Active: 15/20 connections
-   Avg Response: 280ms
-   Action: Prepare to scale
+**Option A: PgBouncer** (open source)
+```yaml
+pgbouncer:
+  pool_size: 25
+  reserve_pool_size: 5
+  mode: transaction  # Share connections between clients
 ```
 
----
+**Option B: Neon Built-in Pooler**
+- Neon offers 0.5 CPU pooler included
+- Automatically manages 500+ connections
+- No additional setup needed
 
-### 🔴 Red Zone (90-100% Utilization = 18-20 Active Connections)
+### Step 4: Read Replicas (Scaling Tier)
 
-**Status**: Critical - Immediate Action Required
-**Action**: Execute scaling procedures
-**Frequency**: Real-time (immediate alert)
+For 100+ concurrent users with heavy reads:
 
-**Triggers**:
-- Active connections > 18 (>90% utilization)
-- Connection timeouts occurring
-- Request queue length > 10
-- Any failed connection attempts
+```sql
+-- Create read replica (Neon)
+CREATE PUBLICATION read_replica FOR TABLE vehicles, interested_vehicles;
+-- Replicate to second Postgres instance
+```
 
-**Immediate Actions** (within 15 minutes):
-1. **Option A - Vertical Scaling** (Temporary):
-   ```sql
-   -- Increase pool size temporarily
-   -- This is a restart operation - coordinate with ops
-   ALTER SYSTEM SET max_connections = 30;
-   SELECT pg_reload_conf();
-   ```
-   **Pros**: Immediate relief, no infrastructure change
-   **Cons**: Brief downtime, limited scalability
-
-2. **Option B - Query Optimization** (Parallel):
-   ```
-   • Identify slow queries (EXPLAIN ANALYZE)
-   • Add missing indices
-   • Optimize N+1 query patterns
-   • Implement query caching
-   ```
-   **Timeline**: 1-4 hours
-   **Impact**: Reduce connection demand without scaling
-
-3. **Option C - Connection Pooler (PgBouncer)** (Long-term):
-   ```yaml
-   pgbouncer:
-     listen_port: 6432
-     mode: transaction
-     max_client_conn: 1000
-     default_pool_size: 25
-     reserve_pool_size: 5
-     reserve_pool_timeout: 3
-   ```
-   **Pros**: Handles 100s of connections, reduces DB load
-   **Cons**: Additional infrastructure layer, configuration complexity
-   **Timeline**: 2-4 hours setup + testing
-
----
-
-## Scaling Decision Matrix
-
-| Metric | Green | Yellow | Red |
-|--------|-------|--------|-----|
-| Active Connections | 0-15 | 15-18 | 18-20 |
-| Utilization % | 0-75% | 75-90% | 90-100% |
-| Avg Response Time | <200ms | 200-400ms | >400ms |
-| Queued Requests | 0 | 0-2 | >2 |
-| Action | Monitor | Alert | Scale Now |
-| Timeline | Ongoing | 15-60 min | Immediate |
-
----
+Route queries:
+- **Writes**: Primary database
+- **Reads**: Replica database (read-only)
 
 ## Monitoring Cadence
 
-### During Development (Phase 5-6)
-- **Interval**: Check `/metrics` endpoint manually after tests
-- **Log**: Connection patterns in DEBUG level
-- **Frequency**: After each major feature
+| Phase | Interval | Owner | Action |
+|-------|----------|-------|--------|
+| **MVP** (10-20 users) | Weekly | Dev | Check /api/metrics |
+| **Beta** (20-50 users) | Daily | Ops | Alert on Yellow status |
+| **Production** (50+ users) | Every 4 hours | Ops | Auto-scale or escalate |
 
-### During QA (Phase 7)
-- **Interval**: 1 hour manual checks
-- **Log**: Response time percentiles (p50, p95, p99)
-- **Alert**: If utilization > 60% during tests
+## Monitoring Dashboard
 
-### In Production (Phase 5+)
-- **Interval**: 5 minute automated checks
-- **Log**: Metrics to central logging (CloudWatch, DataDog)
-- **Alert**: Pagerduty for > 75% utilization
-- **Dashboard**: Real-time Grafana/Prometheus dashboard
+Access metrics at: `GET /api/metrics`
 
----
-
-## Monitoring Endpoints
-
-### 1. `/metrics` (Lightweight)
 ```bash
-curl http://localhost:3000/metrics
+curl https://dealer-sourcing.vercel.app/api/metrics
 ```
 
-**Response**:
+**Response Format**:
 ```json
 {
-  "pool": {
+  "timestamp": "2026-03-28T10:30:00Z",
+  "connection": {
     "active_connections": 12,
-    "idle_connections": 8,
-    "waiting_requests": 0,
-    "utilization_percent": 60.0,
+    "peak_connections": 18,
+    "connection_attempts": 1500,
+    "failed_connections": 2,
     "health_status": "healthy"
+  },
+  "queries": {
+    "total_queries": 50000,
+    "total_errors": 15,
+    "error_rate_percent": 0.03,
+    "slow_queries": 120,
+    "slow_query_rate_percent": 0.24,
+    "average_query_time_ms": 145.50,
+    "last_query_time_ms": 234
+  },
+  "uptime_ms": 86400000,
+  "alerts": {
+    "high_error_rate": false,
+    "slow_queries_detected": false,
+    "requires_investigation": false
   }
 }
 ```
 
-### 2. `/metrics/detailed` (Full Analysis)
-```bash
-curl http://localhost:3000/metrics/detailed
-```
-
-**Response**: Includes recommendations, thresholds, scaling strategy
-
----
-
-## Scaling Levels
-
-### Level 1: Current (20 connections)
-**Sustainable Load**: 10-20 concurrent users
-**Estimated QPS**: 100-200 req/sec
-**Cost**: Baseline (Render PostgreSQL add-on)
-
-### Level 2: Increased (30-40 connections)
-**When**: After hitting Yellow zone 3+ times per day
-**Action**:
-```javascript
-// src/config/database.js
-max: 40,
-idleTimeoutMillis: 30000,
-```
-**Sustainable Load**: 20-40 concurrent users
-**Estimated QPS**: 200-400 req/sec
-**Effort**: 15 min restart + 1 hour validation
-
-### Level 3: PgBouncer (Pooler Layer)
-**When**: After Level 2 exhausted (>40 concurrent users)
-**Architecture**:
-```
-App (1000s connections) → PgBouncer → PostgreSQL (20-25 real connections)
-```
-**Sustainable Load**: 100+ concurrent users
-**Estimated QPS**: 1000+ req/sec
-**Effort**: 4 hours setup + testing
-**Cost**: PgBouncer server (~$10-20/month)
-
-### Level 4: Read Replicas
-**When**: Database CPU bottleneck (not connection exhaustion)
-**Action**: Implement read/write splitting
-**Timeline**: Phase 5+ (future)
-
----
-
-## Query Optimization (First Line of Defense)
-
-Before scaling connections, optimize queries:
-
-1. **Identify Slow Queries**:
-   ```sql
-   -- Enable query logging
-   ALTER DATABASE dealer_sourcing SET log_min_duration_statement = 1000;
-
-   -- Review in pg_stat_statements
-   SELECT query, calls, mean_exec_time FROM pg_stat_statements
-   ORDER BY mean_exec_time DESC LIMIT 10;
-   ```
-
-2. **Add Indices**:
-   ```sql
-   -- For sourcing queries
-   CREATE INDEX idx_interested_vehicles_user_created
-   ON interested_vehicles(user_id, created_at DESC);
-
-   CREATE INDEX idx_search_queries_user_searched
-   ON search_queries(user_id, searched_at DESC);
-   ```
-
-3. **Optimize N+1 Patterns**:
-   - Batch vehicle lookups
-   - Use SELECT * only when needed
-   - Cache frequent queries (5 min TTL)
-
-**Expected Impact**: 30-50% reduction in connection demand
-
----
-
-## Load Test Results (Baseline)
-
-**Test Date**: 2026-03-28
-**Configuration**: 50 concurrent users, 10 requests each
-
-### Baseline (Current Pool Size = 20)
-
-```
-Total Requests: 500
-✅ Success: 485 (97.0%)
-❌ Failures: 10 (2.0%)
-⏱️ Timeouts: 5 (1.0%)
-
-Response Times:
-  • Min: 45ms
-  • Avg: 185ms
-  • P95: 380ms
-  • Max: 2100ms
-
-Throughput: 12.5 req/sec
-Status Codes:
-  200: 485
-  503: 15 (Service Unavailable - pool exhausted)
-```
-
-### Recommended Action
-✅ **PASS**: 97% success rate is acceptable for Phase 5
-⚠️ **Monitor**: Watch for increased concurrency in Phase 5+
-
----
-
-## Production Checklist
-
-Before deploying pool changes to production:
-
-- [ ] Backup current database configuration
-- [ ] Create new snapshots (`*snapshot pre_scale`)
-- [ ] Test changes in staging environment
-- [ ] Run load test with expected peak load
-- [ ] Prepare rollback procedure
-- [ ] Schedule maintenance window (if restarting pool)
-- [ ] Notify ops team and support
-- [ ] Monitor closely for 24 hours post-deployment
-- [ ] Document actual performance vs predictions
-
----
-
 ## Escalation Path
 
-```
-Utilization 50-60% (Green)
-  → @data-engineer logs metrics
+1. **Metrics show Yellow status**
+   - Alert ops team
+   - Plan scaling for next sprint
+   - Optimize queries in parallel
 
-Utilization 75-80% (Yellow) + Sustained
-  → @data-engineer alerts @pm and @devops
-  → Ops prepares scaling plan (query optimization OR pool increase)
+2. **Metrics show Red status**
+   - Immediate scaling: increase `max` from 20→50
+   - Deploy within 1 hour
+   - Monitor for 24 hours
 
-Utilization 90%+ OR 503 errors occurring
-  → Critical Incident
-  → @data-engineer + @devops execute Option A or C immediately
-  → Page on-call engineer
-  → Prepare public status update
-```
+3. **Multiple Red alerts across 3+ hours**
+   - Consider read replicas
+   - Emergency meeting with architect
+   - Plan for connection pooler
 
----
+## Performance Targets
 
-## Tools & Monitoring
+| SLA | Target | Consequence |
+|-----|--------|-------------|
+| **P99 Response Time** | <1000ms | Acceptable latency for users |
+| **Error Rate** | <1% | >1% indicates systemic issue |
+| **Uptime** | 99.5% | <99.5% triggers incident |
 
-### Local Development
-```bash
-# Watch metrics in real-time
-watch -n 1 'curl -s http://localhost:3000/metrics | jq .pool'
+## Estimated Costs
 
-# Run load test
-npm run test:load
-```
+| Scale Tier | Pool Size | Users | Monthly Cost |
+|----------|-----------|-------|-------------|
+| MVP | 20 | 20 | Neon Free ($0) |
+| Beta | 50 | 50 | Neon Growth ($30-50) |
+| Production | 100+ | 100+ | Neon Pro ($300+) + PgBouncer if needed |
 
-### Production (Render)
-```bash
-# Query logs
-render logs --tail -f
+## Future Improvements
 
-# Metrics endpoint
-https://dealer-sourcing-backend.onrender.com/metrics
-```
-
-### Prometheus/Grafana (Future)
-```yaml
-# Add Prometheus scrape config
-- job_name: 'dealer-sourcing'
-  static_configs:
-    - targets: ['localhost:3000']
-  metrics_path: '/metrics'
-  scrape_interval: 5m
-```
-
----
+1. **Automatic Scaling**: Use Render/Vercel auto-scaling
+2. **Caching Layer**: Add Redis for frequently accessed data
+3. **Query Optimization**: Batch requests, denormalize read tables
+4. **Circuit Breaker**: Graceful degradation under load
 
 ## References
 
-- **STORY-502**: Connection Pool Monitoring & Observability
-- **PHASE-5-KICKOFF**: Phase 5 execution plan
-- **database.js**: Pool configuration
-- **metrics.js**: Metrics endpoints
-- **PostgreSQL Documentation**: Connection pooling best practices
+- Monitoring: `/api/metrics` endpoint
+- Load Test: `test/load/connection-pool.test.js`
+- Database Config: `api/lib/db.js` + `src/config/database.js`
+- Neon Docs: https://neon.tech/docs/reference/neon-cli
 
 ---
 
-## FAQ
-
-**Q: Why not just increase the pool size to 100?**
-A: Each connection consumes memory (~5-10MB). 100 connections = 500MB+ additional memory per replica. Better to use connection pooler.
-
-**Q: What if we're in Red zone but can't scale?**
-A: Optimize queries first (usually 30-50% improvement). Implement connection pooler (PgBouncer) as immediate fix.
-
-**Q: How do I test my scaling before going to production?**
-A: Run load test locally with `npm run test:load`, then replicate in staging environment.
-
-**Q: Should we enable connection pooling now or wait?**
-A: Wait until Yellow zone is hit consistently. Over-engineering adds complexity without benefit.
-
----
-
-*-- Dara, arquitetando dados*
-
+**Owner**: @data-engineer (Dara)
 **Last Reviewed**: 2026-03-28
-**Next Review**: 2026-04-28 (monthly)

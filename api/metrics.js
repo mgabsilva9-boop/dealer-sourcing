@@ -4,16 +4,7 @@
  * STORY-502: Pool Monitoring & Observability
  */
 
-// Simple in-memory metrics for Vercel (stateless)
-const poolMetrics = {
-  activeConnections: Math.floor(Math.random() * 10),
-  idleConnections: 20 - Math.floor(Math.random() * 10),
-  waitingRequests: 0,
-  peakConnections: 12,
-  totalAcquired: 1500,
-  totalReleased: 1490,
-  lastResetTime: Date.now() - 3600000,
-};
+import { dbMetrics } from './lib/db.js';
 
 export default function handler(req, res) {
   if (req.method !== 'GET') {
@@ -21,27 +12,47 @@ export default function handler(req, res) {
   }
 
   const now = Date.now();
-  const uptime = now - poolMetrics.lastResetTime;
-  const utilization = (poolMetrics.activeConnections / 20) * 100;
-  const healthStatus = poolMetrics.activeConnections > 16 ? 'warning' : 'healthy';
+  const uptime = now - dbMetrics.startTime;
+
+  // Calculate health status based on query performance and errors
+  const errorRate = dbMetrics.totalQueries > 0 ? (dbMetrics.totalErrors / dbMetrics.totalQueries) * 100 : 0;
+  const slowQueryRate = dbMetrics.totalQueries > 0 ? (dbMetrics.slowQueries / dbMetrics.totalQueries) * 100 : 0;
+
+  let healthStatus = 'healthy';
+  if (errorRate > 5 || slowQueryRate > 10) {
+    healthStatus = 'warning';
+  }
+  if (errorRate > 15 || slowQueryRate > 25) {
+    healthStatus = 'critical';
+  }
 
   const metrics = {
     timestamp: new Date().toISOString(),
-    pool: {
-      active_connections: poolMetrics.activeConnections,
-      idle_connections: poolMetrics.idleConnections,
-      waiting_requests: poolMetrics.waitingRequests,
-      total_available: 20,
-      utilization_percent: parseFloat(utilization.toFixed(2)),
-      peak_connections: poolMetrics.peakConnections,
-      total_acquired: poolMetrics.totalAcquired,
-      total_released: poolMetrics.totalReleased,
+    connection: {
+      active_connections: dbMetrics.activeConnections,
+      peak_connections: dbMetrics.peakConnections,
+      connection_attempts: dbMetrics.connectionAttempts,
+      failed_connections: dbMetrics.failedConnections,
       health_status: healthStatus,
-      requires_scaling: poolMetrics.activeConnections > 16,
+    },
+    queries: {
+      total_queries: dbMetrics.totalQueries,
+      total_errors: dbMetrics.totalErrors,
+      error_rate_percent: parseFloat(errorRate.toFixed(2)),
+      slow_queries: dbMetrics.slowQueries,
+      slow_query_rate_percent: parseFloat(slowQueryRate.toFixed(2)),
+      average_query_time_ms: parseFloat(dbMetrics.averageQueryTime.toFixed(2)),
+      last_query_time_ms: dbMetrics.lastQueryTime,
     },
     uptime_ms: uptime,
+    alerts: {
+      high_error_rate: errorRate > 5,
+      slow_queries_detected: slowQueryRate > 10,
+      requires_investigation: healthStatus === 'critical',
+    },
   };
 
-  const statusCode = poolMetrics.activeConnections > 18 ? 503 : 200;
+  // Return 503 if critical health status
+  const statusCode = healthStatus === 'critical' ? 503 : 200;
   res.status(statusCode).json(metrics);
 }
