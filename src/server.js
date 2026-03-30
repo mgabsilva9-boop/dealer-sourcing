@@ -19,6 +19,7 @@ import crmRoutes from './routes/crm.js';
 import expensesRoutes from './routes/expenses.js';
 import sourcingRoutes from './routes/sourcing.js';
 import metricsRoutes from './routes/metrics.js';
+import cacheRoutes from './routes/cache.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -64,6 +65,10 @@ app.get('/health', (req, res) => {
 // ===== METRICS (STORY-502) =====
 
 app.use('/metrics', metricsRoutes);
+
+// ===== CACHE (STORY-601) =====
+
+app.use('/api/cache', cacheRoutes);
 
 // ===== ROTAS =====
 

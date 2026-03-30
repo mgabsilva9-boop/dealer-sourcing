@@ -23,7 +23,7 @@ Plataforma completa para gerenciamento de concessionária com 5 módulos: invent
 ## 🚀 Production URLs
 
 - **Frontend:** https://dealer-sourcing.vercel.app
-- **Backend:** https://dealer-sourcing-api.onrender.com
+- **Backend:** https://dealer-sourcing-api.railway.app (migrated from Render to Railway)
 
 **Test Account:**
 - Email: `penteadojv1314@gmail.com`
@@ -49,11 +49,13 @@ npm run dev
 
 ```
 Backend:    Node.js 22 + Express.js
-Database:   PostgreSQL (Render free tier)
+Database:   PostgreSQL (Railway)
+Cache:      Redis (Railway optional)
 Auth:       JWT + bcryptjs
 Frontend:   React 18 + Vite + TailwindCSS
-Deploy:     Render (backend) + Vercel (frontend)
+Deploy:     Railway (backend) + Vercel (frontend)
 CI/CD:      GitHub Actions → lint → build → deploy
+Testing:    Vitest + Supertest
 ```
 
 ---
@@ -256,6 +258,104 @@ page.setDefaultTimeout(30000); // 30 segundos
 
 # Ou usar browser pool (futuro)
 ```
+
+---
+
+## 🚀 Redis Cache Setup (Phase 6 - STORY-601)
+
+The project now includes Redis caching layer for improved performance. Redis is **optional** — the application gracefully degrades if Redis is unavailable.
+
+### Quick Start
+
+#### Development (Local)
+
+```bash
+# Option 1: Using Docker
+docker run -d -p 6379:6379 redis:latest
+
+# Option 2: Using WSL (Ubuntu)
+wsl bash -c "sudo apt-get install redis-server && redis-server --daemonize yes"
+
+# Verify Redis is running
+redis-cli ping
+# Response: PONG
+```
+
+#### Environment Variables
+
+**Local (.env.local):**
+```bash
+REDIS_URL=redis://localhost:6379
+```
+
+**Production (.env.production):**
+```bash
+# Railway provides Redis connection string automatically
+REDIS_URL=redis://default:<password>@<hostname>:<port>
+```
+
+### Health Check Endpoint
+
+```bash
+# Check Redis status
+curl http://localhost:3000/api/cache/health
+
+# Response (if Redis is available):
+# { "status": "healthy", "latency_ms": 2 }
+
+# Response (if Redis is down):
+# { "status": "disconnected", "latency_ms": -1 }
+```
+
+### Testing
+
+```bash
+# Run unit tests (no Redis required)
+npm run test:redis:unit
+
+# Run integration tests (requires Redis running)
+npm run test:redis:integration
+
+# Run all Redis tests
+npm run test:redis
+```
+
+### Graceful Degradation
+
+All cache operations have built-in fallbacks:
+
+```javascript
+import * as redis from './src/lib/redis.js';
+
+// get() returns null if Redis unavailable
+const value = await redis.get('key');
+
+// set() returns false if Redis unavailable (but app continues)
+const success = await redis.set('key', value, 300); // TTL: 300 seconds
+
+// API continues to work even if Redis is down
+// Performance degrades gracefully without errors
+```
+
+### Cache Endpoints
+
+**GET /api/cache/health**
+- Returns Redis health status and latency
+- Used by deployment health checks
+- Response: `{ status: 'healthy'|'unhealthy'|'disconnected', latency_ms: number }`
+
+**DELETE /api/cache/flush**
+- Clears all cache
+- For testing/admin purposes only
+- Requires authentication in production
+
+### Implementation Details
+
+- **Singleton Pattern**: Single Redis client instance per process
+- **Connection Pooling**: 5-20 connections (configurable)
+- **Exponential Backoff**: Automatic reconnection with delays up to 500ms
+- **TTL Support**: All cache entries expire automatically (default: 5 minutes)
+- **JSON Serialization**: Automatic object/array serialization via JSON.stringify
 
 ---
 

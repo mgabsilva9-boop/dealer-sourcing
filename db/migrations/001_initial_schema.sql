@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS migrations (
   applied_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-INSERT INTO migrations (name) VALUES ('001_initial_schema') ON CONFLICT DO NOTHING;
+INSERT INTO migrations (name) VALUES ('001_initial_schema') ON CONFLICT (name) DO NOTHING;
 
 -- ============================================
 -- DONE
