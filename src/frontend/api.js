@@ -3,8 +3,9 @@
  * Todas as chamadas HTTP para o backend
  */
 
-// Usar import.meta.env (Vite) para variáveis de ambiente no client-side
-const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000' : null);
+// Usar variável injetada por Vite define (vite.config.js)
+// __API_URL__ é definido em tempo de build, não em tempo de runtime
+const API_BASE = typeof __API_URL__ !== 'undefined' ? __API_URL__ : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000' : null);
 
 class APIError extends Error {
   constructor(status, message, data) {
