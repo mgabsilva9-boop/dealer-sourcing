@@ -1,0 +1,73 @@
+INVESTIGACAO CONCLUIDA COM SUCESSO
+Frontend API 405 Error - null auth login FIX
+
+DIAGNOSTICO EXECUTADO
+- Lido: api.js (processo.env issue encontrada)
+- Lido: vercel.json (config incorreta)
+- Lido: vite.config.js (correto)
+- Verificado: .env files
+- Analisado: Como Vite injeta variáveis
+
+PROBLEMA IDENTIFICADO
+- api.js linha 7: const API_BASE = process.env.VITE_API_URL
+- process.env nao funciona em navegador (undefined)
+- API_BASE fica = null
+- Fetch para /null/auth/login causa erro 405
+
+SOLUCOES IMPLEMENTADAS
+
+1. api.js (linha 7)
+   ANTES: process.env.VITE_API_URL
+   DEPOIS: import.meta.env.VITE_API_URL
+   MOTIVO: Vite injeta variaveis via import.meta.env em tempo de build
+
+2. .env.production
+   ADICIONADO:
+   VITE_API_URL=https://dealer-sourcing-api-production.up.railway.app
+   VITE_API_TIMEOUT=10000
+   VITE_LOG_LEVEL=error
+
+3. test/verify-api-config.js (NEW)
+   Script de validacao com 4 verificacoes
+   Status: PASSOU (4/4 testes)
+
+4. package.json
+   Adicionado: "verify:api": "node test/verify-api-config.js"
+
+DOCUMENTACAO CRIADA
+- CRITICAL_FIX_FRONTEND_API.md (detalhado)
+- ACAO_IMEDIATA_VERCEL.md (passo-a-passo)
+- FIX_SUMMARY.txt (resumo)
+- QUICK_REFERENCE.txt (rapido)
+
+COMMITS FEITOS
+1. fix: corrige conexao API frontend usando import.meta.env do Vite
+2. docs: adiciona guias de acao para resolver erro 405
+3. docs: adiciona referencia rapida do fix de API
+
+PROXIMA ACAO (OBRIGATORIA)
+1. Abra: https://vercel.com/dashboard
+2. Projeto: dealer-sourcing-frontend
+3. Settings > Environment Variables
+4. Crie: VITE_API_URL = https://dealer-sourcing-api-production.up.railway.app
+5. Redeploy
+
+ETA: 10-15 minutos
+
+VERIFICACAO
+No console (F12):
+console.log(import.meta.env.VITE_API_URL)
+
+Deve retornar URL completa (nao null/undefined)
+
+ARQUIVOS MODIFICADOS
+- src/frontend/api.js (linha 7 corrigida)
+- .env.production (VITE_* adicionadas)
+- package.json (script verify:api)
+- test/verify-api-config.js (novo)
+
+STATUS
+✓ Codigo corrigido
+✓ Testes locais passando
+✓ Documentacao completa
+AGUARDANDO: Vercel Dashboard + Redeploy
