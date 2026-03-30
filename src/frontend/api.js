@@ -118,6 +118,13 @@ export const inventoryAPI = {
       method: 'DELETE',
     });
   },
+
+  async uploadImage(id, imageBase64) {
+    return fetchAPI(`/inventory/${id}/upload-image`, {
+      method: 'POST',
+      body: JSON.stringify({ imageBase64 }),
+    });
+  },
 };
 
 // ─── CRM API (Clientes)

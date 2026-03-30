@@ -30,6 +30,7 @@ async function initTables() {
         motor VARCHAR(200),
         potencia VARCHAR(100),
         features TEXT,
+        image_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -271,6 +272,50 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao deletar veículo:', error);
     res.status(500).json({ error: 'Erro ao deletar veículo' });
+  }
+});
+
+// POST - Upload de imagem (base64 ou URL)
+router.post('/:id/upload-image', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imageBase64, imageUrl } = req.body;
+
+    // Validar se veículo pertence ao usuário
+    const vehicleResult = await query(
+      'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
+      [id, req.user.id],
+    );
+
+    if (vehicleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    let finalImageUrl = imageUrl;
+
+    // Se enviou base64, salvar em URL temporária (simplificado - em prod usar Supabase Storage)
+    if (imageBase64) {
+      // Para MVP, apenas armazenar o base64 como data URI
+      finalImageUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
+    }
+
+    if (!finalImageUrl) {
+      return res.status(400).json({ error: 'imageBase64 ou imageUrl são obrigatórios' });
+    }
+
+    // Atualizar veículo com URL da imagem
+    const result = await query(
+      'UPDATE inventory SET image_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3 RETURNING *',
+      [finalImageUrl, id, req.user.id],
+    );
+
+    res.json({
+      message: 'Imagem salva com sucesso',
+      vehicle: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Erro ao salvar imagem:', error);
+    res.status(500).json({ error: 'Erro ao salvar imagem' });
   }
 });
 
