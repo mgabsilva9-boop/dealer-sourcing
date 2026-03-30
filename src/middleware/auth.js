@@ -19,8 +19,8 @@ export const authMiddleware = (req, res, next) => {
     // Verificar e decodificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Extrair user ID from JWT claims (standard 'sub' or custom 'user_id')
-    const userId = decoded.sub || decoded.user_id;
+    // Extrair user ID from JWT claims (custom 'id' field from auth.js, fallback to standard 'sub' or 'user_id')
+    const userId = decoded.id || decoded.sub || decoded.user_id;
 
     if (!userId) {
       return res.status(401).json({ error: 'User ID not found in token' });

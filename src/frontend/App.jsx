@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI } from "./api.js";
 
 const C = {
-  bg: "#f5f6f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
+  bg: "#f0f4f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
   border: "#e8eaed", borderLight: "#f0f1f3",
-  accent: "#0d7c66", accentLight: "#e7f5f2",
+  accent: "#1d4ed8", accentLight: "#eff6ff",
   text: "#1a1d23", textMid: "#5f6773", textDim: "#9ca3ae",
   green: "#16a34a", greenBg: "#f0fdf4",
   yellow: "#d97706", yellowBg: "#fffbeb",

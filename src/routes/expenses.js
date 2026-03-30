@@ -40,11 +40,12 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     const result = await query(
       `INSERT INTO expenses
-       (user_id, category, description, amount, status, date)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       (user_id, dealership_id, category, description, amount, status, date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         req.user.id,
+        req.user.dealership_id,
         category,
         description || '',
         amount,
@@ -60,6 +61,23 @@ router.post('/create', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar despesa:', error);
     res.status(500).json({ error: 'Erro ao criar despesa' });
+  }
+});
+
+// GET - Resumo de despesas por categoria
+router.get('/summary/by-category', authMiddleware, async (req, res) => {
+  try {
+    const result = await query(
+      'SELECT category, SUM(amount) as total, COUNT(*) as count FROM expenses WHERE user_id = $1 GROUP BY category',
+      [req.user.id],
+    );
+
+    res.json({
+      summary: result.rows,
+    });
+  } catch (error) {
+    console.error('Erro ao obter resumo:', error);
+    res.status(500).json({ error: 'Erro ao obter resumo' });
   }
 });
 
@@ -137,23 +155,6 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro ao deletar despesa:', error);
     res.status(500).json({ error: 'Erro ao deletar despesa' });
-  }
-});
-
-// GET - Resumo de despesas por categoria
-router.get('/summary/by-category', authMiddleware, async (req, res) => {
-  try {
-    const result = await query(
-      'SELECT category, SUM(amount) as total, COUNT(*) as count FROM expenses WHERE user_id = $1 GROUP BY category',
-      [req.user.id],
-    );
-
-    res.json({
-      summary: result.rows,
-    });
-  } catch (error) {
-    console.error('Erro ao obter resumo:', error);
-    res.status(500).json({ error: 'Erro ao obter resumo' });
   }
 });
 

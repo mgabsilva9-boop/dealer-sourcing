@@ -131,10 +131,10 @@ router.post('/create', authMiddleware, async (req, res) => {
     // Inserir veículo
     const vehicleResult = await query(
       `INSERT INTO inventory
-       (user_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+       (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [req.user.id, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
+      [req.user.id, req.user.dealership_id, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
     );
 
     const vehicleId = vehicleResult.rows[0].id;

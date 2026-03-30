@@ -137,6 +137,69 @@ router.get('/list', authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /sourcing/favorites
+ * Listar favoritos do usuário (RLS)
+ * STORY-402: Get user's favorites
+ */
+router.get('/favorites', authMiddleware, async (req, res) => {
+  try {
+    const limit = validateNumber(req.query.limit || 20, 1, 100, 'limit');
+    const offset = validateNumber(req.query.offset || 0, 0, Infinity, 'offset');
+    const statusFilter = validateString(req.query.status);
+
+    // Extrair user_id dos claims JWT (authMiddleware já validou o token)
+    const userId = req.user.sub || req.user.user_id || req.user.id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User ID não encontrado nos claims JWT' });
+    }
+
+    // Construir query com filtros opcionais
+    let query = `
+      SELECT id, user_id, vehicle_id, vehicle_data, status, notes,
+             user_validation_score, saved_at, updated_at
+      FROM interested_vehicles
+      WHERE user_id = $1
+    `;
+    const params = [userId];
+
+    if (statusFilter && ['interested', 'contacted', 'purchased', 'rejected'].includes(statusFilter)) {
+      query += ` AND status = $${params.length + 1}`;
+      params.push(statusFilter);
+    }
+
+    // Ordenar por data
+    query += ` ORDER BY saved_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Contar total
+    let countQuery = 'SELECT COUNT(*) FROM interested_vehicles WHERE user_id = $1';
+    const countParams = [userId];
+
+    if (statusFilter && ['interested', 'contacted', 'purchased', 'rejected'].includes(statusFilter)) {
+      countQuery += ' AND status = $2';
+      countParams.push(statusFilter);
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count, 10);
+
+    res.json({
+      total,
+      limit,
+      offset,
+      status_filter: statusFilter,
+      results: result.rows,
+    });
+  } catch (error) {
+    console.error('Erro ao listar favoritos:', error);
+    res.status(500).json({ error: error.message || 'Erro ao listar favoritos' });
+  }
+});
+
+/**
  * GET /sourcing/:id
  * Obter veículo específico
  */
@@ -231,69 +294,6 @@ router.post('/:id/interested', authMiddleware, async (req, res) => {
     res.status(500).json({ error: error.message || 'Erro ao marcar como interessado' });
   } finally {
     client.release();
-  }
-});
-
-/**
- * GET /sourcing/favorites
- * Listar favoritos do usuário (RLS)
- * STORY-402: Get user's favorites
- */
-router.get('/favorites', authMiddleware, async (req, res) => {
-  try {
-    const limit = validateNumber(req.query.limit || 20, 1, 100, 'limit');
-    const offset = validateNumber(req.query.offset || 0, 0, Infinity, 'offset');
-    const statusFilter = validateString(req.query.status);
-
-    // Extrair user_id dos claims JWT (authMiddleware já validou o token)
-    const userId = req.user.sub || req.user.user_id || req.user.id;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'User ID não encontrado nos claims JWT' });
-    }
-
-    // Construir query com filtros opcionais
-    let query = `
-      SELECT id, user_id, vehicle_id, vehicle_data, status, notes,
-             user_validation_score, saved_at, updated_at
-      FROM interested_vehicles
-      WHERE user_id = $1
-    `;
-    const params = [userId];
-
-    if (statusFilter && ['interested', 'contacted', 'purchased', 'rejected'].includes(statusFilter)) {
-      query += ` AND status = $${params.length + 1}`;
-      params.push(statusFilter);
-    }
-
-    // Ordenar por data
-    query += ` ORDER BY saved_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-
-    const result = await pool.query(query, params);
-
-    // Contar total
-    let countQuery = 'SELECT COUNT(*) FROM interested_vehicles WHERE user_id = $1';
-    const countParams = [userId];
-
-    if (statusFilter && ['interested', 'contacted', 'purchased', 'rejected'].includes(statusFilter)) {
-      countQuery += ' AND status = $2';
-      countParams.push(statusFilter);
-    }
-
-    const countResult = await pool.query(countQuery, countParams);
-    const total = parseInt(countResult.rows[0].count, 10);
-
-    res.json({
-      total,
-      limit,
-      offset,
-      status_filter: statusFilter,
-      results: result.rows,
-    });
-  } catch (error) {
-    console.error('Erro ao listar favoritos:', error);
-    res.status(500).json({ error: error.message || 'Erro ao listar favoritos' });
   }
 });
 
