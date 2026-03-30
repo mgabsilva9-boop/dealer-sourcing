@@ -483,53 +483,81 @@ export default function App() {
   };
 
   var upd = useCallback(function(id, field, val) {
-    // Atualizar localmente primeiro
-    setVehicles(function(p) {
-      return p.map(function(v) {
-        return v.id === id ? Object.assign({}, v, { [field]: val }) : v;
+    var vehicleToSend = null;
+    // Atualizar localmente e capturar veículo atualizado
+    setVehicles(function(prev) {
+      var next = prev.map(function(v) {
+        if (v.id !== id) return v;
+        vehicleToSend = Object.assign({}, v, { [field]: val });
+        return vehicleToSend;
       });
+      return next;
     });
     if (selV && selV.id === id) {
       setSelV(function(p) {
         return Object.assign({}, p, { [field]: val });
       });
     }
-    // Enviar para backend
-    (async function() {
-      try {
-        const vehicle = vehicles.find(v => v.id === id);
-        if (vehicle) {
-          await inventoryAPI.update(id, Object.assign({}, vehicle, { [field]: val }));
+    // Enviar para backend com dados corretos
+    if (vehicleToSend) {
+      (async function() {
+        try {
+          const res = await inventoryAPI.update(id, vehicleToSend);
+          if (res && res.vehicle) {
+            setVehicles(function(prev) {
+              return prev.map(function(v) {
+                return v.id === id ? Object.assign({}, v, res.vehicle) : v;
+              });
+            });
+            if (selV && selV.id === id) {
+              setSelV(function(p) {
+                return Object.assign({}, p, res.vehicle);
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao atualizar veículo:', err);
         }
-      } catch (err) {
-        console.error('Erro ao atualizar veículo:', err);
-      }
-    })();
-  }, [selV, vehicles]);
+      })();
+    }
+  }, [selV]);
 
   var updCost = useCallback(function(id, costField, val) {
-    setVehicles(function(p) {
-      return p.map(function(v) {
+    var vehicleToSend = null;
+    setVehicles(function(prev) {
+      var next = prev.map(function(v) {
         if (v.id !== id) return v;
         var newCosts = Object.assign({}, v.costs || {}, { [costField]: val });
         var updates = { costs: newCosts };
         if (costField === "Compra do veiculo") updates.purchasePrice = val;
-        return Object.assign({}, v, updates);
+        vehicleToSend = Object.assign({}, v, updates);
+        return vehicleToSend;
       });
+      return next;
     });
-    // Enviar para backend
-    (async function() {
-      try {
-        const vehicle = vehicles.find(v => v.id === id);
-        if (vehicle) {
-          const updatedCosts = Object.assign({}, vehicle.costs || {}, { [costField]: val });
-          await inventoryAPI.update(id, Object.assign({}, vehicle, { costs: updatedCosts }));
+    // Enviar para backend com dados corretos
+    if (vehicleToSend) {
+      (async function() {
+        try {
+          const res = await inventoryAPI.update(id, vehicleToSend);
+          if (res && res.vehicle) {
+            setVehicles(function(prev) {
+              return prev.map(function(v) {
+                return v.id === id ? Object.assign({}, v, res.vehicle) : v;
+              });
+            });
+            if (selV && selV.id === id) {
+              setSelV(function(p) {
+                return Object.assign({}, p, res.vehicle);
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Erro ao atualizar custos:', err);
         }
-      } catch (err) {
-        console.error('Erro ao atualizar custos:', err);
-      }
-    })();
-  }, [vehicles]);
+      })();
+    }
+  }, [selV]);
 
   var renameCost = useCallback(function(id, oldKey, newKey) {
     if (!newKey || newKey === oldKey) return;

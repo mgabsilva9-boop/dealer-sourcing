@@ -9,6 +9,34 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ===== HELPER: Normalizar vehicle (snake_case → camelCase) =====
+function normalizeVehicle(row) {
+  const costs = typeof row.costs_json === 'string'
+    ? JSON.parse(row.costs_json)
+    : (row.costs_json || {});
+
+  return {
+    id: row.id,
+    make: row.make,
+    model: row.model,
+    year: row.year,
+    purchasePrice: parseFloat(row.purchase_price) || 0,
+    salePrice: parseFloat(row.sale_price) || 0,
+    fipePrice: parseFloat(row.fipe_price) || 0,
+    mileage: row.mileage || 0,
+    location: row.location,
+    status: row.status || 'available',
+    motor: row.motor || '',
+    potencia: row.potencia || '',
+    features: row.features || '',
+    imageUrl: row.image_url || null,
+    daysInStock: Math.round(parseFloat(row.days_in_stock) || 0),
+    costs,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // ===== CRIAR TABELAS SE NÃO EXISTIREM =====
 async function initTables() {
   try {
@@ -174,17 +202,29 @@ initDefaultVehicles();
 
 // ===== VEHICLES / INVENTORY =====
 
-// GET - Listar todos os veículos
+// GET - Listar todos os veículos com custos agregados
 router.get('/list', authMiddleware, async (req, res) => {
   try {
-    const result = await query(
-      'SELECT * FROM inventory WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.user.id],
-    );
+    const result = await query(`
+      SELECT
+        i.*,
+        EXTRACT(DAY FROM (NOW() - i.created_at)) AS days_in_stock,
+        COALESCE(
+          json_object_agg(vc.category, vc.amount) FILTER (WHERE vc.category IS NOT NULL),
+          '{}'::json
+        ) AS costs_json
+      FROM inventory i
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
+      WHERE i.user_id = $1
+      GROUP BY i.id
+      ORDER BY i.created_at DESC
+    `, [req.user.id]);
+
+    const vehicles = result.rows.map(normalizeVehicle);
 
     res.json({
-      total: result.rows.length,
-      vehicles: result.rows,
+      total: vehicles.length,
+      vehicles,
     });
   } catch (error) {
     console.error('Erro ao listar veículos:', error);
@@ -224,9 +264,24 @@ router.post('/create', authMiddleware, async (req, res) => {
       }
     }
 
+    // Buscar veículo completo com custos agregados
+    const fullResult = await query(`
+      SELECT
+        i.*,
+        EXTRACT(DAY FROM (NOW() - i.created_at)) AS days_in_stock,
+        COALESCE(
+          json_object_agg(vc.category, vc.amount) FILTER (WHERE vc.category IS NOT NULL),
+          '{}'::json
+        ) AS costs_json
+      FROM inventory i
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
+      WHERE i.id = $1
+      GROUP BY i.id
+    `, [vehicleId]);
+
     res.status(201).json({
       message: 'Veículo criado com sucesso',
-      vehicle: vehicleResult.rows[0],
+      vehicle: normalizeVehicle(fullResult.rows[0]),
     });
   } catch (error) {
     console.error('Erro ao criar veículo:', error);
@@ -314,9 +369,24 @@ router.put('/:id', authMiddleware, async (req, res) => {
       }
     }
 
+    // Buscar veículo completo com custos agregados
+    const fullResult = await query(`
+      SELECT
+        i.*,
+        EXTRACT(DAY FROM (NOW() - i.created_at)) AS days_in_stock,
+        COALESCE(
+          json_object_agg(vc.category, vc.amount) FILTER (WHERE vc.category IS NOT NULL),
+          '{}'::json
+        ) AS costs_json
+      FROM inventory i
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
+      WHERE i.id = $1
+      GROUP BY i.id
+    `, [id]);
+
     res.json({
       message: 'Veículo atualizado com sucesso',
-      vehicle: result.rows[0],
+      vehicle: normalizeVehicle(fullResult.rows[0]),
     });
   } catch (error) {
     console.error('Erro ao atualizar veículo:', error);
