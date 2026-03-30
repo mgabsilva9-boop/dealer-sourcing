@@ -3,8 +3,8 @@
  * Todas as chamadas HTTP para o backend
  */
 
-// Em produção, se a API não estiver disponível, usar modo demo
-const API_BASE = process.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000' : null);
+// Usar import.meta.env (Vite) para variáveis de ambiente no client-side
+const API_BASE = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000' : null);
 
 class APIError extends Error {
   constructor(status, message, data) {
