@@ -197,8 +197,14 @@ async function initDefaultVehicles() {
 }
 
 // Inicializar tabelas na ativação
-initTables();
-initDefaultVehicles();
+// Inicializar tabelas e dados (não bloqueia startup)
+initTables().catch(err => {
+  console.error('⚠️ Erro ao inicializar tabelas (servidor continua em MVP mode):', err.message);
+});
+
+initDefaultVehicles().catch(err => {
+  console.error('⚠️ Erro ao seed veículos (servidor continua em MVP mode):', err.message);
+});
 
 // ===== VEHICLES / INVENTORY =====
 

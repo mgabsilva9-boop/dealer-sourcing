@@ -71,8 +71,10 @@ async function initDefaultUsers() {
   }
 }
 
-// Executar na ativação do módulo
-initDefaultUsers();
+// Executar na ativação do módulo (não bloqueia startup se banco não estiver disponível)
+initDefaultUsers().catch(err => {
+  console.error('⚠️ Erro ao inicializar usuários padrão (servidor continua em MVP mode):', err.message);
+});
 
 // ===== LOGIN =====
 router.post('/login', async (req, res) => {
