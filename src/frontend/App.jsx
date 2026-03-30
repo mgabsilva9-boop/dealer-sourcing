@@ -380,8 +380,10 @@ export default function App() {
     (async function() {
       try {
         const vehiclesData = await inventoryAPI.list();
-        if (vehiclesData && vehiclesData.vehicles) {
+        if (vehiclesData && vehiclesData.vehicles && vehiclesData.vehicles.length > 0) {
           setVehicles(vehiclesData.vehicles);
+        } else {
+          setVehicles(INIT_VEHICLES);
         }
       } catch (err) {
         console.error('Erro ao carregar estoque:', err);
@@ -389,8 +391,10 @@ export default function App() {
       }
       try {
         const customersData = await crmAPI.list();
-        if (customersData && customersData.customers) {
+        if (customersData && customersData.customers && customersData.customers.length > 0) {
           setCustomers(customersData.customers);
+        } else {
+          setCustomers(INIT_CRM);
         }
       } catch (err) {
         console.error('Erro ao carregar clientes:', err);
@@ -398,8 +402,10 @@ export default function App() {
       }
       try {
         const expensesData = await expensesAPI.list();
-        if (expensesData && expensesData.expenses) {
+        if (expensesData && expensesData.expenses && expensesData.expenses.length > 0) {
           setExpenses(expensesData.expenses);
+        } else {
+          setExpenses(INIT_EXPENSES);
         }
       } catch (err) {
         console.error('Erro ao carregar despesas:', err);
