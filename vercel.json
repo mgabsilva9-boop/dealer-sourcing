@@ -22,7 +22,11 @@
       }
     },
     {
-      "src": "/(.*)",
+      "src": "^/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "^/(?!assets|api)(.*)",
       "dest": "/index.html"
     }
   ]
