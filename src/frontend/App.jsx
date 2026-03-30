@@ -76,7 +76,7 @@ const expStatusMap = { paid: { label: "Pago", color: C.green, bg: C.greenBg }, p
 const catColors = { Financiamento: C.purple, IPVA: C.red, Aluguel: C.blue, Seguro: C.cyan, Operacional: C.textMid };
 
 // ─── ATOMS (no ...rest, no IIFE) ────────────────────────────────────
-function Card({ children, style, onClick }) { return <div onClick={onClick} style={{ background: C.surface, borderRadius: 12, border: "1px solid " + C.border, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", ...style }}>{children}</div>; }
+function Card({ children, style, onClick }) { return <div onClick={onClick} style={{ background: C.surface, borderRadius: 12, border: "1px solid " + C.border, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", ...style }}>{children}</div>; }
 function Stat({ label, value, sub, accent }) { return <Card style={{ padding: "20px 22px", borderLeft: accent ? "3px solid " + C.accent : undefined }}><div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 500 }}>{label}</div><div style={{ fontSize: 24, fontWeight: 700, color: C.text, lineHeight: 1.1 }}>{value}</div>{sub && <div style={{ fontSize: 12, color: C.textDim, marginTop: 6 }}>{sub}</div>}</Card>; }
 function Tag({ children, color, bg }) { return <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: color, background: bg, letterSpacing: 0.3 }}>{children}</span>; }
 function MiniBar({ label, value }) { var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30; var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red; return <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 11, color: C.textMid, width: 28, textAlign: "right" }}>{value}</span><div style={{ flex: 1, height: 4, background: C.borderLight, borderRadius: 2 }}><div style={{ width: w + "%", height: "100%", background: c, borderRadius: 2 }} /></div></div>; }
@@ -525,7 +525,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
       {/* HEADER */}
-      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 28px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
+      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
           <span style={{ fontWeight: 700, fontSize: 16 }}>ThreeOn</span>
@@ -544,11 +544,11 @@ export default function App() {
       </div>
 
       {/* TABS */}
-      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 28px", display: "flex", gap: 0, overflowX: "auto" }}>
+      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 40px", display: "flex", gap: 0, overflowX: "auto" }}>
         {tabList.map(function(t) { return <button key={t[0]} onClick={function() { setTab(t[0]); setSelV(null); setShowCosts(false); setAddingV(false); }} style={{ padding: "12px 16px", border: "none", borderBottom: tab === t[0] ? "2px solid " + C.accent : "2px solid transparent", background: "transparent", color: tab === t[0] ? C.accent : C.textDim, fontSize: 12, fontWeight: tab === t[0] ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t[1]}</button>; })}
       </div>
 
-      <div style={{ padding: "24px 28px", maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ padding: "32px 40px", maxWidth: 1280, margin: "0 auto" }}>
 
         {/* DASHBOARD */}
         {tab === "dashboard" && <div>
