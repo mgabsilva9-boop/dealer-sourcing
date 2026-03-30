@@ -1,0 +1,121 @@
+┌─────────────────────────────────────────────────────────────────────────┐
+│  QUICK REFERENCE: Frontend API Fix                                      │
+│  Error: 405 /null/auth/login                                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+PROBLEMA VISUAL
+───────────────────────────────────────────────────────────────────────────
+Antes:
+  api.js: API_BASE = process.env.VITE_API_URL
+          ↓
+  Navegador não vê process.env (undefined)
+          ↓
+  API_BASE = null
+          ↓
+  fetch('/null/auth/login') → ERROR 405
+
+
+SOLUÇÃO
+───────────────────────────────────────────────────────────────────────────
+Depois:
+  api.js: API_BASE = import.meta.env.VITE_API_URL
+          ↓
+  Vite injeta variável durante build
+          ↓
+  API_BASE = 'https://dealer-sourcing-api-production.up.railway.app'
+          ↓
+  fetch('https://.../auth/login') → SUCCESS ✅
+
+
+O QUE FOI FEITO
+───────────────────────────────────────────────────────────────────────────
+✅ CÓDIGO: src/frontend/api.js
+   Linha 7 corrigida
+   process.env → import.meta.env
+
+✅ ENV: .env.production
+   VITE_API_URL definido
+
+✅ TEST: test/verify-api-config.js
+   Script de validação criado
+
+✅ SCRIPT: npm run verify:api
+   Adicionado ao package.json
+
+✅ DOCS: 3 arquivos de referência
+   - CRITICAL_FIX_FRONTEND_API.md
+   - AÇÃO_IMEDIATA_VERCEL.md
+   - FIX_SUMMARY.txt
+
+
+PRÓXIMO PASSO (APENAS 1!)
+───────────────────────────────────────────────────────────────────────────
+
+❶ Abra: https://vercel.com/dashboard
+   → dealer-sourcing-frontend
+   → Settings → Environment Variables
+
+❷ Crie variável:
+   Key:   VITE_API_URL
+   Value: https://dealer-sourcing-api-production.up.railway.app
+
+❸ Redeploy
+   → Deployments → Redeploy do commit mais recente
+
+PRONTO! ✅ (10-15 minutos)
+
+
+TESTE (após redeploy)
+───────────────────────────────────────────────────────────────────────────
+Console do navegador (F12):
+  import.meta.env.VITE_API_URL
+  
+Deve retornar:
+  'https://dealer-sourcing-api-production.up.railway.app'
+
+Se undefined/null:
+  - Espere mais
+  - Ctrl+Shift+R (hard refresh)
+
+
+VERIFICAÇÃO LOCAL
+───────────────────────────────────────────────────────────────────────────
+npm run verify:api
+
+Status: ✅ PASSOU todas as 4 verificações
+
+
+REFERÊNCIA RÁPIDA - ANTES vs DEPOIS
+───────────────────────────────────────────────────────────────────────────
+
+┌────────────────────────────┬────────────────────────────────────────────┐
+│ ANTES ❌                    │ DEPOIS ✅                                  │
+├────────────────────────────┼────────────────────────────────────────────┤
+│ process.env.VITE_API_URL   │ import.meta.env.VITE_API_URL              │
+│ undefined (navegador)      │ 'https://...' (Vite injeta)               │
+│ API_BASE = null            │ API_BASE = 'https://...'                  │
+│ /null/auth/login → 405     │ /auth/login → 200 ✅                      │
+│ SyntaxError: '<'           │ JSON response ✅                           │
+└────────────────────────────┴────────────────────────────────────────────┘
+
+
+ARQUIVOS CRÍTICOS
+───────────────────────────────────────────────────────────────────────────
+/c/Users/renat/ThreeOn/dealer-sourcing/src/frontend/api.js
+/c/Users/renat/ThreeOn/dealer-sourcing/.env.production
+/c/Users/renat/ThreeOn/dealer-sourcing/.env.development
+/c/Users/renat/ThreeOn/dealer-sourcing/vite.config.js
+/c/Users/renat/ThreeOn/dealer-sourcing/package.json
+
+
+DOCUMENTAÇÃO
+───────────────────────────────────────────────────────────────────────────
+Detalhado:   CRITICAL_FIX_FRONTEND_API.md
+Passo-a-passo: AÇÃO_IMEDIATA_VERCEL.md
+Resumo:      FIX_SUMMARY.txt
+Rápido:      QUICK_REFERENCE.txt (este arquivo)
+
+
+═════════════════════════════════════════════════════════════════════════
+                  TUDO PRONTO! FALTA SÓ VERCEL DASHBOARD
+═════════════════════════════════════════════════════════════════════════
