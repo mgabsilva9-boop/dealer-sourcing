@@ -3,9 +3,10 @@
  * Todas as chamadas HTTP para o backend
  */
 
-// Usar variável injetada por Vite define (vite.config.js)
-// __API_URL__ é definido em tempo de build, não em tempo de runtime
-const API_BASE = typeof __API_URL__ !== 'undefined' ? __API_URL__ : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3000' : null);
+// Vite injeta automaticamente variáveis VITE_* via import.meta.env
+// Em produção: https://dealer-sourcing-api-production.up.railway.app
+// Em desenvolvimento: http://localhost:3000
+const API_BASE = import.meta.env.VITE_API_URL || 'https://dealer-sourcing-api-production.up.railway.app';
 
 class APIError extends Error {
   constructor(status, message, data) {
