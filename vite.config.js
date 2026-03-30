@@ -7,20 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: process.env.VITE_API_URL || 'http://localhost:3000',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
       }
     }
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
-    minify: 'terser',
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify('1.0.0'),
-    'process.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : 'https://dealer-sourcing-backend.onrender.com')
-    ),
+    sourcemap: false
   }
 })
