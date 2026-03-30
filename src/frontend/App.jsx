@@ -11,6 +11,7 @@ const C = {
   red: "#dc2626", redBg: "#fef2f2",
   blue: "#2563eb", blueBg: "#eff6ff",
   purple: "#7c3aed", cyan: "#0891b2",
+  header: "#0f172a", headerBorder: "#1e293b", headerText: "#f1f5f9", headerMuted: "#94a3b8",
 };
 const FONT = "-apple-system, 'SF Pro Display', 'Segoe UI', sans-serif";
 const IMGS = {
@@ -90,8 +91,8 @@ function EditField({ label, value, onChange, type }) {
 
 // ─── LOGIN ──────────────────────────────────────────────────────────
 function LoginScreen({ onLogin }) {
-  const [emailInput, setEmailInput] = useState("penteadojv1314@gmail.com");
-  const [passInput, setPassInput] = useState("Fontes13");
+  const [emailInput, setEmailInput] = useState("");
+  const [passInput, setPassInput] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -364,6 +365,7 @@ export default function App() {
   const [invFilter, setInvFilter] = useState("active");
   const [addingV, setAddingV] = useState(false);
   const [addingExp, setAddingExp] = useState(false);
+  const [invView, setInvView] = useState("lista");
   const [finSub, setFinSub] = useState("overview");
   const [balMonth, setBalMonth] = useState("2026-02");
   const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0] });
@@ -374,6 +376,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [changePassForm, setChangePassForm] = useState({ oldPass: "", newPass: "", confirmPass: "" });
   const [changePassMsg, setChangePassMsg] = useState("");
+  const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || null);
 
   // Carregar vehicles, customers e expenses do backend
   useEffect(function() {
@@ -517,6 +520,18 @@ export default function App() {
   var months = []; vehicles.forEach(function(v) { if (v.soldDate) { var m = v.soldDate.slice(0, 7); if (months.indexOf(m) === -1) months.push(m); } }); months.sort().reverse();
   var balSold = vehicles.filter(function(v) { return v.status === "sold" && v.soldDate && v.soldDate.startsWith(balMonth); });
 
+  // Kanban helpers
+  var kPipeline = ["maintenance", "available", "reserved", "sold"];
+  var kColumnMap = { maintenance: { label: "Recondicionamento", color: C.red }, available: { label: "Disponível", color: C.green }, reserved: { label: "Reservado", color: C.yellow }, sold: { label: "Vendido", color: C.blue } };
+  var moveVehicle = function(vehicleId, direction) {
+    var v = vehicles.find(x => x.id === vehicleId);
+    if (!v) return;
+    var idx = kPipeline.indexOf(v.status);
+    var newStatus = kPipeline[idx + direction];
+    if (!newStatus) return;
+    upd(vehicleId, "status", newStatus);
+  };
+
   var cP = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + vProfit(v); }, 0); };
   var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
   var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
@@ -530,20 +545,24 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
       {/* HEADER */}
-      <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
+      <div style={{ background: C.header, borderBottom: "1px solid " + C.headerBorder, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>ThreeOn</span>
+          {customLogo ? (
+            <img src={customLogo} alt="Logo" style={{ height: 28, width: 'auto', borderRadius: 4 }} />
+          ) : (
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
+          )}
+          <span style={{ fontWeight: 700, fontSize: 16, color: C.headerText }}>ThreeOn</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {canSwitch && <div style={{ display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 8, padding: 3, border: "1px solid " + C.border }}>
-            {["all", "Loja A", "Loja B"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.textDim, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
+          {canSwitch && <div style={{ display: "flex", gap: 2, background: "#1e293b", borderRadius: 8, padding: 3, border: "1px solid " + C.headerBorder }}>
+            {["all", "Loja A", "Loja B"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.headerMuted, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
           </div>}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.border }}>
-            <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: C.accent }}>{user.icon}</div>
-            <span style={{ fontSize: 12, color: C.textMid }}>{user.label}</span>
-            <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
-            <button onClick={function() { setUser(null); }} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 11 }}>Sair</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.headerBorder }}>
+            <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
+            <span style={{ fontSize: 12, color: C.headerMuted }}>{user.label}</span>
+            <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
+            <button onClick={function() { setUser(null); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11 }}>Sair</button>
           </div>
         </div>
       </div>
@@ -590,11 +609,14 @@ export default function App() {
           </div>
         </div>}
 
-        {/* INVENTORY LIST */}
+        {/* INVENTORY LIST / KANBAN */}
         {tab === "inventory" && !sv && <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Inventario --- {dispV.length} veiculos</h2>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 8, padding: 3, border: "1px solid " + C.border }}>
+                {[["lista","Lista"],["kanban","Kanban"]].map(function(item) { return <button key={item[0]} onClick={function() { setInvView(item[0]); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: invView === item[0] ? C.accent : "transparent", color: invView === item[0] ? "#fff" : C.textDim, fontSize: 11, fontWeight: 500, cursor: "pointer" }}>{item[1]}</button>; })}
+              </div>
               <div style={{ display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 8, padding: 3, border: "1px solid " + C.border }}>
                 {[["active","Ativos"],["sold","Vendidos"],["all","Todos"]].map(function(item) { return <button key={item[0]} onClick={function() { setInvFilter(item[0]); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: invFilter === item[0] ? C.accent : "transparent", color: invFilter === item[0] ? "#fff" : C.textDim, fontSize: 11, fontWeight: 500, cursor: "pointer" }}>{item[1]}</button>; })}
               </div>
@@ -602,7 +624,8 @@ export default function App() {
             </div>
           </div>
           {addingV && <VehicleForm onAdd={function(nv) { setVehicles(function(p) { return p.concat([nv]); }); setAddingV(false); }} onCancel={function() { setAddingV(false); }} />}
-          <div style={{ display: "grid", gap: 10 }}>
+
+          {invView === "lista" && <div style={{ display: "grid", gap: 10 }}>
             {dispV.map(function(v) {
               var margin = vMargin(v);
               var st = statusMap[v.status] || statusMap.available;
@@ -631,7 +654,44 @@ export default function App() {
                 </div>
               </Card>;
             })}
-          </div>
+          </div>}
+
+          {invView === "kanban" && <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+            {kPipeline.map(function(status) {
+              var col = kColumnMap[status];
+              var statusVehicles = allF.filter(function(v) { return v.status === status; });
+              return <div key={status} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span>{col.label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>({statusVehicles.length})</span>
+                </div>
+                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}>
+                  {statusVehicles.length === 0 && <div style={{ fontSize: 12, color: C.textDim, textAlign: "center", opacity: 0.5, marginTop: 20 }}>Vazio</div>}
+                  {statusVehicles.map(function(v) {
+                    var imgKey = v.make + " " + v.model;
+                    var statusIdx = kPipeline.indexOf(v.status);
+                    return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ width: "100%", height: 80, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {!imgErr[v.id] ? <img src={IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
+                        <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMid, paddingTop: 6, borderTop: "1px solid " + C.border }}>
+                        <span><strong style={{ color: vMargin(v) >= 25 ? C.green : vMargin(v) >= 15 ? C.yellow : C.red }}>{vMargin(v)}%</strong></span>
+                        <span style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green }}><strong>{v.daysInStock}d</strong></span>
+                      </div>
+                      <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
+                        {statusIdx > 0 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, -1); }} style={{ padding: "4px 8px", background: C.border, color: C.text, border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>←</button>}
+                        {statusIdx < kPipeline.length - 1 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, 1); }} style={{ padding: "4px 8px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>→</button>}
+                      </div>
+                    </Card>;
+                  })}
+                </div>
+              </div>;
+            })}
+          </div>}
         </div>}
 
         {/* VEHICLE DETAIL */}
@@ -671,6 +731,30 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Venda</span><span style={{ fontSize: 14, fontWeight: 700, color: C.green }}>{fmtFull(sv.soldPrice || sv.salePrice)}</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", borderTop: "2px solid " + C.border }}><span style={{ fontWeight: 700 }}>Lucro</span><span style={{ fontSize: 16, fontWeight: 700, color: vProfit(sv) > 0 ? C.green : C.red }}>{fmtFull(vProfit(sv))}</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Margem</span><span style={{ fontWeight: 700, color: vMargin(sv) >= 25 ? C.green : C.yellow }}>{vMargin(sv)}%</span></div>
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid " + C.border }}>
+                    <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>Breakdown de Custos</div>
+                    {function() {
+                      var costs = sv.costs || {};
+                      var total = totalCosts(sv);
+                      if (total === 0) return <div style={{ fontSize: 11, color: C.textDim }}>Sem custos</div>;
+                      var top = Object.entries(costs).sort((a,b) => (b[1]||0) - (a[1]||0)).slice(0, 3);
+                      return <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {top.map(([k,v]) => {
+                          var pct = total > 0 ? ((v/total)*100).toFixed(0) : 0;
+                          var shortKey = k === "Compra do veiculo" ? "Compra" : k.length > 15 ? k.substring(0,12)+"..." : k;
+                          return <div key={k}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginBottom: 2 }}>
+                              <span style={{ color: C.textDim }}>{shortKey}</span>
+                              <span style={{ fontWeight: 600 }}>{pct}%</span>
+                            </div>
+                            <div style={{ height: 3, background: C.borderLight, borderRadius: 1 }}>
+                              <div style={{ height: "100%", background: C.accent, borderRadius: 1, width: pct+"%" }} />
+                            </div>
+                          </div>;
+                        })}
+                      </div>;
+                    }()}
+                  </div>
                 </Card>
               </div>
               <button onClick={function() { setShowCosts(!showCosts); }} style={{ width: "100%", padding: "11px 16px", background: C.surfaceAlt, border: "1px solid " + C.border, borderRadius: showCosts ? "10px 10px 0 0" : "10px", cursor: "pointer", display: "flex", justifyContent: "space-between" }}>
@@ -818,6 +902,21 @@ export default function App() {
           <button onClick={function() { setShowSettings(false); }} style={{ background: C.surface, border: "1px solid " + C.border, color: C.textMid, padding: "7px 16px", borderRadius: 8, cursor: "pointer", marginBottom: 18, fontSize: 12 }}>Voltar</button>
           <Card style={{ padding: 26, maxWidth: 500 }}>
             <h2 style={{ margin: "0 0 24px", fontSize: 20, fontWeight: 700 }}>Configuracoes</h2>
+
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Logo da Empresa</h3>
+              {customLogo && <div style={{ marginBottom: 12, padding: 12, background: C.surfaceAlt, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <img src={customLogo} alt="Logo atual" style={{ height: 32, width: 'auto', borderRadius: 4 }} />
+                  <div style={{ fontSize: 11, color: C.textDim, marginTop: 6 }}>Logo definida</div>
+                </div>
+                <button onClick={function() { setCustomLogo(null); localStorage.removeItem('customLogo'); }} style={{ padding: "6px 12px", background: C.redBg, color: C.red, border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Remover</button>
+              </div>}
+              <label style={{ display: "block", padding: "10px 14px", border: "2px dashed " + C.border, borderRadius: 8, textAlign: "center", cursor: "pointer", fontSize: 12, color: C.textMid, transition: "all 0.2s" }}>
+                + Fazer upload de imagem (PNG, SVG, JPG)
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = function(ev) { var base64 = ev.target.result; setCustomLogo(base64); localStorage.setItem('customLogo', base64); }; reader.readAsDataURL(file); } }} />
+              </label>
+            </div>
 
             <div style={{ marginBottom: 24 }}>
               <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Alterar Senha</h3>
