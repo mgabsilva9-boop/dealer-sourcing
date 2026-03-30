@@ -13,6 +13,67 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ===== INICIALIZAR USUÁRIOS PADRÃO =====
+async function initDefaultUsers() {
+  try {
+    // 1. Garantir que a tabela users tem as colunas corretas
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
+    `);
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+    `);
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(200);
+    `);
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS dealership_id UUID;
+    `);
+
+    // 2. Criar unique constraint em email (idempotent)
+    await query(`
+      DO $$ BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'users_email_unique'
+        ) THEN
+          ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);
+        END IF;
+      END $$;
+    `);
+
+    // 3. Criar dealership BrossMotors se não existir
+    const dealershipId = '11111111-1111-1111-1111-111111111111';
+    await query(`
+      INSERT INTO dealerships (id, name, created_at, updated_at)
+      VALUES ($1, 'BrossMotors', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO NOTHING;
+    `, [dealershipId]);
+
+    // 4. Criar os 3 usuários padrão
+    const defaultUsers = [
+      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin' },
+      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono' },
+      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente' },
+    ];
+
+    for (const u of defaultUsers) {
+      const hash = await bcrypt.hash(u.password, 10);
+      await query(`
+        INSERT INTO users (email, password, name, dealership_id)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT ON CONSTRAINT users_email_unique DO NOTHING;
+      `, [u.email, hash, u.name, dealershipId]);
+    }
+
+    console.log('✅ Usuários padrão verificados/criados');
+  } catch (err) {
+    console.error('Erro ao inicializar usuários:', err.message);
+  }
+}
+
+// Executar na ativação do módulo
+initDefaultUsers();
+
 // ===== LOGIN =====
 router.post('/login', async (req, res) => {
   try {

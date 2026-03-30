@@ -97,8 +97,80 @@ async function initTables() {
   }
 }
 
+// ===== SEED DE VEÍCULOS PADRÃO =====
+async function initDefaultVehicles() {
+  try {
+    // Pegar user ID e dealership ID
+    const userResult = await query(
+      'SELECT id FROM users WHERE email = $1 LIMIT 1',
+      ['dono@brossmotors.com']
+    );
+    const dealershipResult = await query(
+      'SELECT id FROM dealerships WHERE name = $1 LIMIT 1',
+      ['BrossMotors']
+    );
+
+    if (!userResult.rows[0] || !dealershipResult.rows[0]) {
+      console.log('⏭️ Usuário ou dealership não encontrado, pulando seed de veículos');
+      return;
+    }
+
+    const userId = userResult.rows[0].id;
+    const dealershipId = dealershipResult.rows[0].id;
+
+    // Veículos padrão
+    const defaultVehicles = [
+      { make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, mileage: 72000, location: "Loja A", motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 } },
+      { make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, mileage: 56000, location: "Loja A", motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 } },
+      { make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, mileage: 42000, location: "Loja A", motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 } },
+      { make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, mileage: 37000, location: "Loja A", motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 } },
+      { make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, mileage: 52000, location: "Loja A", motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 } }
+    ];
+
+    for (const v of defaultVehicles) {
+      // Verificar se veículo já existe
+      const existsResult = await query(
+        'SELECT id FROM inventory WHERE user_id = $1 AND make = $2 AND model = $3 AND year = $4',
+        [userId, v.make, v.model, v.year]
+      );
+
+      if (existsResult.rows.length > 0) {
+        continue; // Pular se já existe
+      }
+
+      // Inserir veículo
+      const vehicleResult = await query(
+        `INSERT INTO inventory
+         (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+         RETURNING id`,
+        [userId, dealershipId, v.make, v.model, v.year, v.purchasePrice, v.salePrice, v.fipePrice, v.mileage, v.location, 'available', v.motor, v.potencia, v.features]
+      );
+
+      const vehicleId = vehicleResult.rows[0].id;
+
+      // Inserir custos
+      if (v.costs && typeof v.costs === 'object') {
+        for (const [category, amount] of Object.entries(v.costs)) {
+          if (amount > 0) {
+            await query(
+              'INSERT INTO vehicle_costs (inventory_id, category, amount) VALUES ($1, $2, $3)',
+              [vehicleId, category, amount]
+            );
+          }
+        }
+      }
+    }
+
+    console.log('✅ Veículos padrão verificados/criados');
+  } catch (error) {
+    console.error('Erro ao seed veículos:', error.message);
+  }
+}
+
 // Inicializar tabelas na ativação
 initTables();
+initDefaultVehicles();
 
 // ===== VEHICLES / INVENTORY =====
 
