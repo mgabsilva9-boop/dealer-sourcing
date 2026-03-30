@@ -11,7 +11,7 @@
   },
   "env": {
     "NODE_ENV": "production",
-    "VITE_API_URL": "https://dealer-sourcing-api.onrender.com"
+    "VITE_API_URL": "https://dealer-sourcing-api-production.up.railway.app"
   },
   "routes": [
     {
