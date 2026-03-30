@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { searchAllPlatforms } from '../utils/scraper.js';
+import { scrapeMultiplePlatforms } from '../utils/scrapers.js';
 import { query as dbQuery } from '../config/database.js';
 import { authMiddleware } from '../middleware/auth.js';
 
@@ -33,7 +33,7 @@ router.post('/query', authMiddleware, async (req, res) => {
     // Fazer busca em plataformas (async)
     console.log('⏳ Buscando em WebMotors, OLX...');
 
-    const vehicles = await searchAllPlatforms(queryText);
+    const vehicles = await scrapeMultiplePlatforms(queryText);
 
     // Salvar veículos encontrados no banco
     for (const vehicle of vehicles) {
