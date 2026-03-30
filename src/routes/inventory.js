@@ -15,8 +15,9 @@ async function initTables() {
     // Tabela de veículos do estoque
     await query(`
       CREATE TABLE IF NOT EXISTS inventory (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id),
+        dealership_id UUID NOT NULL REFERENCES dealerships(id),
         make VARCHAR(100) NOT NULL,
         model VARCHAR(100) NOT NULL,
         year INTEGER,
@@ -37,8 +38,8 @@ async function initTables() {
     // Tabela de custos/despesas por veículo
     await query(`
       CREATE TABLE IF NOT EXISTS vehicle_costs (
-        id SERIAL PRIMARY KEY,
-        inventory_id INTEGER NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        inventory_id UUID NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
         category VARCHAR(100) NOT NULL,
         amount DECIMAL(15, 2),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -48,8 +49,9 @@ async function initTables() {
     // Tabela de clientes/CRM
     await query(`
       CREATE TABLE IF NOT EXISTS customers (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id),
+        dealership_id UUID NOT NULL REFERENCES dealerships(id),
         name VARCHAR(200) NOT NULL,
         phone VARCHAR(20),
         email VARCHAR(100),
@@ -73,8 +75,9 @@ async function initTables() {
     // Tabela de despesas gerais
     await query(`
       CREATE TABLE IF NOT EXISTS expenses (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER NOT NULL REFERENCES users(id),
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id),
+        dealership_id UUID NOT NULL REFERENCES dealerships(id),
         category VARCHAR(100) NOT NULL,
         description VARCHAR(255),
         amount DECIMAL(15, 2),
