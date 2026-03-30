@@ -319,4 +319,35 @@ router.post('/:id/upload-image', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE - Deletar imagem
+router.delete('/:id/image', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validar se veículo pertence ao usuário
+    const vehicleResult = await query(
+      'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
+      [id, req.user.id],
+    );
+
+    if (vehicleResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // Deletar imagem (set NULL)
+    const result = await query(
+      'UPDATE inventory SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *',
+      [id, req.user.id],
+    );
+
+    res.json({
+      message: 'Imagem deletada com sucesso',
+      vehicle: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Erro ao deletar imagem:', error);
+    res.status(500).json({ error: 'Erro ao deletar imagem' });
+  }
+});
+
 export default router;

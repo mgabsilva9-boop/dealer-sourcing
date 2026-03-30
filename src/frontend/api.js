@@ -125,6 +125,12 @@ export const inventoryAPI = {
       body: JSON.stringify({ imageBase64 }),
     });
   },
+
+  async deleteImage(id) {
+    return fetchAPI(`/inventory/${id}/image`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ─── CRM API (Clientes)
