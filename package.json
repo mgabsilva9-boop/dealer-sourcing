@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test:production": "node test/smoke/production.test.js"
   },
+
   "keywords": [
     "dealer",
     "sourcing",
