@@ -88,6 +88,8 @@ async function initTables() {
     console.log('✅ Tabelas de inventory verificadas/criadas');
   } catch (error) {
     console.error('Erro ao criar tabelas:', error.message);
+    console.error('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    console.error('Full error:', error);
   }
 }
 

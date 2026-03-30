@@ -101,6 +101,17 @@ app.use((req, res) => {
 
 async function startServer() {
   try {
+    // Log configurações de inicialização
+    console.log('🔧 Configurações:');
+    console.log('   NODE_ENV:', process.env.NODE_ENV);
+    console.log('   PORT:', PORT);
+    console.log('   DATABASE_URL: ' + (process.env.DATABASE_URL ? '(SET)' : '(NOT SET)'));
+    if (process.env.DATABASE_URL) {
+      const dbUrl = process.env.DATABASE_URL;
+      const masked = dbUrl.split('@')[0] + '@[REDACTED]';
+      console.log('   DATABASE_URL (masked):', masked);
+    }
+
     // Testar conexão com banco (não bloqueia se falhar - MVP mode)
     try {
       const result = await pool.query('SELECT NOW()');
