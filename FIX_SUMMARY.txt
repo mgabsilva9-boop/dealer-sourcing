@@ -1,0 +1,122 @@
+═════════════════════════════════════════════════════════════════════════
+  CORREÇÃO CRÍTICA: Frontend API 405 Error - /null/auth/login
+═════════════════════════════════════════════════════════════════════════
+
+PROBLEMA
+─────────────────────────────────────────────────────────────────────────
+Erro:
+  - Failed to load resource: the server responded with a status of 405
+  - URL: /null/auth/login ← ANORMAL (começa com /null/)
+  - SyntaxError: Unexpected token '<' (HTML em vez de JSON)
+
+Causa Raiz:
+  1. api.js usava process.env.VITE_API_URL (❌ errado para client-side)
+  2. Vercel Dashboard não tinha VITE_API_URL configurada
+  3. Resultado: API_BASE = undefined | null = null
+  4. Fetch para: `/null/auth/login` → 404/405 → HTML error → SyntaxError
+
+
+SOLUÇÃO IMPLEMENTADA
+─────────────────────────────────────────────────────────────────────────
+
+1. ARQUIVO: src/frontend/api.js (linha 7)
+   ANTES: const API_BASE = process.env.VITE_API_URL || ...
+   DEPOIS: const API_BASE = import.meta.env.VITE_API_URL || ...
+   MOTIVO: process.env não funciona em navegador, Vite usa import.meta.env
+
+2. ARQUIVO: .env.production
+   ADICIONADO:
+   - VITE_API_URL=https://dealer-sourcing-api-production.up.railway.app
+   - VITE_API_TIMEOUT=10000
+   - VITE_LOG_LEVEL=error
+
+3. ARQUIVO: .env.development (já existia, apenas confirmado)
+   - VITE_API_URL=http://localhost:3000
+
+4. ARQUIVO: test/verify-api-config.js
+   - Script que valida a configuração localmente
+   - Executa: npm run verify:api
+
+5. ARQUIVO: package.json
+   - Adicionado: "verify:api": "node test/verify-api-config.js"
+
+
+PRÓXIMA AÇÃO (CRÍTICA)
+─────────────────────────────────────────────────────────────────────────
+
+Ir em: https://vercel.com/dashboard
+1. Selecionar: dealer-sourcing-frontend
+2. Settings → Environment Variables
+3. Criar nova variável:
+   Key: VITE_API_URL
+   Value: https://dealer-sourcing-api-production.up.railway.app
+   Environments: Production
+4. Salvar
+5. Redeploy (Deployments → Redeploy)
+
+TEMPO ESTIMADO: 10-15 minutos
+
+
+VERIFICAÇÃO LOCAL
+─────────────────────────────────────────────────────────────────────────
+
+Rodar localmente para confirmar setup:
+  npm run verify:api
+
+Resultado esperado:
+  ✅ PASS: Usa import.meta.env (correto)
+  ✅ PASS: VITE_API_URL definido (https://...)
+  ✅ PASS: vite.config.js referencia VITE_API_URL
+
+Status: ✅ PASSOU (todas as verificações locais OK)
+
+
+TESTE FINAL (após redeploy no Vercel)
+─────────────────────────────────────────────────────────────────────────
+
+No console do navegador (F12):
+  console.log(import.meta.env.VITE_API_URL)
+  
+Resultado esperado:
+  'https://dealer-sourcing-api-production.up.railway.app'
+
+Se mostrar undefined/null:
+  - Aguarde mais (build pode estar em progresso)
+  - Hard refresh (Ctrl+Shift+R)
+
+
+COMO FUNCIONA AGORA
+─────────────────────────────────────────────────────────────────────────
+
+Frontend Build (Vite em Vercel):
+  1. Vercel lê VITE_API_URL do Dashboard
+  2. Vite injeta em import.meta.env.VITE_API_URL
+  3. API_BASE fica = 'https://dealer-sourcing-api-production.up.railway.app'
+  4. fetchAPI('/auth/login') → 'https://.../auth/login' ✅ CORRETO
+
+
+ARQUIVOS MODIFICADOS
+─────────────────────────────────────────────────────────────────────────
+✅ src/frontend/api.js (linha 7, processo.env → import.meta.env)
+✅ .env.production (adicionadas variáveis VITE_*)
+✅ package.json (adicionado script verify:api)
+✅ test/verify-api-config.js (novo arquivo, validação)
+✅ CRITICAL_FIX_FRONTEND_API.md (documentação detalhada)
+✅ AÇÃO_IMEDIATA_VERCEL.md (guia passo a passo)
+
+
+COMMIT
+─────────────────────────────────────────────────────────────────────────
+✅ Feito: "fix: corrige conexão API frontend usando import.meta.env do Vite"
+   - Mensagem descreve a mudança e próximos passos
+
+
+STATUS
+─────────────────────────────────────────────────────────────────────────
+✅ Código corrigido
+✅ Testes locais passando
+✅ Documentação completa
+⏳ Aguardando: Configuração no Vercel Dashboard + Redeploy
+
+
+═════════════════════════════════════════════════════════════════════════
