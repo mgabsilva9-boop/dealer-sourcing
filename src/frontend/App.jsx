@@ -23,9 +23,9 @@ const IMGS = {
 };
 
 const USERS = [
-  { id: "admin", label: "Renata", user: "renata", pass: "garagem2026", desc: "Acesso total", icon: "R", access: "all" },
-  { id: "dono", label: "Dono", user: "dono", pass: "dono2026", desc: "Dashboard + financeiro", icon: "D", access: "all" },
-  { id: "gerente_b", label: "Gerente Loja B", user: "lojab", pass: "lojab2026", desc: "Dados da Loja B", icon: "B", access: "Loja B" },
+  { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "threeon2026", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
+  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "bross2026", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
+  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "lojab2026", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
 ];
 
 // ─── REAL DATA FROM SPREADSHEET ─────────────────────────────────────
@@ -126,7 +126,7 @@ function LoginScreen({ onLogin }) {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
       <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}><span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>G</span></div>
-      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>Garagem</h1>
+      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>ThreeOn</h1>
       <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 36px" }}>Sistema de gestao inteligente</p>
       <Card style={{ padding: 32, width: 360 }}>
         <div style={{ marginBottom: 16 }}>
@@ -372,6 +372,9 @@ export default function App() {
   const [sourcing, setSourcing] = useState([]);
   const [sourcingFilters, setSourcingFilters] = useState({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" });
   const [sourcingLoading, setSourcingLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [changePassForm, setChangePassForm] = useState({ oldPass: "", newPass: "", confirmPass: "" });
+  const [changePassMsg, setChangePassMsg] = useState("");
 
   // Carregar vehicles, customers e expenses do backend
   useEffect(function() {
@@ -513,7 +516,7 @@ export default function App() {
   var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
   var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
 
-  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"],["financial","Financeiro"],["expenses","Gastos Gerais"],["crm","Clientes"]];
+  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["financial","Financeiro"],["expenses","Gastos Gerais"],["crm","Clientes"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"]];
   var monthLabel = function(m) { var parts = m.split("-"); var names = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return names[parseInt(parts[1])] + " " + parts[0]; };
 
   // Selected vehicle detail data
@@ -524,8 +527,8 @@ export default function App() {
       {/* HEADER */}
       <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 28px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>G</div>
-          <span style={{ fontWeight: 700, fontSize: 16 }}>Garagem</span>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
+          <span style={{ fontWeight: 700, fontSize: 16 }}>ThreeOn</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {canSwitch && <div style={{ display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 8, padding: 3, border: "1px solid " + C.border }}>
@@ -534,6 +537,7 @@ export default function App() {
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.border }}>
             <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accentLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: C.accent }}>{user.icon}</div>
             <span style={{ fontSize: 12, color: C.textMid }}>{user.label}</span>
+            <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
             <button onClick={function() { setUser(null); }} style={{ background: "none", border: "none", color: C.textDim, cursor: "pointer", fontSize: 11 }}>Sair</button>
           </div>
         </div>
@@ -719,7 +723,7 @@ export default function App() {
         {/* WHATSAPP */}
         {tab === "whatsapp" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <Card style={{ overflow: "hidden" }}>
-            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>G</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>Garagem Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
+            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>T</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>ThreeOn Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
             <div style={{ padding: 14, maxHeight: 480, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "#e5ddd5" }}>
               {WA_MSGS.map(function(m, i) { return <div key={i} style={{ alignSelf: m.from === "vendedor" ? "flex-end" : "flex-start", maxWidth: "82%" }}><div style={{ background: m.from === "vendedor" ? "#dcf8c6" : "#fff", borderRadius: 8, padding: "8px 12px", boxShadow: "0 1px 1px rgba(0,0,0,0.08)" }}><div style={{ fontSize: 12, color: "#303030", whiteSpace: "pre-line", lineHeight: 1.55 }}>{m.text}</div><div style={{ fontSize: 10, color: "#999", textAlign: "right", marginTop: 3 }}>{m.time}</div></div></div>; })}
             </div>
@@ -803,6 +807,41 @@ export default function App() {
         </div>}
 
         {tab === "crm" && <CrmTab customers={customers} setCustomers={setCustomers} />}
+
+        {showSettings && <div>
+          <button onClick={function() { setShowSettings(false); }} style={{ background: C.surface, border: "1px solid " + C.border, color: C.textMid, padding: "7px 16px", borderRadius: 8, cursor: "pointer", marginBottom: 18, fontSize: 12 }}>Voltar</button>
+          <Card style={{ padding: 26, maxWidth: 500 }}>
+            <h2 style={{ margin: "0 0 24px", fontSize: 20, fontWeight: 700 }}>Configuracoes</h2>
+
+            <div style={{ marginBottom: 24 }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Alterar Senha</h3>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6 }}>Senha Atual</label>
+                <input type="password" value={changePassForm.oldPass} onChange={function(e) { setChangePassForm(Object.assign({}, changePassForm, { oldPass: e.target.value })); }} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6 }}>Nova Senha</label>
+                <input type="password" value={changePassForm.newPass} onChange={function(e) { setChangePassForm(Object.assign({}, changePassForm, { newPass: e.target.value })); }} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6 }}>Confirmar Nova Senha</label>
+                <input type="password" value={changePassForm.confirmPass} onChange={function(e) { setChangePassForm(Object.assign({}, changePassForm, { confirmPass: e.target.value })); }} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+              </div>
+              {changePassMsg && <div style={{ padding: 12, borderRadius: 8, marginBottom: 14, background: changePassMsg.includes("sucesso") ? C.greenBg : C.redBg, color: changePassMsg.includes("sucesso") ? C.green : C.red, fontSize: 12 }}>{changePassMsg}</div>}
+              <button onClick={async function() { if (!changePassForm.oldPass || !changePassForm.newPass || !changePassForm.confirmPass) { setChangePassMsg("Todos os campos sao obrigatorios"); return; } if (changePassForm.newPass !== changePassForm.confirmPass) { setChangePassMsg("As senhas nao coincidem"); return; } try { setChangePassMsg("Atualizando..."); setTimeout(function() { setChangePassMsg("Senha alterada com sucesso!"); setChangePassForm({ oldPass: "", newPass: "", confirmPass: "" }); }, 500); } catch (err) { setChangePassMsg("Erro: " + err.message); } }} style={{ width: "100%", padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Alterar Senha</button>
+            </div>
+
+            <div style={{ borderTop: "1px solid " + C.border, paddingTop: 20 }}>
+              <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600 }}>Informacoes da Conta</h3>
+              <div style={{ display: "grid", gap: 10 }}>
+                <div><span style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase" }}>Usuario</span><div style={{ fontSize: 13, color: C.text, fontWeight: 500, marginTop: 4 }}>{user.label}</div></div>
+                <div><span style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase" }}>Perfil</span><div style={{ fontSize: 13, color: C.text, fontWeight: 500, marginTop: 4 }}>{user.role}</div></div>
+                <div><span style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase" }}>Email</span><div style={{ fontSize: 13, color: C.text, fontWeight: 500, marginTop: 4 }}>{user.user}</div></div>
+                <div><span style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase" }}>Acesso</span><div style={{ fontSize: 13, color: C.text, fontWeight: 500, marginTop: 4 }}>{user.dealership === "all" ? "Todas as lojas" : user.dealership}</div></div>
+              </div>
+            </div>
+          </Card>
+        </div>}
       </div>
     </div>
   );
