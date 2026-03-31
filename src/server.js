@@ -20,6 +20,8 @@ import expensesRoutes from './routes/expenses.js';
 import sourcingRoutes from './routes/sourcing.js';
 import metricsRoutes from './routes/metrics.js';
 import cacheRoutes from './routes/cache.js';
+import financialRoutes from './routes/financial.js';
+import ipvaRoutes from './routes/ipva.js';
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -106,6 +108,8 @@ app.use('/inventory', inventoryRoutes);
 app.use('/crm', crmRoutes);
 app.use('/expenses', expensesRoutes);
 app.use('/sourcing', sourcingRoutes);
+app.use('/financial', financialRoutes);
+app.use('/ipva', ipvaRoutes);
 
 // ===== ERROR HANDLING =====
 
@@ -171,3 +175,4 @@ startServer();
 export { app, startServer };
 export default app;
 // Redeploy forced at Mon Mar 30 23:38:02     2026
+# Forçar redeploy - Tue Mar 31 19:41:21     2026
