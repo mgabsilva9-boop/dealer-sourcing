@@ -412,8 +412,32 @@ export default function App() {
   const [newCostKey, setNewCostKey] = useState("");
   const [newCostVal, setNewCostVal] = useState(0);
 
+  // Restaurar sessão ao carregar a página (se houver token no localStorage)
+  useEffect(function() {
+    var token = localStorage.getItem('token');
+    if (!token) return;
+    (async function() {
+      try {
+        var me = await authAPI.me();
+        if (me && me.id) {
+          setUser({
+            id: me.id,
+            name: me.name,
+            email: me.email,
+            dealership_id: me.dealership_id,
+            label: me.name,
+            access: "all"
+          });
+        }
+      } catch (e) {
+        localStorage.removeItem('token');
+      }
+    })();
+  }, []);
+
   // Carregar vehicles, customers e expenses do backend
   useEffect(function() {
+    if (!user) return;
     (async function() {
       try {
         const vehiclesData = await inventoryAPI.list();

@@ -192,7 +192,7 @@ router.post('/register', async (req, res) => {
 // ===== DADOS DO USUÁRIO ATUAL =====
 router.get('/me', authMiddleware, async (req, res) => {
   try {
-    const result = await query('SELECT id, name, email FROM users WHERE id = $1', [req.user.id]);
+    const result = await query('SELECT id, name, email, dealership_id FROM users WHERE id = $1', [req.user.id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });

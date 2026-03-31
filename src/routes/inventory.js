@@ -208,9 +208,14 @@ initDefaultVehicles().catch(err => {
 
 // ===== VEHICLES / INVENTORY =====
 
-// GET - Listar todos os veículos com custos agregados
+// GET - Listar todos os veículos com custos agregados (por dealership)
 router.get('/list', authMiddleware, async (req, res) => {
   try {
+    const dealershipId = req.user.dealership_id;
+    if (!dealershipId) {
+      return res.status(400).json({ error: 'dealership_id ausente no token' });
+    }
+
     const result = await query(`
       SELECT
         i.*,
@@ -221,10 +226,10 @@ router.get('/list', authMiddleware, async (req, res) => {
         ) AS costs_json
       FROM inventory i
       LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
-      WHERE i.user_id = $1
+      WHERE i.dealership_id = $1
       GROUP BY i.id
       ORDER BY i.created_at DESC
-    `, [req.user.id]);
+    `, [dealershipId]);
 
     const vehicles = result.rows.map(normalizeVehicle);
 

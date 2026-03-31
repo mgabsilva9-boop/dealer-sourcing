@@ -66,6 +66,10 @@ export const authAPI = {
   logout() {
     localStorage.removeItem('token');
   },
+
+  async me() {
+    return fetchAPI('/auth/me');
+  },
 };
 
 // ─── VEHICLES API (Sourcing - carros de interesse)
