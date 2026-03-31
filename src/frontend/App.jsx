@@ -134,15 +134,20 @@ function LoginScreen({ onLogin }) {
     try {
       // Tentar login na API
       const result = await authAPI.login(emailInput.trim(), passInput);
-      // Se sucesso, usar dados do usuário retornado
-      const user = result.user || {
-        id: result.id || 1,
-        label: result.name || emailInput,
-        user: emailInput,
-        pass: passInput,
-        access: "all"
-      };
-      onLogin(user);
+      // Se sucesso, usar dados do usuário retornado com dealership_id
+      if (result.user && result.user.id) {
+        const user = {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email,
+          dealership_id: result.user.dealership_id,
+          label: result.user.name,
+          access: "all"
+        };
+        onLogin(user);
+      } else {
+        setError("Resposta do servidor inválida");
+      }
     } catch (err) {
       // Fallback: validação local se API não responder
       const found = USERS.find(function(u) { return u.user === emailInput.toLowerCase().trim() && u.pass === passInput; });
@@ -415,11 +420,15 @@ export default function App() {
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
   useEffect(function() {
     var token = localStorage.getItem('token');
+    console.log('[useEffect] Session restore: token present?', !!token);
     if (!token) return;
     (async function() {
       try {
+        console.log('[useEffect] Calling authAPI.me()...');
         var me = await authAPI.me();
+        console.log('[useEffect] Got user data:', me);
         if (me && me.id) {
+          console.log('[useEffect] Setting user with dealership_id:', me.dealership_id);
           setUser({
             id: me.id,
             name: me.name,
@@ -430,6 +439,7 @@ export default function App() {
           });
         }
       } catch (e) {
+        console.error('[useEffect] Error restoring session:', e);
         localStorage.removeItem('token');
       }
     })();
