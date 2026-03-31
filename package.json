@@ -1,6 +1,6 @@
 {
   "name": "dealer-sourcing-bot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Bot de sourcing interno para dealer de carros premium",
   "main": "src/server.js",
   "type": "module",
