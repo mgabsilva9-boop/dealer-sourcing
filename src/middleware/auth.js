@@ -17,7 +17,8 @@ export const authMiddleware = (req, res, next) => {
     const token = authHeader.substring(7); // Remove "Bearer "
 
     // Verificar e decodificar token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET || 'SECRET_FALLBACK_UNSAFE_DEVELOPMENT_ONLY';
+    const decoded = jwt.verify(token, jwtSecret);
 
     // Extrair user ID from JWT claims (custom 'id' field from auth.js, fallback to standard 'sub' or 'user_id')
     const userId = decoded.id || decoded.sub || decoded.user_id;

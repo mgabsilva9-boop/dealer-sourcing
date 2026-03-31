@@ -106,13 +106,14 @@ router.post('/login', async (req, res) => {
     console.log('[LOGIN] User found:', { id: user.id, email: user.email, dealership_id: user.dealership_id });
 
     // Gerar JWT com dealership_id (crítico para RLS)
+    const jwtSecret = process.env.JWT_SECRET || 'SECRET_FALLBACK_UNSAFE_DEVELOPMENT_ONLY';
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         dealership_id: user.dealership_id, // CRÍTICO para RLS (AC6 test)
       },
-      process.env.JWT_SECRET,
+      jwtSecret,
       { expiresIn: '7d' },
     );
 
