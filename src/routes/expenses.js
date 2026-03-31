@@ -15,8 +15,8 @@ const router = express.Router();
 router.get('/list', authMiddleware, async (req, res) => {
   try {
     const result = await query(
-      'SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC',
-      [req.user.id],
+      'SELECT * FROM expenses WHERE dealership_id = $1 ORDER BY date DESC',
+      [req.user.dealership_id],
     );
 
     res.json({
@@ -68,8 +68,8 @@ router.post('/create', authMiddleware, async (req, res) => {
 router.get('/summary/by-category', authMiddleware, async (req, res) => {
   try {
     const result = await query(
-      'SELECT category, SUM(amount) as total, COUNT(*) as count FROM expenses WHERE user_id = $1 GROUP BY category',
-      [req.user.id],
+      'SELECT category, SUM(amount) as total, COUNT(*) as count FROM expenses WHERE dealership_id = $1 GROUP BY category',
+      [req.user.dealership_id],
     );
 
     res.json({
@@ -87,8 +87,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const result = await query(
-      'SELECT * FROM expenses WHERE id = $1 AND user_id = $2',
-      [id, req.user.id],
+      'SELECT * FROM expenses WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -116,9 +116,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
            status = COALESCE($4, status),
            date = COALESCE($5, date),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $6 AND user_id = $7
+       WHERE id = $6 AND dealership_id = $7
        RETURNING *`,
-      [category, description, amount, status, date, id, req.user.id],
+      [category, description, amount, status, date, id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -141,8 +141,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const result = await query(
-      'DELETE FROM expenses WHERE id = $1 AND user_id = $2 RETURNING id',
-      [id, req.user.id],
+      'DELETE FROM expenses WHERE id = $1 AND dealership_id = $2 RETURNING id',
+      [id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {

@@ -5,6 +5,7 @@
 
 import express from 'express';
 import * as redis from '../lib/redis.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -27,9 +28,9 @@ router.get('/health', async (req, res) => {
 /**
  * DELETE /api/cache/flush
  * Clears all cache (for testing/admin)
- * Requires authentication in production
+ * Requer autenticação JWT
  */
-router.delete('/flush', async (req, res) => {
+router.delete('/flush', authMiddleware, async (req, res) => {
   try {
     const success = await redis.flushDb();
     if (success) {

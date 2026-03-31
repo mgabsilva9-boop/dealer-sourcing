@@ -15,8 +15,8 @@ const router = express.Router();
 router.get('/list', authMiddleware, async (req, res) => {
   try {
     const result = await query(
-      'SELECT * FROM customers WHERE user_id = $1 ORDER BY created_at DESC',
-      [req.user.id],
+      'SELECT * FROM customers WHERE dealership_id = $1 ORDER BY created_at DESC',
+      [req.user.dealership_id],
     );
 
     res.json({
@@ -80,8 +80,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const result = await query(
-      'SELECT * FROM customers WHERE id = $1 AND user_id = $2',
-      [id, req.user.id],
+      'SELECT * FROM customers WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -119,9 +119,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
            referral = COALESCE($14, referral),
            contact_pref = COALESCE($15, contact_pref),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $16 AND user_id = $17
+       WHERE id = $16 AND dealership_id = $17
        RETURNING *`,
-      [name, phone, email, cpf, vehicleBought, purchaseDate, purchaseValue, notes, style, region, collector, birthday, profession, referral, contactPref, id, req.user.id],
+      [name, phone, email, cpf, vehicleBought, purchaseDate, purchaseValue, notes, style, region, collector, birthday, profession, referral, contactPref, id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -144,8 +144,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const result = await query(
-      'DELETE FROM customers WHERE id = $1 AND user_id = $2 RETURNING id',
-      [id, req.user.id],
+      'DELETE FROM customers WHERE id = $1 AND dealership_id = $2 RETURNING id',
+      [id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {

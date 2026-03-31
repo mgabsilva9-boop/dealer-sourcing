@@ -416,6 +416,8 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState(localStorage.getItem('customLogo') || null);
   const [newCostKey, setNewCostKey] = useState("");
   const [newCostVal, setNewCostVal] = useState(0);
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverCol, setDragOverCol] = useState(null);
 
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
   useEffect(function() {
@@ -657,6 +659,11 @@ export default function App() {
     upd(vehicleId, "status", newStatus);
   };
 
+  var moveVehicleToStatus = function(vehicleId, newStatus) {
+    if (!newStatus) return;
+    upd(vehicleId, "status", newStatus);
+  };
+
   var cP = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + vProfit(v); }, 0); };
   var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
   var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
@@ -834,7 +841,7 @@ export default function App() {
               var imgKey = v.make + " " + v.model;
               return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", display: "flex", overflow: "hidden", opacity: v.status === "sold" ? 0.7 : 1 }}>
                 <div style={{ width: 150, minHeight: 100, flexShrink: 0, background: C.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  {!imgErr[v.id] ? <img src={IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
+                  {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
                 </div>
                 <div style={{ flex: 1, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ flex: 2 }}>
@@ -862,7 +869,7 @@ export default function App() {
             {kPipeline.map(function(status) {
               var col = kColumnMap[status];
               var statusVehicles = allF.filter(function(v) { return v.status === status; });
-              return <div key={status} style={{ background: C.surface, border: "1px solid " + C.border, borderRadius: 10, overflow: "hidden" }}>
+              return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) { e.preventDefault(); var vehicleId = e.dataTransfer.getData('vehicleId'); if (vehicleId) { var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; }); setDragOverCol(null); setDraggingId(null); moveVehicleToStatus(vehicleId, status); } }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
                 <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>{col.label}</span>
                   <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>({statusVehicles.length})</span>
@@ -872,23 +879,25 @@ export default function App() {
                   {statusVehicles.map(function(v) {
                     var imgKey = v.make + " " + v.model;
                     var statusIdx = kPipeline.indexOf(v.status);
-                    return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ width: "100%", height: 80, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {!imgErr[v.id] ? <img src={IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
-                        <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMid, paddingTop: 6, borderTop: "1px solid " + C.border }}>
-                        <span><strong style={{ color: vMargin(v) >= 25 ? C.green : vMargin(v) >= 15 ? C.yellow : C.red }}>{vMargin(v)}%</strong></span>
-                        <span style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green }}><strong>{v.daysInStock}d</strong></span>
-                      </div>
-                      <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
-                        {statusIdx > 0 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, -1); }} style={{ padding: "4px 8px", background: C.border, color: C.text, border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>←</button>}
-                        {statusIdx < kPipeline.length - 1 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, 1); }} style={{ padding: "4px 8px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>→</button>}
-                      </div>
-                    </Card>;
+                    return <div key={v.id} draggable={true} onDragStart={function(e) { e.dataTransfer.setData('vehicleId', String(v.id)); setDraggingId(v.id); }} onDragEnd={function() { setDraggingId(null); setDragOverCol(null); }} onClick={function() { setSelV(v); }} style={{ cursor: "grab", opacity: draggingId === v.id ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
+                      <Card style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ width: "100%", height: 80, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
+                          <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMid, paddingTop: 6, borderTop: "1px solid " + C.border }}>
+                          <span><strong style={{ color: vMargin(v) >= 25 ? C.green : vMargin(v) >= 15 ? C.yellow : C.red }}>{vMargin(v)}%</strong></span>
+                          <span style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green }}><strong>{v.daysInStock}d</strong></span>
+                        </div>
+                        <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
+                          {statusIdx > 0 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, -1); }} style={{ padding: "4px 8px", background: C.border, color: C.text, border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>←</button>}
+                          {statusIdx < kPipeline.length - 1 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, 1); }} style={{ padding: "4px 8px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>→</button>}
+                        </div>
+                      </Card>
+                    </div>;
                   })}
                 </div>
               </div>;
@@ -901,7 +910,7 @@ export default function App() {
           <button onClick={function() { setSelV(null); setShowCosts(false); }} style={{ background: C.surface, border: "1px solid " + C.border, color: C.textMid, padding: "7px 16px", borderRadius: 8, cursor: "pointer", marginBottom: 18, fontSize: 12 }}>Voltar</button>
           <Card style={{ overflow: "hidden" }}>
             <div style={{ height: 160, background: C.surfaceAlt, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-              {!imgErr[sv.id] ? <img src={IMGS[sv.make + " " + sv.model] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: C.textDim }}>Sem foto</span>}
+              {!imgErr[sv.id] ? <img src={sv.imageUrl || IMGS[sv.make + " " + sv.model] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: C.textDim }}>Sem foto</span>}
               <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); await inventoryAPI.uploadImage(sv.id, base64); alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
               <label htmlFor={"img-" + sv.id} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: 600, opacity: 0, transition: "opacity 0.2s ease", zIndex: 10 }} onMouseEnter={function(e) { e.target.style.opacity = 1; }} onMouseLeave={function(e) { e.target.style.opacity = 0; }}>Alterar foto</label>
               {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { await inventoryAPI.deleteImage(sv.id); setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 8, right: 8, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
@@ -1185,7 +1194,7 @@ export default function App() {
                 <input type="password" value={changePassForm.confirmPass} onChange={function(e) { setChangePassForm(Object.assign({}, changePassForm, { confirmPass: e.target.value })); }} style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
               </div>
               {changePassMsg && <div style={{ padding: 12, borderRadius: 8, marginBottom: 14, background: changePassMsg.includes("sucesso") ? C.greenBg : C.redBg, color: changePassMsg.includes("sucesso") ? C.green : C.red, fontSize: 12 }}>{changePassMsg}</div>}
-              <button onClick={async function() { if (!changePassForm.oldPass || !changePassForm.newPass || !changePassForm.confirmPass) { setChangePassMsg("Todos os campos sao obrigatorios"); return; } if (changePassForm.newPass !== changePassForm.confirmPass) { setChangePassMsg("As senhas nao coincidem"); return; } try { setChangePassMsg("Atualizando..."); setTimeout(function() { setChangePassMsg("Senha alterada com sucesso!"); setChangePassForm({ oldPass: "", newPass: "", confirmPass: "" }); }, 500); } catch (err) { setChangePassMsg("Erro: " + err.message); } }} style={{ width: "100%", padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Alterar Senha</button>
+              <button onClick={async function() { if (!changePassForm.oldPass || !changePassForm.newPass || !changePassForm.confirmPass) { setChangePassMsg("Todos os campos sao obrigatorios"); return; } if (changePassForm.newPass !== changePassForm.confirmPass) { setChangePassMsg("As senhas nao coincidem"); return; } try { setChangePassMsg("Atualizando..."); await authAPI.changePassword(changePassForm.oldPass, changePassForm.newPass); setChangePassMsg("Senha alterada com sucesso!"); setChangePassForm({ oldPass: "", newPass: "", confirmPass: "" }); } catch (err) { setChangePassMsg("Erro: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ width: "100%", padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Alterar Senha</button>
             </div>
 
             <div style={{ borderTop: "1px solid " + C.border, paddingTop: 20 }}>

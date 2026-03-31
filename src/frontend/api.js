@@ -70,6 +70,13 @@ export const authAPI = {
   async me() {
     return fetchAPI('/auth/me');
   },
+
+  async changePassword(currentPassword, newPassword) {
+    return fetchAPI('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
 };
 
 // ─── VEHICLES API (Sourcing - carros de interesse)

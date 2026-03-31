@@ -306,8 +306,8 @@ router.get('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const vehicleResult = await query(
-      'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
-      [id, req.user.id],
+      'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
     );
 
     if (vehicleResult.rows.length === 0) {
@@ -355,9 +355,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
            potencia = COALESCE($11, potencia),
            features = COALESCE($12, features),
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $13 AND user_id = $14
+       WHERE id = $13 AND dealership_id = $14
        RETURNING *`,
-      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.id],
+      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -411,8 +411,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
 
     const result = await query(
-      'DELETE FROM inventory WHERE id = $1 AND user_id = $2 RETURNING id',
-      [id, req.user.id],
+      'DELETE FROM inventory WHERE id = $1 AND dealership_id = $2 RETURNING id',
+      [id, req.user.dealership_id],
     );
 
     if (result.rows.length === 0) {
@@ -434,10 +434,10 @@ router.post('/:id/upload-image', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const { imageBase64, imageUrl } = req.body;
 
-    // Validar se veículo pertence ao usuário
+    // Validar se veículo pertence à loja (dealership)
     const vehicleResult = await query(
-      'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
-      [id, req.user.id],
+      'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
     );
 
     if (vehicleResult.rows.length === 0) {
@@ -458,8 +458,8 @@ router.post('/:id/upload-image', authMiddleware, async (req, res) => {
 
     // Atualizar veículo com URL da imagem
     const result = await query(
-      'UPDATE inventory SET image_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND user_id = $3 RETURNING *',
-      [finalImageUrl, id, req.user.id],
+      'UPDATE inventory SET image_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND dealership_id = $3 RETURNING *',
+      [finalImageUrl, id, req.user.dealership_id],
     );
 
     res.json({
@@ -476,11 +476,12 @@ router.post('/:id/upload-image', authMiddleware, async (req, res) => {
 router.delete('/:id/image', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('[DELETE /:id/image] Deletando imagem do veículo', id);
 
-    // Validar se veículo pertence ao usuário
+    // Validar se veículo pertence à loja (dealership)
     const vehicleResult = await query(
-      'SELECT * FROM inventory WHERE id = $1 AND user_id = $2',
-      [id, req.user.id],
+      'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
     );
 
     if (vehicleResult.rows.length === 0) {
@@ -489,8 +490,8 @@ router.delete('/:id/image', authMiddleware, async (req, res) => {
 
     // Deletar imagem (set NULL)
     const result = await query(
-      'UPDATE inventory SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2 RETURNING *',
-      [id, req.user.id],
+      'UPDATE inventory SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND dealership_id = $2 RETURNING *',
+      [id, req.user.dealership_id],
     );
 
     res.json({

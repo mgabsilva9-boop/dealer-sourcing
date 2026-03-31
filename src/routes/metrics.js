@@ -8,14 +8,16 @@
 
 import express from 'express';
 import { poolMetrics } from '../config/database.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
 /**
  * GET /metrics
  * Retorna métricas de conexão do pool PostgreSQL
+ * Requer autenticação JWT
  */
-router.get('/', (req, res) => {
+router.get('/', authMiddleware, (req, res) => {
   const now = Date.now();
   const uptime = now - poolMetrics.lastResetTime;
   const utilization = (poolMetrics.activeConnections / 20) * 100;
@@ -54,8 +56,9 @@ router.get('/', (req, res) => {
 /**
  * GET /metrics/detailed
  * Métricas detalhadas com recomendações
+ * Requer autenticação JWT
  */
-router.get('/detailed', (req, res) => {
+router.get('/detailed', authMiddleware, (req, res) => {
   const utilization = (poolMetrics.activeConnections / 20) * 100;
 
   let recommendation = 'Pool is healthy. No action needed.';

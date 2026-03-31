@@ -49,11 +49,11 @@ async function initDefaultUsers() {
       ON CONFLICT (id) DO NOTHING;
     `, [dealershipId]);
 
-    // 4. Criar os 3 usuários padrão
+    // 4. Criar os 3 usuários padrão — senhas carregadas de env vars (NUNCA hardcoded)
     const defaultUsers = [
-      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin' },
-      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono' },
-      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente' },
+      { email: 'admin@threeon.com', password: process.env.DEFAULT_ADMIN_PASS || 'ADMIN_PASS_NOT_SET', name: 'ThreeON Admin' },
+      { email: 'dono@brossmotors.com', password: process.env.DEFAULT_DONO_PASS || 'DONO_PASS_NOT_SET', name: 'BrossMotors Dono' },
+      { email: 'lojab@brossmotors.com', password: process.env.DEFAULT_LOJAB_PASS || 'LOJAB_PASS_NOT_SET', name: 'Loja B Gerente' },
     ];
 
     for (const u of defaultUsers) {
@@ -102,16 +102,24 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
 
+    // Debug: Log user data para verificar dealership_id
+    console.log('[LOGIN] User found:', { id: user.id, email: user.email, dealership_id: user.dealership_id });
+
     // Gerar JWT com dealership_id (crítico para RLS)
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
-        dealership_id: user.dealership_id, // CRÍTICO para RLS
+        dealership_id: user.dealership_id, // CRÍTICO para RLS (AC6 test)
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' },
     );
+
+    console.log('[LOGIN] Token created with dealership_id:', {
+      userId: user.id,
+      dealership_id: user.dealership_id,
+    });
 
     res.json({
       token,
@@ -211,9 +219,58 @@ router.post('/logout', authMiddleware, (req, res) => {
   res.json({ message: 'Logout realizado com sucesso' });
 });
 
-// ===== SEED DEFAULT USERS (Development/Emergency) =====
+// ===== ALTERAR SENHA =====
+router.put('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Validar inputs
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Senha atual e nova são obrigatórias' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Nova senha deve ter pelo menos 6 caracteres' });
+    }
+
+    // Buscar usuário atual
+    const result = await query('SELECT password FROM users WHERE id = $1', [req.user.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    const user = result.rows[0];
+
+    // Validar senha atual
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ error: 'Senha atual incorreta' });
+    }
+
+    // Hash da nova senha
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Atualizar no banco
+    await query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, req.user.id]);
+
+    res.json({ message: 'Senha alterada com sucesso' });
+  } catch (error) {
+    console.error('Erro ao alterar senha:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// ===== SEED DEFAULT USERS (Development/Emergency) — REQUER SECRET =====
 router.post('/seed-default-users', async (req, res) => {
   try {
+    // Validar secret header (CRITICO: proteger contra acesso não autorizado)
+    const adminSecret = req.headers['x-admin-secret'];
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      console.warn('⚠️ Tentativa de acesso ao /seed-default-users sem secret válido');
+      return res.status(403).json({ error: 'Acesso negado: secret inválido' });
+    }
     // 1. Garantir que a tabela users tem as colunas corretas
     await query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
@@ -247,11 +304,11 @@ router.post('/seed-default-users', async (req, res) => {
       ON CONFLICT (id) DO NOTHING;
     `, [dealershipId]);
 
-    // 4. Criar os 3 usuários padrão
+    // 4. Criar os 3 usuários padrão — senhas carregadas de env vars (NUNCA hardcoded)
     const defaultUsers = [
-      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin' },
-      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono' },
-      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente' },
+      { email: 'admin@threeon.com', password: process.env.DEFAULT_ADMIN_PASS || 'ADMIN_PASS_NOT_SET', name: 'ThreeON Admin' },
+      { email: 'dono@brossmotors.com', password: process.env.DEFAULT_DONO_PASS || 'DONO_PASS_NOT_SET', name: 'BrossMotors Dono' },
+      { email: 'lojab@brossmotors.com', password: process.env.DEFAULT_LOJAB_PASS || 'LOJAB_PASS_NOT_SET', name: 'Loja B Gerente' },
     ];
 
     const created = [];

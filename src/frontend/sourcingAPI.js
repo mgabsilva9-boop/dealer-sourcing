@@ -6,9 +6,6 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 5000;
 
-// Test JWT Token (will be replaced with real authentication in Phase 5+)
-const TEST_JWT = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJpYXQiOjE2Nzg3OTIwMDB9.test';
-
 export class APIError extends Error {
   constructor(status, message, data) {
     super(message);
@@ -19,7 +16,7 @@ export class APIError extends Error {
 
 // Generic fetch wrapper with timeout
 async function fetchAPI(endpoint, options = {}) {
-  const token = localStorage.getItem('sourcingToken') || TEST_JWT;
+  const token = localStorage.getItem('token');
   
   const headers = {
     'Content-Type': 'application/json',
@@ -124,31 +121,24 @@ export const sourcingAPI = {
 // Authentication helper
 export const authAPI = {
   /**
-   * Set authentication token (for future real JWT implementation)
+   * Set authentication token (uses same token as main app)
    */
   setToken(token) {
-    localStorage.setItem('sourcingToken', token);
+    localStorage.setItem('token', token);
   },
 
   /**
-   * Get current token
+   * Get current token from main app localStorage
    */
   getToken() {
-    return localStorage.getItem('sourcingToken') || TEST_JWT;
+    return localStorage.getItem('token');
   },
 
   /**
    * Clear authentication
    */
   logout() {
-    localStorage.removeItem('sourcingToken');
-  },
-
-  /**
-   * Use test token (MVP testing)
-   */
-  useTestToken() {
-    localStorage.setItem('sourcingToken', TEST_JWT);
+    localStorage.removeItem('token');
   },
 };
 
