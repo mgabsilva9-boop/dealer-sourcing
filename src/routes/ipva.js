@@ -1,0 +1,253 @@
+/**
+ * IPVA Tracking Routes
+ * Registro e acompanhamento de IPVA por veículo
+ */
+
+import express from 'express';
+import { pool } from '../config/database.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { calculateIPVA } from '../lib/financial-calculations.js';
+
+const router = express.Router();
+
+// Middleware: autenticação em todas as rotas
+router.use(authenticateToken);
+
+// ============================================
+// POST /ipva/vehicle/:id — Criar IPVA
+// ============================================
+
+router.post('/vehicle/:id', async (req, res) => {
+  try {
+    const { id: vehicleId } = req.params;
+    const { plate, state, vehicle_value } = req.body;
+    const dealershipId = req.user.dealership_id;
+
+    // Validar entrada
+    if (!plate || !state || !vehicle_value) {
+      return res.status(400).json({ error: 'plate, state, vehicle_value são obrigatórios' });
+    }
+
+    // Verificar se veículo pertence a esta dealership
+    const vehicleCheck = await pool.query(
+      'SELECT id FROM vehicles WHERE id = $1 AND dealership_id = $2',
+      [vehicleId, dealershipId]
+    );
+
+    if (vehicleCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // FIX SEC-001: Verificar se já existe IPVA para este veículo este ano
+    const existingIPVA = await pool.query(
+      'SELECT id FROM ipva_tracking WHERE vehicle_id = $1 AND EXTRACT(YEAR FROM due_date) = $2',
+      [vehicleId, new Date().getFullYear()]
+    );
+
+    if (existingIPVA.rows.length > 0) {
+      return res.status(409).json({
+        error: 'IPVA already exists for this vehicle this year',
+        existing_ipva_id: existingIPVA.rows[0].id
+      });
+    }
+
+    // Calcular IPVA
+    const { aliquota, ipva_due, due_date, status } = calculateIPVA(state, vehicle_value);
+
+    // Inserir no banco
+    const query = `
+      INSERT INTO ipva_tracking (vehicle_id, dealership_id, plate, state, vehicle_value, aliquota, ipva_due, due_date, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [
+      vehicleId,
+      dealershipId,
+      plate,
+      state,
+      vehicle_value,
+      aliquota,
+      ipva_due,
+      due_date,
+      status,
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('❌ Erro ao criar IPVA:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// PUT /ipva/:id/mark-paid — Marcar como Pago
+// ============================================
+
+router.put('/:id/mark-paid', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dealershipId = req.user.dealership_id;
+
+    const query = `
+      UPDATE ipva_tracking
+      SET paid_at = NOW(), status = 'paid'
+      WHERE id = $1 AND dealership_id = $2
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, [id, dealershipId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'IPVA não encontrado' });
+    }
+
+    res.json({ message: 'IPVA marcado como pago', ipva: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Erro ao marcar IPVA como pago:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// GET /ipva/summary — Resumo de IPVA
+// ============================================
+
+router.get('/summary', async (req, res) => {
+  try {
+    const dealershipId = req.user.dealership_id;
+
+    const query = `
+      SELECT
+        status,
+        COUNT(*) as count,
+        SUM(ipva_due) as total_due,
+        MIN(due_date) as nearest_due_date
+      FROM ipva_tracking
+      WHERE dealership_id = $1
+      GROUP BY status
+    `;
+
+    const result = await pool.query(query, [dealershipId]);
+
+    // Agrupar por status
+    const summary = {
+      paid: { count: 0, total: 0 },
+      pending: { count: 0, total: 0 },
+      urgent: { count: 0, total: 0 },
+    };
+
+    result.rows.forEach((row) => {
+      summary[row.status] = {
+        count: parseInt(row.count) || 0,
+        total: parseInt(row.total_due) || 0,
+      };
+    });
+
+    res.json(summary);
+  } catch (error) {
+    console.error('❌ Erro ao buscar resumo de IPVA:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// GET /ipva/list — Listar todos os IPVAs
+// ============================================
+
+router.get('/list', async (req, res) => {
+  try {
+    const dealershipId = req.user.dealership_id;
+    const { status } = req.query; // Filtro opcional por status
+
+    let query = `
+      SELECT
+        i.*,
+        v.make, v.model, v.year
+      FROM ipva_tracking i
+      LEFT JOIN vehicles v ON i.vehicle_id = v.id
+      WHERE i.dealership_id = $1
+    `;
+
+    const params = [dealershipId];
+
+    if (status) {
+      query += ` AND i.status = $2`;
+      params.push(status);
+    }
+
+    query += ' ORDER BY i.due_date ASC';
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      count: result.rows.length,
+      ipva_records: result.rows,
+    });
+  } catch (error) {
+    console.error('❌ Erro ao listar IPVA:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// GET /ipva/urgent — IPVAs com vencimento urgente
+// ============================================
+
+router.get('/urgent', async (req, res) => {
+  try {
+    const dealershipId = req.user.dealership_id;
+
+    const query = `
+      SELECT
+        i.*,
+        v.make, v.model, v.year,
+        (i.due_date - CURRENT_DATE) as days_until_due
+      FROM ipva_tracking i
+      LEFT JOIN vehicles v ON i.vehicle_id = v.id
+      WHERE i.dealership_id = $1
+        AND i.status IN ('urgent', 'overdue')
+      ORDER BY i.due_date ASC
+    `;
+
+    const result = await pool.query(query, [dealershipId]);
+
+    res.json({
+      urgent_count: result.rows.length,
+      urgent_ipva: result.rows,
+    });
+  } catch (error) {
+    console.error('❌ Erro ao buscar IPVAs urgentes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// DELETE /ipva/:id — Deletar IPVA
+// ============================================
+
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const dealershipId = req.user.dealership_id;
+
+    const query = `
+      DELETE FROM ipva_tracking
+      WHERE id = $1 AND dealership_id = $2
+      RETURNING id
+    `;
+
+    const result = await pool.query(query, [id, dealershipId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'IPVA não encontrado' });
+    }
+
+    res.json({ message: 'IPVA deletado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar IPVA:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;
