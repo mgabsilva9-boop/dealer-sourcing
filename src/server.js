@@ -155,6 +155,7 @@ async function startServer() {
 ║  🚀 Server rodando em porta ${PORT}        ║
 ║  📡 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'} ║
 ║  ✅ Status: Online                     ║
+║  🔄 Version: 3B-Hotfix (2026-03-31)   ║
 ╚════════════════════════════════════════╝
       `);
     });
