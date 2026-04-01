@@ -5,7 +5,7 @@
 
 import express from 'express';
 import { pool } from '../config/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 import {
   calculateVehicleProfit,
   calculateDealershipComparison,
@@ -16,7 +16,7 @@ import {
 const router = express.Router();
 
 // Middleware: autenticação em todas as rotas
-router.use(authenticateToken);
+router.use(authMiddleware);
 
 // ============================================
 // GET /financial/vehicle/:id — P&L Individual

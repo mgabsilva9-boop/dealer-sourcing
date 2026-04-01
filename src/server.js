@@ -3,10 +3,11 @@
  * Server principal do aplicativo
  */
 
+import './config/env.js';
+
 import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { pool } from './config/database.js';
 
 // Importar rotas
@@ -23,9 +24,6 @@ import cacheRoutes from './routes/cache.js';
 import financialRoutes from './routes/financial.js';
 import ipvaRoutes from './routes/ipva.js';
 
-// Carregar variáveis de ambiente
-dotenv.config();
-
 // Inicializar Express
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,19 +34,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// CORS com suporte a Vercel e preview deploys
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000',
-  'https://dealer-sourcing-frontend.vercel.app',
-];
-
-// Se houver FRONTEND_URL em env, adicionar
-if (process.env.FRONTEND_URL && !allowedOrigins.includes(process.env.FRONTEND_URL)) {
-  allowedOrigins.push(process.env.FRONTEND_URL);
-}
+// CORS — em dev aceita qualquer localhost, em prod apenas origens específicas
+const isDev = process.env.NODE_ENV !== 'production';
 
 app.use(cors({
   origin: function(origin, callback) {
@@ -57,17 +44,23 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // Verificar se origin está na lista exata
-    if (allowedOrigins.includes(origin)) {
+    // Em desenvolvimento: aceitar qualquer localhost e 127.0.0.1 em qualquer porta
+    if (isDev && origin.match(/^https?:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+    if (isDev && origin.match(/^https?:\/\/127\.0\.0\.1:\d+$/)) {
       return callback(null, true);
     }
 
-    // Verificar se é preview deploy do Vercel (*.vercel.app)
+    // Em produção: aceitar apenas origens específicas
+    if (origin === 'https://dealer-sourcing-frontend.vercel.app') {
+      return callback(null, true);
+    }
     if (origin.match(/^https:\/\/dealer-sourcing-frontend-[\w-]+\.vercel\.app$/)) {
       return callback(null, true);
     }
 
-    // Se não passou em nenhuma verificação, rejeitar
+    // Rejeitar tudo mais
     console.warn(`⚠️ CORS bloqueado para origin: ${origin}`);
     return callback(new Error(`CORS não permitido para: ${origin}`), false);
   },
@@ -174,5 +167,4 @@ startServer();
 
 export { app, startServer };
 export default app;
-// Redeploy forced at Mon Mar 30 23:38:02     2026
-# Forçar redeploy - Tue Mar 31 19:41:21     2026
+// Redeploy forced at Tue Mar 31 19:41:21 2026

@@ -32,6 +32,8 @@ function normalizeVehicle(row) {
     imageUrl: row.image_url || null,
     daysInStock: Math.round(parseFloat(row.days_in_stock) || 0),
     costs,
+    soldPrice: parseFloat(row.sold_price) || null,
+    soldDate: row.sold_date ? String(row.sold_date).slice(0, 10) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -116,6 +118,24 @@ async function initTables() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Migration 1.3: Add sold_price e sold_date columns
+    await query(`
+      ALTER TABLE inventory
+        ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15, 2),
+        ADD COLUMN IF NOT EXISTS sold_date  DATE;
+    `);
+
+    // Backfill de veículos já marcados como vendidos
+    const backfillResult = await query(`
+      UPDATE inventory
+      SET sold_price = sale_price, sold_date = updated_at::date
+      WHERE status = 'sold' AND sold_price IS NULL
+      RETURNING id;
+    `);
+    if (backfillResult.rows.length > 0) {
+      console.log(`  ℹ️ Backfilled ${backfillResult.rows.length} vehicles with sold_price/sold_date`);
+    }
 
     console.log('✅ Tabelas de inventory verificadas/criadas');
   } catch (error) {
@@ -209,6 +229,38 @@ initDefaultVehicles().catch(err => {
 // ===== VEHICLES / INVENTORY =====
 
 // GET - Listar todos os veículos com custos agregados (por dealership)
+// GET / - Listar todos os veículos (REST)
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const dealershipId = req.user.dealership_id;
+    if (!dealershipId) {
+      return res.status(400).json({ error: 'dealership_id ausente no token' });
+    }
+
+    const result = await query(`
+      SELECT
+        i.*,
+        EXTRACT(DAY FROM (NOW() - i.created_at)) AS days_in_stock,
+        COALESCE(
+          json_object_agg(vc.category, vc.amount) FILTER (WHERE vc.category IS NOT NULL),
+          '{}'::json
+        ) AS costs_json
+      FROM inventory i
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
+      WHERE i.dealership_id = $1
+      GROUP BY i.id
+      ORDER BY i.created_at DESC
+    `, [dealershipId]);
+
+    const vehicles = result.rows.map(normalizeVehicle);
+    res.json(vehicles);
+  } catch (error) {
+    console.error('Erro ao listar veículos:', error);
+    res.status(500).json({ error: 'Erro ao listar veículos' });
+  }
+});
+
+// GET /list - Listar todos os veículos (LEGACY)
 router.get('/list', authMiddleware, async (req, res) => {
   try {
     const dealershipId = req.user.dealership_id;
@@ -243,7 +295,33 @@ router.get('/list', authMiddleware, async (req, res) => {
   }
 });
 
-// POST - Criar novo veículo
+// POST / - Criar novo veículo (REST)
+router.post('/', authMiddleware, async (req, res) => {
+  try {
+    const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs } = req.body;
+
+    if (!make || !model) {
+      return res.status(400).json({ error: 'Marca e modelo são obrigatórios' });
+    }
+
+    // Inserir veículo
+    const vehicleResult = await query(
+      `INSERT INTO inventory
+       (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+       RETURNING *`,
+      [req.user.id, req.user.dealership_id, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
+    );
+
+    const vehicle = normalizeVehicle(vehicleResult.rows[0]);
+    res.status(201).json(vehicle);
+  } catch (error) {
+    console.error('Erro ao criar veículo:', error);
+    res.status(500).json({ error: 'Erro ao criar veículo' });
+  }
+});
+
+// POST /create - Criar novo veículo (LEGACY)
 router.post('/create', authMiddleware, async (req, res) => {
   try {
     const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs } = req.body;
@@ -300,6 +378,69 @@ router.post('/create', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /pl-summary - P&L consolidado calculado no banco (AC5)
+router.get('/pl-summary', authMiddleware, async (req, res) => {
+  try {
+    const dealershipId = req.user.dealership_id;
+    const { from, to } = req.query;
+
+    const dateFilter = from && to ? 'AND i.sold_date BETWEEN $2 AND $3'
+                     : from      ? 'AND i.sold_date >= $2'
+                     : to        ? 'AND i.sold_date <= $2'
+                     : '';
+    const params = [dealershipId];
+    if (from) params.push(from);
+    if (to) params.push(to);
+
+    const invResult = await query(`
+      SELECT
+        COUNT(*) FILTER (WHERE i.status = 'sold')                       AS total_sold,
+        COUNT(*) FILTER (WHERE i.status != 'sold')                      AS total_active,
+        COALESCE(SUM(COALESCE(i.sold_price, i.sale_price))
+          FILTER (WHERE i.status = 'sold'), 0)                          AS gross_revenue,
+        COALESCE(SUM(vc_totals.cost_sum)
+          FILTER (WHERE i.status = 'sold'), 0)                          AS total_vehicle_costs,
+        COALESCE(SUM(vc_totals.cost_sum)
+          FILTER (WHERE i.status != 'sold'), 0)                         AS stock_value
+      FROM inventory i
+      LEFT JOIN (
+        SELECT inventory_id, SUM(amount) AS cost_sum
+        FROM vehicle_costs GROUP BY inventory_id
+      ) vc_totals ON vc_totals.inventory_id = i.id
+      WHERE i.dealership_id = $1 ${dateFilter}
+    `, params);
+
+    const expParams = [dealershipId];
+    if (from) expParams.push(from);
+    if (to) expParams.push(to);
+    const expResult = await query(`
+      SELECT COALESCE(SUM(amount), 0) AS total
+      FROM expenses WHERE dealership_id = $1
+      ${from && to ? 'AND date BETWEEN $2 AND $3' : from ? 'AND date >= $2' : to ? 'AND date <= $2' : ''}
+    `, expParams);
+
+    const row = invResult.rows[0];
+    const grossRevenue = parseFloat(row.gross_revenue) || 0;
+    const totalVehicleCosts = parseFloat(row.total_vehicle_costs) || 0;
+    const grossProfit = grossRevenue - totalVehicleCosts;
+    const generalExpenses = parseFloat(expResult.rows[0].total) || 0;
+
+    res.json({
+      totalSold: parseInt(row.total_sold) || 0,
+      totalActive: parseInt(row.total_active) || 0,
+      grossRevenue,
+      totalVehicleCosts,
+      grossProfit,
+      generalExpenses,
+      netProfit: grossProfit - generalExpenses,
+      stockValue: parseFloat(row.stock_value) || 0,
+    });
+  } catch (error) {
+    console.error('Erro ao calcular P&L:', error);
+    res.status(500).json({ error: 'Erro ao calcular P&L' });
+  }
+});
+
 // GET - Buscar veículo específico
 router.get('/:id', authMiddleware, async (req, res) => {
   try {
@@ -338,7 +479,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs } = req.body;
+    const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs, soldPrice } = req.body;
 
     const result = await query(
       `UPDATE inventory
@@ -354,10 +495,19 @@ router.put('/:id', authMiddleware, async (req, res) => {
            motor = COALESCE($10, motor),
            potencia = COALESCE($11, potencia),
            features = COALESCE($12, features),
+           sold_price = CASE
+             WHEN $15 IS NOT NULL THEN $15
+             WHEN $9 = 'sold' AND sold_price IS NULL THEN sale_price
+             ELSE sold_price
+           END,
+           sold_date = CASE
+             WHEN $9 = 'sold' AND sold_date IS NULL THEN CURRENT_DATE
+             ELSE sold_date
+           END,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $13 AND dealership_id = $14
        RETURNING *`,
-      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id],
+      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id, soldPrice || null],
     );
 
     if (result.rows.length === 0) {

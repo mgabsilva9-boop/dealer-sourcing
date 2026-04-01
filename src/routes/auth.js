@@ -49,11 +49,11 @@ async function initDefaultUsers() {
       ON CONFLICT (id) DO NOTHING;
     `, [dealershipId]);
 
-    // 4. Criar os 3 usuários padrão — senhas carregadas de env vars (NUNCA hardcoded)
+    // 4. Criar os 3 usuários padrão — senhas fixas para desenvolvimento (não mudar)
     const defaultUsers = [
-      { email: 'admin@threeon.com', password: process.env.DEFAULT_ADMIN_PASS || 'ADMIN_PASS_NOT_SET', name: 'ThreeON Admin' },
-      { email: 'dono@brossmotors.com', password: process.env.DEFAULT_DONO_PASS || 'DONO_PASS_NOT_SET', name: 'BrossMotors Dono' },
-      { email: 'lojab@brossmotors.com', password: process.env.DEFAULT_LOJAB_PASS || 'LOJAB_PASS_NOT_SET', name: 'Loja B Gerente' },
+      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin' },
+      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono' },
+      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente' },
     ];
 
     for (const u of defaultUsers) {
@@ -61,7 +61,7 @@ async function initDefaultUsers() {
       await query(`
         INSERT INTO users (email, password, name, dealership_id)
         VALUES ($1, $2, $3, $4)
-        ON CONFLICT ON CONSTRAINT users_email_unique DO NOTHING;
+        ON CONFLICT ON CONSTRAINT users_email_unique DO UPDATE SET password = EXCLUDED.password;
       `, [u.email, hash, u.name, dealershipId]);
     }
 

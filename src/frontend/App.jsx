@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI } from "./api.js";
+import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI } from "./api.js";
 
 const C = {
   bg: "#f0f4f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
@@ -117,7 +117,8 @@ function EditField({ label, value, onChange, type }) {
   const [editing, setEditing] = useState(false);
   const [temp, setTemp] = useState(String(value));
   var save = function() { setEditing(false); onChange(type === "number" ? Number(temp) || value : temp); };
-  if (!editing) { return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{ cursor: "pointer", padding: "7px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{type === "number" ? fmtFull(value) : value}</span></div>; }
+  var displayValue = type === "number" ? (label.toLowerCase().includes("km") ? (Number(value) || 0).toLocaleString("pt-BR") + " km" : fmtFull(value)) : value;
+  if (!editing) { return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{ cursor: "pointer", padding: "7px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{displayValue}</span></div>; }
   return <div style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid " + C.accent, background: C.accentLight, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><div style={{ display: "flex", gap: 4 }}><input autoFocus value={temp} onChange={function(e) { setTemp(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") save(); }} type={type || "text"} style={{ width: type === "number" ? 100 : 140, padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 13, fontFamily: FONT, outline: "none" }} /><button onClick={save} style={{ padding: "4px 10px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>OK</button><button onClick={function() { setEditing(false); }} style={{ padding: "4px 8px", background: "none", color: C.textDim, border: "1px solid " + C.border, borderRadius: 4, fontSize: 11, cursor: "pointer" }}>X</button></div></div>;
 }
 
@@ -183,13 +184,49 @@ function LoginScreen({ onLogin }) {
 
 // ─── VEHICLE FORM ───────────────────────────────────────────────────
 function VehicleForm({ onAdd, onCancel }) {
-  const [f, setF] = useState({ make: "", model: "", year: 2024, salePrice: 0, fipePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 });
+  const [f, setF] = useState(function() {
+    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
+    var saved = localStorage.getItem("vehicleFormDraft");
+    if (!saved) return defaults;
+    try {
+      var parsed = JSON.parse(saved);
+      // Restaurar apenas campos que existem em defaults (ignora campos obsoletos como fipePrice)
+      var restored = Object.assign({}, defaults);
+      for (var key in defaults) {
+        if (key in parsed) restored[key] = parsed[key];
+      }
+      return restored;
+    } catch (e) {
+      console.error("Erro ao restaurar rascunho:", e);
+      return defaults;
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
+  const [showCostsDetail, setShowCostsDetail] = useState(false);
+  var totalCosts = (Number(f.compra) || 0) + (Number(f.documentacao) || 0) + (Number(f.funilaria) || 0) + (Number(f.combustivel) || 0) + (Number(f.viagem) || 0) + (Number(f.lavagem) || 0) + (Number(f.vistoria) || 0) + (Number(f.comissao) || 0);
   var inp = { width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" };
   var lbl = { fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" };
+  var validate = function() {
+    var errs = {};
+    if (!f.make || f.make.trim() === "") errs.make = "Marca é obrigatória";
+    if (!f.model || f.model.trim() === "") errs.model = "Modelo é obrigatório";
+    var year = Number(f.year);
+    if (year < 1900 || year > new Date().getFullYear() + 1) errs.year = "Ano inválido (1900-" + (new Date().getFullYear() + 1) + ")";
+    if (Number(f.compra) <= 0) errs.compra = "Compra deve ser > 0";
+    if (Number(f.viagem) < 0) errs.viagem = "Viagem não pode ser negativo";
+    if (Number(f.combustivel) < 0) errs.combustivel = "Combustível não pode ser negativo";
+    if (Number(f.documentacao) < 0) errs.documentacao = "Documentação não pode ser negativo";
+    if (Number(f.funilaria) < 0) errs.funilaria = "Funilaria não pode ser negativo";
+    if (Number(f.lavagem) < 0) errs.lavagem = "Lavagem não pode ser negativo";
+    if (Number(f.vistoria) < 0) errs.vistoria = "Vistoria não pode ser negativo";
+    if (Number(f.comissao) < 0) errs.comissao = "Comissão não pode ser negativo";
+    setValidationErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
   var submit = async function() {
-    if (!f.make || !f.model) return;
+    if (!validate()) { setError("Por favor, corrija os erros acima"); return; }
     setLoading(true);
     setError("");
     try {
@@ -207,7 +244,6 @@ function VehicleForm({ onAdd, onCancel }) {
         year: Number(f.year),
         purchasePrice: Number(f.compra) || 0,
         salePrice: Number(f.salePrice) || 0,
-        fipePrice: Number(f.fipePrice) || 0,
         mileage: Number(f.mileage) || 0,
         location: f.location,
         status: "available",
@@ -216,9 +252,19 @@ function VehicleForm({ onAdd, onCancel }) {
         features: f.features,
         costs: costs
       };
-      var result = await inventoryAPI.create(vehicleData);
-      if (result && result.vehicle) {
-        onAdd(result.vehicle);
+      try {
+        var result = await inventoryAPI.create(vehicleData);
+        if (result && result.vehicle) {
+          onAdd(result.vehicle);
+        }
+      } catch (apiErr) {
+        // Se API falhar, criar localmente com ID gerado
+        var localVehicle = Object.assign({
+          id: Date.now(),
+          daysInStock: 0,
+          imageUrl: null
+        }, vehicleData);
+        onAdd(localVehicle);
       }
     } catch (err) {
       setError(err instanceof APIError ? err.message : "Erro ao adicionar veiculo");
@@ -226,35 +272,55 @@ function VehicleForm({ onAdd, onCancel }) {
       setLoading(false);
     }
   };
-  var set = function(key, val) { var u = {}; u[key] = val; setF(Object.assign({}, f, u)); };
+  var set = function(key, val) {
+    var newF = Object.assign({}, f);
+    newF[key] = val;
+    setF(newF);
+    localStorage.setItem("vehicleFormDraft", JSON.stringify(newF));
+  };
   return <Card style={{ padding: 22, marginBottom: 16 }}>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.5fr 1fr", gap: 12, marginBottom: 12 }}>
-      <div><label style={lbl}>Marca</label><input value={f.make} onChange={function(e) { set("make", e.target.value); }} style={inp} placeholder="Ford, BMW, Ram..." /></div>
-      <div><label style={lbl}>Modelo</label><input value={f.model} onChange={function(e) { set("model", e.target.value); }} style={inp} placeholder="Ka, M3, 1500..." /></div>
-      <div><label style={lbl}>Ano</label><input type="number" value={f.year} onChange={function(e) { set("year", e.target.value); }} style={inp} /></div>
+      <div><label style={lbl}>Marca</label><input value={f.make} onChange={function(e) { set("make", e.target.value); }} style={Object.assign({}, inp, validationErrors.make ? { borderColor: C.red } : {})} placeholder="Ford, BMW, Ram..." />{validationErrors.make && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.make}</div>}</div>
+      <div><label style={lbl}>Modelo</label><input value={f.model} onChange={function(e) { set("model", e.target.value); }} style={Object.assign({}, inp, validationErrors.model ? { borderColor: C.red } : {})} placeholder="Ka, M3, 1500..." />{validationErrors.model && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.model}</div>}</div>
+      <div><label style={lbl}>Ano</label><input type="number" value={f.year} onChange={function(e) { set("year", e.target.value); }} style={Object.assign({}, inp, validationErrors.year ? { borderColor: C.red } : {})} />{validationErrors.year && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.year}</div>}</div>
       <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>Loja A</option><option>Loja B</option></select></div>
     </div>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-      <div><label style={lbl}>Compra do veiculo</label><input type="number" value={f.compra} onChange={function(e) { set("compra", e.target.value); }} style={inp} /></div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+      <div><label style={lbl}>Compra do veiculo</label><input type="number" value={f.compra} onChange={function(e) { set("compra", e.target.value); }} style={Object.assign({}, inp, validationErrors.compra ? { borderColor: C.red } : {})} />{validationErrors.compra && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.compra}</div>}</div>
       <div><label style={lbl}>Preco de Venda</label><input type="number" value={f.salePrice} onChange={function(e) { set("salePrice", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>FIPE</label><input type="number" value={f.fipePrice} onChange={function(e) { set("fipePrice", e.target.value); }} style={inp} /></div>
       <div><label style={lbl}>Km</label><input type="number" value={f.mileage} onChange={function(e) { set("mileage", e.target.value); }} style={inp} /></div>
     </div>
+    <div style={{ padding: 12, background: C.surfaceAlt, borderRadius: 8, border: "1px solid " + C.border, marginBottom: 12, cursor: "pointer" }} onClick={function() { setShowCostsDetail(!showCostsDetail); }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div><label style={Object.assign({}, lbl, { marginBottom: 0 })}>Custos Gerais</label><div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginTop: 4 }}>{totalCosts > 0 ? "R$ " + totalCosts.toLocaleString("pt-BR") : "—"}</div></div>
+        <div style={{ fontSize: 20, color: C.textDim }}>{showCostsDetail ? "−" : "+"}</div>
+      </div>
+      {showCostsDetail && <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid " + C.border, fontSize: 12 }}>
+        {f.compra > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Compra do veiculo</span><span>R$ {Number(f.compra).toLocaleString("pt-BR")}</span></div>}
+        {f.documentacao > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Documentacao</span><span>R$ {Number(f.documentacao).toLocaleString("pt-BR")}</span></div>}
+        {f.funilaria > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Funilaria</span><span>R$ {Number(f.funilaria).toLocaleString("pt-BR")}</span></div>}
+        {f.combustivel > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Combustivel</span><span>R$ {Number(f.combustivel).toLocaleString("pt-BR")}</span></div>}
+        {f.viagem > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Viagem</span><span>R$ {Number(f.viagem).toLocaleString("pt-BR")}</span></div>}
+        {f.lavagem > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Lavagem</span><span>R$ {Number(f.lavagem).toLocaleString("pt-BR")}</span></div>}
+        {f.vistoria > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, color: C.textMid }}><span>Vistoria</span><span>R$ {Number(f.vistoria).toLocaleString("pt-BR")}</span></div>}
+        {f.comissao > 0 && <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 0, color: C.textMid }}><span>Comissao</span><span>R$ {Number(f.comissao).toLocaleString("pt-BR")}</span></div>}
+      </div>}
+    </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12 }}>
-      <div><label style={lbl}>Documentacao</label><input type="number" value={f.documentacao} onChange={function(e) { set("documentacao", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>Funilaria</label><input type="number" value={f.funilaria} onChange={function(e) { set("funilaria", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>Combustivel</label><input type="number" value={f.combustivel} onChange={function(e) { set("combustivel", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>Comissao</label><input type="number" value={f.comissao} onChange={function(e) { set("comissao", e.target.value); }} style={inp} /></div>
+      <div><label style={lbl}>Documentacao</label><input type="number" value={f.documentacao} onChange={function(e) { set("documentacao", e.target.value); }} style={Object.assign({}, inp, validationErrors.documentacao ? { borderColor: C.red } : {})} />{validationErrors.documentacao && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.documentacao}</div>}</div>
+      <div><label style={lbl}>Funilaria</label><input type="number" value={f.funilaria} onChange={function(e) { set("funilaria", e.target.value); }} style={Object.assign({}, inp, validationErrors.funilaria ? { borderColor: C.red } : {})} />{validationErrors.funilaria && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.funilaria}</div>}</div>
+      <div><label style={lbl}>Combustivel</label><input type="number" value={f.combustivel} onChange={function(e) { set("combustivel", e.target.value); }} style={Object.assign({}, inp, validationErrors.combustivel ? { borderColor: C.red } : {})} />{validationErrors.combustivel && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.combustivel}</div>}</div>
+      <div><label style={lbl}>Viagem</label><input type="number" value={f.viagem} onChange={function(e) { set("viagem", e.target.value); }} style={Object.assign({}, inp, validationErrors.viagem ? { borderColor: C.red } : {})} />{validationErrors.viagem && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.viagem}</div>}</div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 14 }}>
-      <div><label style={lbl}>Viagem</label><input type="number" value={f.viagem} onChange={function(e) { set("viagem", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>Lavagem</label><input type="number" value={f.lavagem} onChange={function(e) { set("lavagem", e.target.value); }} style={inp} /></div>
-      <div><label style={lbl}>Vistoria</label><input type="number" value={f.vistoria} onChange={function(e) { set("vistoria", e.target.value); }} style={inp} /></div>
+      <div><label style={lbl}>Lavagem</label><input type="number" value={f.lavagem} onChange={function(e) { set("lavagem", e.target.value); }} style={Object.assign({}, inp, validationErrors.lavagem ? { borderColor: C.red } : {})} />{validationErrors.lavagem && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.lavagem}</div>}</div>
+      <div><label style={lbl}>Vistoria</label><input type="number" value={f.vistoria} onChange={function(e) { set("vistoria", e.target.value); }} style={Object.assign({}, inp, validationErrors.vistoria ? { borderColor: C.red } : {})} />{validationErrors.vistoria && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.vistoria}</div>}</div>
+      <div><label style={lbl}>Comissao</label><input type="number" value={f.comissao} onChange={function(e) { set("comissao", e.target.value); }} style={Object.assign({}, inp, validationErrors.comissao ? { borderColor: C.red } : {})} />{validationErrors.comissao && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.comissao}</div>}</div>
       <div><label style={lbl}>Motor / Features</label><input value={f.motor} onChange={function(e) { set("motor", e.target.value); }} style={inp} placeholder="2.8L Diesel..." /></div>
     </div>
     {error && <div style={{ padding: 12, background: C.redBg, border: "1px solid " + C.red, borderRadius: 8, color: C.red, fontSize: 12, fontWeight: 500, marginBottom: 12 }}>{error}</div>}
     <div style={{ display: "flex", gap: 10 }}>
-      <button onClick={submit} disabled={loading} style={{ padding: "10px 24px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}>{loading ? "Adicionando..." : "Adicionar ao Estoque"}</button>
+      <button onClick={submit} disabled={loading || Object.keys(validationErrors).length > 0} style={{ padding: "10px 24px", background: (loading || Object.keys(validationErrors).length > 0) ? C.textDim : C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: (loading || Object.keys(validationErrors).length > 0) ? "default" : "pointer", opacity: (loading || Object.keys(validationErrors).length > 0) ? 0.5 : 1 }}>{loading ? "Adicionando..." : "Adicionar ao Estoque"}</button>
       <button onClick={onCancel} disabled={loading} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.5 : 1 }}>Cancelar</button>
     </div>
   </Card>;
@@ -418,6 +484,18 @@ export default function App() {
   const [newCostVal, setNewCostVal] = useState(0);
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
+  const [plData, setPlData] = useState(null);
+  const [stockError, setStockError] = useState("");
+  const [ipvaList, setIpvaList] = useState([]);
+  const [ipvaSummary, setIpvaSummary] = useState(null);
+  const [ipvaLoading, setIpvaLoading] = useState(false);
+  const [showIpvaForm, setShowIpvaForm] = useState(null);
+  const [ipvaFormState, setIpvaFormState] = useState('SP');
+  const [ipvaFormYear, setIpvaFormYear] = useState(new Date().getFullYear());
+  const [finData, setFinData] = useState(null);
+  const [finMonth, setFinMonth] = useState(new Date().getMonth() + 1);
+  const [finYear, setFinYear] = useState(new Date().getFullYear());
+  const [finMonthlyData, setFinMonthlyData] = useState([]);
 
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
   useEffect(function() {
@@ -453,14 +531,28 @@ export default function App() {
     (async function() {
       try {
         const vehiclesData = await inventoryAPI.list();
-        if (vehiclesData && vehiclesData.vehicles && vehiclesData.vehicles.length > 0) {
-          setVehicles(vehiclesData.vehicles);
-        } else {
-          setVehicles(INIT_VEHICLES);
-        }
+        let loadedVehicles = vehiclesData && vehiclesData.vehicles && vehiclesData.vehicles.length > 0 ? vehiclesData.vehicles : INIT_VEHICLES;
+        // Recuperar imagens e drafts do localStorage
+        loadedVehicles = loadedVehicles.map(function(v) {
+          var imgKey = "vehicle_img_" + v.id;
+          var draftKey = "vehicle_draft_" + v.id;
+          var savedImg = localStorage.getItem(imgKey);
+          var savedDraft = localStorage.getItem(draftKey);
+          var updated = Object.assign({}, v);
+          if (savedImg) updated.imageUrl = savedImg;
+          if (savedDraft) {
+            try {
+              var draft = JSON.parse(savedDraft);
+              updated = Object.assign({}, updated, draft);
+            } catch (e) { console.error("Erro ao restaurar draft:", e); }
+          }
+          return updated;
+        });
+        setVehicles(loadedVehicles);
       } catch (err) {
         console.error('Erro ao carregar estoque:', err);
-        setVehicles(INIT_VEHICLES);
+        setVehicles([]);
+        setStockError('Não foi possível carregar o estoque. Verifique se o servidor está rodando (porta 9000).');
       }
       try {
         const customersData = await crmAPI.list();
@@ -491,6 +583,12 @@ export default function App() {
         }
       } catch (err) {
         console.error('Erro ao carregar sourcing:', err);
+      }
+      try {
+        const pl = await inventoryAPI.plSummary();
+        if (pl) setPlData(pl);
+      } catch (err) {
+        console.error('Erro ao carregar P&L:', err);
       }
       setLoaded(true);
     })();
@@ -534,6 +632,10 @@ export default function App() {
         return Object.assign({}, p, { [field]: val });
       });
     }
+    // Auto-save no localStorage
+    if (vehicleToSend) {
+      localStorage.setItem("vehicle_draft_" + id, JSON.stringify(vehicleToSend));
+    }
     // Enviar para backend com dados corretos
     if (vehicleToSend) {
       (async function() {
@@ -550,6 +652,8 @@ export default function App() {
                 return Object.assign({}, p, res.vehicle);
               });
             }
+            // Limpar draft após salvar com sucesso
+            localStorage.removeItem("vehicle_draft_" + id);
           }
         } catch (err) {
           console.error('Erro ao atualizar veículo:', err);
@@ -624,6 +728,15 @@ export default function App() {
     })();
   }, [vehicles, selV]);
 
+  const loadFinancialMonthly = async function() {
+    try {
+      const result = await financialAPI.monthly(finYear, String(finMonth).padStart(2, '0'));
+      setFinMonthlyData(result.transactions || []);
+    } catch (err) {
+      console.error('Erro ao carregar financeiro mensal:', err);
+    }
+  };
+
   if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
 
   var canSwitch = user.access === "all";
@@ -668,7 +781,7 @@ export default function App() {
   var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
   var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
 
-  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["financial","Financeiro"],["expenses","Gastos Gerais"],["crm","Clientes"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"]];
+  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["financial","Financeiro"],["ipva","IPVA"],["expenses","Gastos Gerais"],["crm","Clientes"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"]];
   var monthLabel = function(m) { var parts = m.split("-"); var names = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return names[parseInt(parts[1])] + " " + parts[0]; };
 
   // Selected vehicle detail data
@@ -720,15 +833,15 @@ export default function App() {
           var totalPipeline = Object.values(pipelineStatuses).reduce(function(a, b) { return a + b; }, 0);
           pipelineSegments = pipelineSegments.map(function(s) { return Object.assign({}, s, { pct: totalPipeline > 0 ? (s.pct / totalPipeline) * 100 : 0 }); });
 
-          var agingAlerts = (allF || []).filter(function(v) { return v.status !== "sold" && v.daysInStock > 30; }).sort(function(a, b) { return b.daysInStock - a.daysInStock; }).slice(0, 5);
+          var agingAlerts = (allF || []).filter(function(v) { return v.status !== "sold" && v.daysInStock > 45; }).sort(function(a, b) { return b.daysInStock - a.daysInStock; }).slice(0, 5);
 
           return <div>
             {/* ROW 1 — 4 STAT CARDS */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 24 }}>
               <Stat label="Contas a Pagar" value={fmtFull(expenses.filter(function(e) { return e.status !== "paid"; }).reduce(function(a, e) { return a + (Number(e.amount) || 0); }, 0))} sub={expenses.filter(function(e) { return e.status !== "paid"; }).length + " pendentes"} accent />
-              <Stat label="Lucro deste Mes" value={fmtFull(profitThisMonth)} sub={profitLastMonth ? "Anterior: " + fmtFull(profitLastMonth) : "Sem dados"} />
-              <Stat label="Veiculos Ativos" value={activeV.length} sub={avail + " disponíveis"} />
-              <Stat label="Lucro Total" value={fmtFull(totalProfit)} sub={soldV.length + " vendidos"} />
+              <Stat label="Lucro Bruto" value={plData ? fmtFull(plData.grossProfit) : fmtFull(totalProfit)} sub={soldV.length + " vendidos"} />
+              <Stat label="Despesas Gerais" value={plData ? fmtFull(plData.generalExpenses) : fmtFull(expenses.reduce(function(a,e){ return a+(Number(e.amount)||0); },0))} sub="Operacional + fixas" />
+              <Stat label="Lucro Liquido" value={plData ? fmtFull(plData.netProfit) : fmtFull(totalProfit - expenses.reduce(function(a,e){ return a+(Number(e.amount)||0); },0))} sub={plData && plData.grossRevenue > 0 ? ("Margem: " + ((plData.netProfit/plData.grossRevenue)*100).toFixed(1) + "%") : ""} />
             </div>
 
             {/* ROW 2 — 3 COLUNAS: DONUT + BARRAS + TOP MARGENS */}
@@ -756,7 +869,7 @@ export default function App() {
                 {(function() {
                   var months = [];
                   for (var i = 5; i >= 0; i--) {
-                    var d = new Date(2026, 2 - i, 1);
+                    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                     var monthStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
                     var monthProfit = (soldV || []).filter(function(v) { return v.soldDate && v.soldDate.startsWith(monthStr); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
                     months.push({ label: monthStr.split("-")[1], label2: "", value: monthProfit, color: monthProfit > 0 ? C.green : C.red });
@@ -781,7 +894,7 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               {/* AGING ALERTS */}
               <Card style={{ padding: 22 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.red }}>⚠️ Veículos em Estoque > 30 dias</h3>
+                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.red }}>⚠️ Veículos em Estoque > 45 dias</h3>
                 {agingAlerts.length === 0 ? <div style={{ fontSize: 12, color: C.textDim, padding: "20px 0", textAlign: "center" }}>Sem alertas</div> : agingAlerts.map(function(v) {
                   var severity = v.daysInStock > 60 ? "critical" : v.daysInStock > 45 ? "high" : "medium";
                   return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: severity === "critical" ? C.redBg : severity === "high" ? C.yellowBg : C.surfaceAlt, borderRadius: 6, borderLeft: "3px solid " + (severity === "critical" ? C.red : severity === "high" ? C.yellow : C.orange || "#f97316"), marginBottom: 8 }}>
@@ -820,6 +933,7 @@ export default function App() {
 
         {/* INVENTORY LIST / KANBAN */}
         {tab === "inventory" && !sv && <div>
+          {stockError && <div style={{ padding: 12, background: C.redBg, border: "1px solid " + C.red, borderRadius: 8, color: C.red, fontSize: 12, fontWeight: 500, marginBottom: 14 }}>⚠️ {stockError}</div>}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600 }}>Inventario --- {dispV.length} veiculos</h2>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -858,6 +972,8 @@ export default function App() {
                   <div style={{ textAlign: "center", minWidth: 50, paddingLeft: 12, borderLeft: "1px solid " + C.borderLight }}>
                     <div style={{ color: margin >= 25 ? C.green : margin >= 15 ? C.yellow : C.red, fontWeight: 700, fontSize: 15 }}>{margin}%</div>
                     <div style={{ fontSize: 9, color: C.textDim }}>margem</div>
+                    <div style={{ fontSize: 11, color: vProfit(v) >= 0 ? C.green : C.red, fontWeight: 600, marginTop: 2 }}>{fmt(vProfit(v))}</div>
+                    <div style={{ fontSize: 9, color: C.textDim }}>lucro</div>
                     {v.status !== "sold" && <div style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green, fontWeight: 700, fontSize: 16, marginTop: 4 }}>{v.daysInStock}d</div>}
                   </div>
                 </div>
@@ -911,9 +1027,9 @@ export default function App() {
           <Card style={{ overflow: "hidden" }}>
             <div style={{ height: 160, background: C.surfaceAlt, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
               {!imgErr[sv.id] ? <img src={sv.imageUrl || IMGS[sv.make + " " + sv.model] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: C.textDim }}>Sem foto</span>}
-              <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); await inventoryAPI.uploadImage(sv.id, base64); alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
+              <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); localStorage.setItem("vehicle_img_" + sv.id, base64); try { await inventoryAPI.uploadImage(sv.id, base64); } catch (apiErr) { console.log("API upload failed, usando localStorage:", apiErr); } alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
               <label htmlFor={"img-" + sv.id} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: 600, opacity: 0, transition: "opacity 0.2s ease", zIndex: 10 }} onMouseEnter={function(e) { e.target.style.opacity = 1; }} onMouseLeave={function(e) { e.target.style.opacity = 0; }}>Alterar foto</label>
-              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { await inventoryAPI.deleteImage(sv.id); setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 8, right: 8, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
+              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { localStorage.removeItem("vehicle_img_" + sv.id); try { await inventoryAPI.deleteImage(sv.id); } catch (apiErr) { console.log("API delete failed, removido do localStorage:", apiErr); } setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 8, right: 8, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
             </div>
             <div style={{ padding: 26 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
@@ -930,15 +1046,75 @@ export default function App() {
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
                 <Card style={{ padding: 14 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Dados</div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Dados</div>
                   <EditField label="Preco de Venda" value={sv.salePrice || 0} onChange={function(val) { upd(sv.id, "salePrice", val); }} type="number" />
-                  <EditField label="FIPE" value={sv.fipePrice || 0} onChange={function(val) { upd(sv.id, "fipePrice", val); }} type="number" />
                   <EditField label="Km" value={sv.mileage || 0} onChange={function(val) { upd(sv.id, "mileage", val); }} type="number" />
                   <EditField label="Localizacao" value={sv.location} onChange={function(val) { upd(sv.id, "location", val); }} />
+
+                  {/* CUSTOS DETALHADOS EXPANDÍVEL */}
+                  <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid " + C.border }}>
+                    <button onClick={function() { setShowCosts(!showCosts); }} style={{ width: "100%", padding: "8px 10px", background: "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 12, color: C.textMid, fontWeight: 600 }}>Custos Gerais</span>
+                      <span style={{ fontSize: 18, color: C.accent, fontWeight: 600 }}>{showCosts ? "−" : "+"}</span>
+                    </button>
+                    {showCosts && <div style={{ marginTop: 10, padding: "12px 10px", background: C.surfaceAlt, borderRadius: 6, border: "1px solid " + C.border }}>
+                      {/* CABEÇALHO */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, padding: "0 8px 8px", borderBottom: "1px solid " + C.border }}>
+                        <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", fontWeight: 600 }}>Categoria</span>
+                        <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", textAlign: "right", fontWeight: 600 }}>Valor</span>
+                        <span />
+                      </div>
+
+                      {/* LINHAS EDITÁVEIS */}
+                      {Object.keys(sv.costs || {}).map(function(key) {
+                        return <div key={key} style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, alignItems: "center", padding: "6px 8px" }}>
+                          <input
+                            defaultValue={key}
+                            onBlur={function(e) { if (e.target.value !== key) renameCost(sv.id, key, e.target.value.trim()); }}
+                            onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
+                            style={{ padding: "4px 6px", border: "1px solid " + C.border, borderRadius: 3, fontSize: 11, fontFamily: FONT, outline: "none" }}
+                          />
+                          <input
+                            type="number"
+                            defaultValue={(sv.costs || {})[key] || 0}
+                            onBlur={function(e) { updCost(sv.id, key, Number(e.target.value)); }}
+                            onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
+                            style={{ padding: "4px 6px", border: "1px solid " + C.border, borderRadius: 3, fontSize: 11, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
+                          />
+                          <button onClick={function() { deleteCost(sv.id, key); }}
+                            style={{ padding: "3px 4px", background: C.redBg, color: C.red, border: "none", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>✕</button>
+                        </div>;
+                      })}
+
+                      {/* LINHA DE ADICIONAR NOVO CUSTO */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, alignItems: "center", padding: "6px 8px", borderTop: "1px solid " + C.border, marginTop: 6 }}>
+                        <input
+                          value={newCostKey}
+                          onChange={function(e) { setNewCostKey(e.target.value); }}
+                          placeholder="Nova categoria..."
+                          style={{ padding: "4px 6px", border: "1px dashed " + C.border, borderRadius: 3, fontSize: 11, fontFamily: FONT, outline: "none" }}
+                        />
+                        <input
+                          type="number"
+                          value={newCostVal}
+                          onChange={function(e) { setNewCostVal(Number(e.target.value)); }}
+                          style={{ padding: "4px 6px", border: "1px dashed " + C.border, borderRadius: 3, fontSize: 11, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
+                        />
+                        <button
+                          onClick={function() {
+                            if (!newCostKey) return;
+                            updCost(sv.id, newCostKey, newCostVal);
+                            setNewCostKey("");
+                            setNewCostVal(0);
+                          }}
+                          style={{ padding: "3px 4px", background: C.accent, color: "#fff", border: "none", borderRadius: 3, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+</button>
+                      </div>
+                    </div>}
+                  </div>
                 </Card>
                 <Card style={{ padding: 14 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Resumo</div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Custo Total</span><span style={{ fontSize: 14, fontWeight: 700, color: C.red }}>{fmtFull(totalCosts(sv))}</span></div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8, fontWeight: 600 }}>Resumo</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Custo Total</span><div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 14, fontWeight: 700, color: C.red }}>{fmtFull(totalCosts(sv))}</span><button onClick={function() { setShowCosts(!showCosts); }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 16, color: C.accent, fontWeight: 600, padding: "2px 4px" }}>{showCosts ? "−" : "+"}</button></div></div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Venda</span><span style={{ fontSize: 14, fontWeight: 700, color: C.green }}>{fmtFull(sv.soldPrice || sv.salePrice)}</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", borderTop: "2px solid " + C.border }}><span style={{ fontWeight: 700 }}>Lucro</span><span style={{ fontSize: 16, fontWeight: 700, color: vProfit(sv) > 0 ? C.green : C.red }}>{fmtFull(vProfit(sv))}</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 10px" }}><span style={{ fontSize: 12, color: C.textDim }}>Margem</span><span style={{ fontWeight: 700, color: vMargin(sv) >= 25 ? C.green : C.yellow }}>{vMargin(sv)}%</span></div>
@@ -968,62 +1144,6 @@ export default function App() {
                   </div>
                 </Card>
               </div>
-              <button onClick={function() { setShowCosts(!showCosts); }} style={{ width: "100%", padding: "11px 16px", background: C.surfaceAlt, border: "1px solid " + C.border, borderRadius: showCosts ? "10px 10px 0 0" : "10px", cursor: "pointer", display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>Custos Detalhados</span><span style={{ fontSize: 12, color: C.textDim }}>{showCosts ? "Fechar" : "Abrir"}</span>
-              </button>
-              {showCosts && <div style={{ padding: 16, background: C.surfaceAlt, border: "1px solid " + C.border, borderTop: "none", borderRadius: "0 0 10px 10px", marginBottom: 14 }}>
-                {/* CABEÇALHO */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 36px", gap: 8, padding: "0 10px 8px", borderBottom: "1px solid " + C.border }}>
-                  <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase" }}>Categoria</span>
-                  <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", textAlign: "right" }}>Valor</span>
-                  <span />
-                </div>
-
-                {/* LINHAS EDITÁVEIS */}
-                {Object.keys(sv.costs || {}).map(function(key) {
-                  return <div key={key} style={{ display: "grid", gridTemplateColumns: "1fr 120px 36px", gap: 8, alignItems: "center", padding: "4px 10px" }}>
-                    <input
-                      defaultValue={key}
-                      onBlur={function(e) { if (e.target.value !== key) renameCost(sv.id, key, e.target.value.trim()); }}
-                      onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
-                      style={{ padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 12, fontFamily: FONT, outline: "none" }}
-                    />
-                    <input
-                      type="number"
-                      defaultValue={(sv.costs || {})[key] || 0}
-                      onBlur={function(e) { updCost(sv.id, key, Number(e.target.value)); }}
-                      onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
-                      style={{ padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 12, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
-                    />
-                    <button onClick={function() { deleteCost(sv.id, key); }}
-                      style={{ padding: "4px 6px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 12 }}>✕</button>
-                  </div>;
-                })}
-
-                {/* LINHA DE ADICIONAR NOVO CUSTO */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 120px 36px", gap: 8, alignItems: "center", padding: "8px 10px", borderTop: "1px solid " + C.border, marginTop: 4 }}>
-                  <input
-                    value={newCostKey}
-                    onChange={function(e) { setNewCostKey(e.target.value); }}
-                    placeholder="Nova categoria..."
-                    style={{ padding: "4px 8px", border: "1px dashed " + C.border, borderRadius: 4, fontSize: 12, fontFamily: FONT, outline: "none" }}
-                  />
-                  <input
-                    type="number"
-                    value={newCostVal}
-                    onChange={function(e) { setNewCostVal(Number(e.target.value)); }}
-                    style={{ padding: "4px 8px", border: "1px dashed " + C.border, borderRadius: 4, fontSize: 12, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
-                  />
-                  <button
-                    onClick={function() {
-                      if (!newCostKey) return;
-                      updCost(sv.id, newCostKey, newCostVal);
-                      setNewCostKey("");
-                      setNewCostVal(0);
-                    }}
-                    style={{ padding: "4px 6px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontSize: 14 }}>+</button>
-                </div>
-              </div>}
               {sv.status === "sold" && sv.soldTo && <div style={{ padding: 14, background: C.blueBg, borderRadius: 10, border: "1px solid " + C.blue + "20", marginTop: 8 }}>
                 <div style={{ fontSize: 13, color: C.blue, fontWeight: 600 }}>Vendido para {sv.soldTo} em {sv.soldDate ? new Date(sv.soldDate).toLocaleDateString("pt-BR") : "---"}</div>
                 {sv.docs && sv.docs.length > 0 && <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>{sv.docs.map(function(d, i) { return <Tag key={i} color={C.accent} bg={C.accentLight}>{d}</Tag>; })}</div>}
@@ -1088,25 +1208,216 @@ export default function App() {
         {/* FINANCIAL */}
         {tab === "financial" && <div>
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>Financeiro</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-            <Stat label="Receita Vendas" value={fmtFull(cR(allF))} accent />
-            <Stat label="Custo Estoque" value={fmtFull(cCost(allF))} />
-            <Stat label="Lucro Bruto" value={fmtFull(totalProfit)} sub={soldV.length > 0 ? "Margem: " + ((totalProfit / (cR(allF) || 1)) * 100).toFixed(1) + "%" : "Sem vendas"} />
-            <Stat label="Despesas" value={fmtFull(expenses.reduce((a, e) => a + (e.amount || 0), 0))} />
-          </div>
-          {finSub === "overview" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            <Card style={{ padding: 22 }}>
-              <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600 }}>Resumo {thisMonth}</h3>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Lucro Este Mes</span><span style={{ fontSize: 16, fontWeight: 700, color: profitThisMonth > 0 ? C.green : C.red }}>{fmtFull(profitThisMonth)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Veiculos Vendidos</span><span style={{ fontSize: 16, fontWeight: 700 }}>{soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}><span style={{ fontSize: 12, color: C.textDim }}>Media Lucro/Venda</span><span style={{ fontSize: 16, fontWeight: 700, color: C.accent }}>{soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length > 0 ? fmtFull(profitThisMonth / soldV.filter(v => v.soldDate && v.soldDate.startsWith(thisMonth)).length) : "—"}</span></div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
+            <Card style={{ padding: 16 }}>
+              <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Receita</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull(plData?.grossRevenue || cR(allF) || 0)}</div>
             </Card>
-            <Card style={{ padding: 22 }}>
-              <h3 style={{ margin: "0 0 14px", fontSize: 14, fontWeight: 600 }}>Comparacao</h3>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid " + C.border }}><span style={{ fontSize: 12, color: C.textDim }}>Lucro Mes Passado</span><span style={{ fontSize: 16, fontWeight: 700, color: profitLastMonth > 0 ? C.green : C.red }}>{fmtFull(profitLastMonth)}</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0" }}><span style={{ fontSize: 12, color: C.textDim }}>Variacao</span><span style={{ fontSize: 16, fontWeight: 700, color: (profitThisMonth - profitLastMonth) > 0 ? C.green : C.red }}>{(profitThisMonth - profitLastMonth) > 0 ? "+" : ""}{fmtFull(profitThisMonth - profitLastMonth)}</span></div>
+            <Card style={{ padding: 16 }}>
+              <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Custo Total</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.totalVehicleCosts || cCost(allF) || 0)}</div>
+            </Card>
+            <Card style={{ padding: 16 }}>
+              <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Lucro Bruto</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull((plData?.grossRevenue || cR(allF) || 0) - (plData?.totalVehicleCosts || cCost(allF) || 0))}</div>
+            </Card>
+            <Card style={{ padding: 16 }}>
+              <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Despesas</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.generalExpenses || expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0) || 0)}</div>
+            </Card>
+            <Card style={{ padding: 16 }}>
+              <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Lucro Líquido</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: (plData?.netProfit || (totalProfit - expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0)) || 0) > 0 ? C.green : C.red }}>{fmtFull(plData?.netProfit || (totalProfit - expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0)) || 0)}</div>
+            </Card>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, borderBottom: "1px solid " + C.border, paddingBottom: 12 }}>
+            <button onClick={function() { setFinSub('overview'); }} style={{ padding: "8px 12px", background: finSub === 'overview' ? C.accent : "transparent", color: finSub === 'overview' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Visão Geral</button>
+            <button onClick={function() { setFinSub('vehicles'); }} style={{ padding: "8px 12px", background: finSub === 'vehicles' ? C.accent : "transparent", color: finSub === 'vehicles' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Por Veículo</button>
+            <button onClick={function() { setFinSub('monthly'); }} style={{ padding: "8px 12px", background: finSub === 'monthly' ? C.accent : "transparent", color: finSub === 'monthly' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Mensal</button>
+          </div>
+
+          {finSub === 'overview' && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Card style={{ padding: 20 }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Lucro - 6 Meses</h3>
+              {(function() {
+                var months = [];
+                for (var i = 5; i >= 0; i--) {
+                  var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                  var monthStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+                  var monthProfit = (soldV || []).filter(function(v) { return v.soldDate && v.soldDate.startsWith(monthStr); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
+                  months.push({ label: monthStr.split("-")[1], label2: "", value: monthProfit, color: monthProfit > 0 ? C.green : C.red });
+                }
+                return <BarChart data={months} height={140} />;
+              })()}
+            </Card>
+            <Card style={{ padding: 20 }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Top 5 - Margem</h3>
+              {((soldV || []).slice().sort(function(a, b) { return Number(vMargin(b)) - Number(vMargin(a)); }).slice(0, 5)).map(function(v, i) {
+                return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < 4 ? "1px solid " + C.border : "none" }}>
+                  <div style={{ fontSize: 12, color: C.text }}>{v.make} {v.model}</div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</span>
+                </div>;
+              })}
             </Card>
           </div>}
+
+          {finSub === 'vehicles' && <Card style={{ padding: 20 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Veículos Vendidos</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Veículo</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Compra</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Custos</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Venda</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Lucro</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim }}>Margem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(soldV || []).map(function(v) {
+                    return <tr key={v.id} style={{ borderBottom: "1px solid " + C.border }}>
+                      <td style={{ padding: "12px" }}>{v.make} {v.model} {v.year}</td>
+                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(v.purchasePrice || 0)}</td>
+                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(totalCosts(v))}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(v.soldPrice || v.salePrice || 0)}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 700, color: vProfit(v) > 0 ? C.green : C.red }}>{fmtFull(vProfit(v))}</td>
+                      <td style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>}
+
+          {finSub === 'monthly' && <Card style={{ padding: 20 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Relatório Mensal</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Mês</label>
+                <input type="number" min="1" max="12" value={finMonth} onChange={function(e) { setFinMonth(Number(e.target.value)); }} style={{ width: "100%", padding: "8px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Ano</label>
+                <input type="number" value={finYear} onChange={function(e) { setFinYear(Number(e.target.value)); }} style={{ width: "100%", padding: "8px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                <button onClick={function() { loadFinancialMonthly(); }} style={{ width: "100%", padding: "8px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Carregar</button>
+              </div>
+            </div>
+            {finMonthlyData && finMonthlyData.length > 0 ? <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Descrição</th>
+                    <th style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Valor</th>
+                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {finMonthlyData.map(function(t, i) {
+                    return <tr key={i} style={{ borderBottom: "1px solid " + C.border }}>
+                      <td style={{ padding: "10px" }}>{t.description || "-"}</td>
+                      <td style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: t.type === 'income' ? C.green : C.red }}>{fmtFull(t.amount || 0)}</td>
+                      <td style={{ padding: "10px" }}>{t.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+            </div> : <div style={{ fontSize: 12, color: C.textDim, padding: "20px", textAlign: "center" }}>Sem dados para o período</div>}
+          </Card>}
+        </div>}
+
+        {/* IPVA */}
+        {tab === "ipva" && <div>
+          <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>IPVA</h2>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Total Pendente</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.yellow }}>{ipvaSummary?.pending || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.pending_amount || 0))}</div>
+            </Card>
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Urgente (&lt; 15d)</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.red }}>{ipvaSummary?.urgent || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.urgent_amount || 0))}</div>
+            </Card>
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Pagos</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.green }}>{ipvaSummary?.paid || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.paid_amount || 0))}</div>
+            </Card>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <button onClick={function() { setShowIpvaForm(showIpvaForm ? null : 'new'); }} style={{ padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
+              {showIpvaForm ? "Cancelar" : "+ Registrar IPVA"}
+            </button>
+
+            {showIpvaForm && <Card style={{ padding: 16, marginTop: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Estado</label>
+                  <select value={ipvaFormState} onChange={function(e) { setIpvaFormState(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
+                    <option value="SP">SP (4%)</option>
+                    <option value="SC">SC (2%)</option>
+                    <option value="RJ">RJ (3%)</option>
+                    <option value="MG">MG (3.5%)</option>
+                    <option value="RS">RS (3%)</option>
+                    <option value="PR">PR (3.5%)</option>
+                    <option value="BA">BA (3%)</option>
+                    <option value="PE">PE (3.5%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Ano</label>
+                  <input type="number" value={ipvaFormYear} onChange={function(e) { setIpvaFormYear(Number(e.target.value)); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
+                </div>
+              </div>
+              <button onClick={async function() { if (!ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormState, { year: ipvaFormYear }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
+            </Card>}
+          </div>
+
+          <Card style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Veículo</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Estado</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Alíquota</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Valor</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Vencimento</th>
+                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Status</th>
+                    <th style={{ padding: "12px", textAlign: "center" }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {ipvaList.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : ipvaList.map(function(ipva) {
+                    var daysTo = ipva.due_date ? Math.ceil((new Date(ipva.due_date) - new Date()) / 86400000) : 999;
+                    var statusColor = ipva.status === 'paid' ? C.green : daysTo <= 15 ? C.red : C.yellow;
+                    var statusLabel = ipva.status === 'paid' ? 'Pago' : daysTo <= 15 ? 'Urgente' : 'Pendente';
+                    return <tr key={ipva.id} style={{ borderBottom: "1px solid " + C.border, background: ipva.status === 'paid' ? C.surfaceAlt : "transparent" }}>
+                      <td style={{ padding: "12px" }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
+                      <td style={{ padding: "12px" }}>{ipva.state || ""}</td>
+                      <td style={{ padding: "12px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
+                      <td style={{ padding: "12px" }}>{ipva.due_date ? new Date(ipva.due_date).toLocaleDateString("pt-BR") : "-"}</td>
+                      <td style={{ padding: "12px", textAlign: "center" }}><span style={{ background: statusColor + "22", color: statusColor, padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{statusLabel}</span></td>
+                      <td style={{ padding: "12px", textAlign: "center" }}>
+                        {ipva.status !== 'paid' && <button onClick={async function() { try { await ipvaAPI.markPaid(ipva.id); setIpvaList(ipvaList.map(function(i) { return i.id === ipva.id ? Object.assign({}, i, { status: 'paid' }) : i; })); } catch (err) { alert('Erro: ' + err.message); } }} style={{ padding: "4px 8px", background: C.greenBg, color: C.green, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600, marginRight: 4 }}>Pagar</button>}
+                        <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "4px 8px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Deletar</button>
+                      </td>
+                    </tr>;
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         </div>}
 
         {/* GASTOS GERAIS */}

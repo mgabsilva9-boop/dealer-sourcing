@@ -3,10 +3,8 @@
  * Todas as chamadas HTTP para o backend
  */
 
-// Vite injeta automaticamente variáveis VITE_* via import.meta.env
-// Em produção: https://dealer-sourcing-api-production.up.railway.app
-// Em desenvolvimento: http://localhost:3000
-const API_BASE = import.meta.env.VITE_API_URL || 'https://dealer-sourcing-api-production.up.railway.app';
+// URL do backend — em dev localhost:8000, em prod via VITE_API_URL
+const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : (import.meta.env.VITE_API_URL || '');
 
 class APIError extends Error {
   constructor(status, message, data) {
@@ -142,6 +140,14 @@ export const inventoryAPI = {
       method: 'DELETE',
     });
   },
+
+  async plSummary(from, to) {
+    const params = new URLSearchParams();
+    if (from) params.append('from', from);
+    if (to) params.append('to', to);
+    const qs = params.toString();
+    return fetchAPI(`/inventory/pl-summary${qs ? '?' + qs : ''}`);
+  },
 };
 
 // ─── CRM API (Clientes)
@@ -272,6 +278,59 @@ export const healthAPI = {
     } catch {
       return false;
     }
+  },
+};
+
+// ─── IPVA API
+export const ipvaAPI = {
+  async list(status) {
+    const qs = status ? `?status=${status}` : '';
+    return fetchAPI(`/ipva/list${qs}`);
+  },
+
+  async summary() {
+    return fetchAPI('/ipva/summary');
+  },
+
+  async urgent() {
+    return fetchAPI('/ipva/urgent');
+  },
+
+  async create(vehicleId, data) {
+    return fetchAPI(`/ipva/vehicle/${vehicleId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async markPaid(id) {
+    return fetchAPI(`/ipva/${id}/mark-paid`, {
+      method: 'PUT',
+      body: JSON.stringify({}),
+    });
+  },
+
+  async delete(id) {
+    return fetchAPI(`/ipva/${id}`, { method: 'DELETE' });
+  },
+};
+
+// ─── FINANCIAL API
+export const financialAPI = {
+  async summary() {
+    return fetchAPI('/financial/summary');
+  },
+
+  async vehiclePL(id) {
+    return fetchAPI(`/financial/vehicle/${id}`);
+  },
+
+  async monthly(year, month) {
+    return fetchAPI(`/financial/report/monthly/${year}/${month}`);
+  },
+
+  async comparison() {
+    return fetchAPI('/financial/comparison');
   },
 };
 
