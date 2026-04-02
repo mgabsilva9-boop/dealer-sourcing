@@ -12,19 +12,21 @@
 -- ============================================
 
 -- ============================================
--- PHASE 1: ADD COST COLUMNS TO VEHICLES TABLE
+-- PHASE 1: ADD COST COLUMNS TO INVENTORY TABLE
 -- ============================================
 
 -- Adicionar colunas de custo (se não existirem)
-ALTER TABLE vehicles
+-- NOTE: Using inventory table instead of vehicles (inventory is the runtime table)
+ALTER TABLE inventory
 ADD COLUMN IF NOT EXISTS transport_cost INTEGER DEFAULT 0, -- em centavos
 ADD COLUMN IF NOT EXISTS reconditioning_cost INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS documentation_cost INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ADD COLUMN IF NOT EXISTS documentation_cost INTEGER DEFAULT 0;
 
-COMMENT ON COLUMN vehicles.transport_cost IS 'Custo de transporte em centavos';
-COMMENT ON COLUMN vehicles.reconditioning_cost IS 'Custo de recondicionamento em centavos';
-COMMENT ON COLUMN vehicles.documentation_cost IS 'Custo de documentação (RENAVAM, CRV, etc) em centavos';
+-- Note: created_at already exists in inventory table
+
+COMMENT ON COLUMN inventory.transport_cost IS 'Custo de transporte em centavos';
+COMMENT ON COLUMN inventory.reconditioning_cost IS 'Custo de recondicionamento em centavos';
+COMMENT ON COLUMN inventory.documentation_cost IS 'Custo de documentação (RENAVAM, CRV, etc) em centavos';
 
 -- ============================================
 -- PHASE 2: CREATE IPVA_TRACKING TABLE
@@ -34,7 +36,7 @@ CREATE TABLE IF NOT EXISTS ipva_tracking (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Relações
-  vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
+  vehicle_id UUID NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
   dealership_id UUID NOT NULL REFERENCES dealerships(id) ON DELETE RESTRICT,
 
   -- Identificação do veículo
@@ -107,7 +109,7 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Relações
-  vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
+  vehicle_id UUID REFERENCES inventory(id) ON DELETE SET NULL,
   dealership_id UUID NOT NULL REFERENCES dealerships(id) ON DELETE RESTRICT,
 
   -- Tipo de transação
@@ -161,53 +163,63 @@ CREATE TRIGGER trg_financial_transactions_updated_at
   EXECUTE FUNCTION update_financial_transactions_timestamp();
 
 -- ============================================
--- PHASE 4: ADD dealership_id TO VEHICLES (IF NOT EXISTS)
+-- PHASE 4: ADD dealership_id TO INVENTORY (IF NOT EXISTS)
 -- ============================================
 
-ALTER TABLE vehicles
+-- Note: dealership_id already exists in inventory table from creation
+-- Verify it exists
+ALTER TABLE inventory
 ADD COLUMN IF NOT EXISTS dealership_id UUID;
 
--- Backfill com Loja A (primeira dealership)
-UPDATE vehicles
-SET dealership_id = (SELECT id FROM dealerships WHERE name LIKE 'Loja A%' LIMIT 1)
+-- Backfill with first dealership if needed
+UPDATE inventory
+SET dealership_id = (SELECT id FROM dealerships LIMIT 1)
 WHERE dealership_id IS NULL AND (SELECT COUNT(*) FROM dealerships) > 0;
 
-ALTER TABLE vehicles
-ADD CONSTRAINT vehicles_dealership_id_fk
-FOREIGN KEY (dealership_id) REFERENCES dealerships(id) ON DELETE RESTRICT;
-
-ALTER TABLE vehicles
-ALTER COLUMN dealership_id SET NOT NULL;
+-- Add FK constraint if not exists
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name = 'inventory' AND constraint_name = 'inventory_dealership_id_fk'
+  ) THEN
+    ALTER TABLE inventory
+    ADD CONSTRAINT inventory_dealership_id_fk
+    FOREIGN KEY (dealership_id) REFERENCES dealerships(id) ON DELETE RESTRICT;
+  END IF;
+END $$;
 
 -- Índice: dealership_id como leader
-CREATE INDEX IF NOT EXISTS idx_vehicles_dealership_status ON vehicles(dealership_id, status);
+CREATE INDEX IF NOT EXISTS idx_inventory_dealership_status ON inventory(dealership_id, status);
 
-COMMENT ON COLUMN vehicles.dealership_id IS 'Dealership que possui este veículo';
+COMMENT ON COLUMN inventory.dealership_id IS 'Dealership que possui este veículo';
 
 -- ============================================
--- PHASE 5: UPDATE RLS POLICIES FOR VEHICLES
+-- PHASE 5: UPDATE RLS POLICIES FOR INVENTORY
 -- ============================================
 
--- Verificar se tabela vehicles tem RLS ativada
-ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
+-- Verificar se tabela inventory tem RLS ativada
+ALTER TABLE inventory ENABLE ROW LEVEL SECURITY;
 
--- Drop old policies
-DROP POLICY IF EXISTS "vehicles_select_same_shop" ON vehicles;
-DROP POLICY IF EXISTS "vehicles_insert_same_shop" ON vehicles;
-DROP POLICY IF EXISTS "vehicles_update_same_shop" ON vehicles;
+-- Drop old policies (if using old naming)
+DROP POLICY IF EXISTS "vehicles_select_same_shop" ON inventory;
+DROP POLICY IF EXISTS "vehicles_insert_same_shop" ON inventory;
+DROP POLICY IF EXISTS "vehicles_update_same_shop" ON inventory;
+DROP POLICY IF EXISTS "inventory_select_same_shop" ON inventory;
+DROP POLICY IF EXISTS "inventory_insert_same_shop" ON inventory;
+DROP POLICY IF EXISTS "inventory_update_same_shop" ON inventory;
 
 -- Criar novas policies baseadas em dealership_id
-CREATE POLICY "vehicles_dealership_isolation" ON vehicles
+CREATE POLICY "inventory_dealership_isolation" ON inventory
   FOR SELECT USING (
     dealership_id = (SELECT dealership_id FROM users WHERE id = auth.uid() LIMIT 1)
   );
 
-CREATE POLICY "vehicles_dealership_insert" ON vehicles
+CREATE POLICY "inventory_dealership_insert" ON inventory
   FOR INSERT WITH CHECK (
     dealership_id = (SELECT dealership_id FROM users WHERE id = auth.uid() LIMIT 1)
   );
 
-CREATE POLICY "vehicles_dealership_update" ON vehicles
+CREATE POLICY "inventory_dealership_update" ON inventory
   FOR UPDATE USING (
     dealership_id = (SELECT dealership_id FROM users WHERE id = auth.uid() LIMIT 1)
   );
@@ -220,13 +232,13 @@ DO $$
 DECLARE
   missing_dealership_count INT;
 BEGIN
-  -- Verificar se há vehicles sem dealership_id
+  -- Verificar se há inventory items sem dealership_id
   SELECT COUNT(*) INTO missing_dealership_count
-  FROM vehicles
+  FROM inventory
   WHERE dealership_id IS NULL;
 
   IF missing_dealership_count > 0 THEN
-    RAISE WARNING 'Found % vehicles without dealership_id', missing_dealership_count;
+    RAISE WARNING 'Found % inventory items without dealership_id', missing_dealership_count;
   END IF;
 
   -- Log de sucesso

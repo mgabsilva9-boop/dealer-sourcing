@@ -14,6 +14,39 @@ const router = express.Router();
 router.use(authMiddleware);
 
 // ============================================
+// HELPER: Inicializar tabela IPVA
+// ============================================
+async function initIpvaTable() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ipva_tracking (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        vehicle_id UUID NOT NULL REFERENCES inventory(id) ON DELETE CASCADE,
+        dealership_id UUID NOT NULL REFERENCES dealerships(id),
+        plate TEXT DEFAULT '',
+        state TEXT NOT NULL DEFAULT 'SP',
+        vehicle_value DECIMAL(15,2) DEFAULT 0,
+        aliquota NUMERIC(5,2) NOT NULL DEFAULT 4.0,
+        ipva_due DECIMAL(15,2) NOT NULL DEFAULT 0,
+        due_date DATE NOT NULL,
+        paid_at TIMESTAMPTZ,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'urgent', 'paid')),
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+    console.log('✅ Tabela ipva_tracking verificada/criada');
+  } catch (error) {
+    console.error('⚠️ Erro ao criar tabela IPVA:', error.message);
+  }
+}
+
+// Inicializar tabela na ativação
+initIpvaTable().catch(err => {
+  console.error('⚠️ Erro ao inicializar IPVA (servidor continua):', err.message);
+});
+
+// ============================================
 // POST /ipva/vehicle/:id — Criar IPVA
 // ============================================
 
@@ -30,7 +63,7 @@ router.post('/vehicle/:id', async (req, res) => {
 
     // Verificar se veículo pertence a esta dealership
     const vehicleCheck = await pool.query(
-      'SELECT id FROM vehicles WHERE id = $1 AND dealership_id = $2',
+      'SELECT id FROM inventory WHERE id = $1 AND dealership_id = $2',
       [vehicleId, dealershipId]
     );
 
@@ -163,9 +196,9 @@ router.get('/list', async (req, res) => {
     let query = `
       SELECT
         i.*,
-        v.make, v.model, v.year
+        inv.make, inv.model, inv.year
       FROM ipva_tracking i
-      LEFT JOIN vehicles v ON i.vehicle_id = v.id
+      LEFT JOIN inventory inv ON i.vehicle_id = inv.id
       WHERE i.dealership_id = $1
     `;
 
@@ -201,10 +234,10 @@ router.get('/urgent', async (req, res) => {
     const query = `
       SELECT
         i.*,
-        v.make, v.model, v.year,
+        inv.make, inv.model, inv.year,
         (i.due_date - CURRENT_DATE) as days_until_due
       FROM ipva_tracking i
-      LEFT JOIN vehicles v ON i.vehicle_id = v.id
+      LEFT JOIN inventory inv ON i.vehicle_id = inv.id
       WHERE i.dealership_id = $1
         AND i.status IN ('urgent', 'overdue')
       ORDER BY i.due_date ASC

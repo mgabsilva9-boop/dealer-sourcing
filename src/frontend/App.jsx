@@ -1212,23 +1212,23 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginBottom: 20 }}>
             <Card style={{ padding: 16 }}>
               <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Receita</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull(plData?.grossRevenue || cR(allF) || 0)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull(plData?.grossRevenue || 0)}</div>
             </Card>
             <Card style={{ padding: 16 }}>
               <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Custo Total</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.totalVehicleCosts || cCost(allF) || 0)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.totalVehicleCosts || 0)}</div>
             </Card>
             <Card style={{ padding: 16 }}>
               <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Lucro Bruto</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull((plData?.grossRevenue || cR(allF) || 0) - (plData?.totalVehicleCosts || cCost(allF) || 0))}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>{fmtFull((plData?.grossRevenue || 0) - (plData?.totalVehicleCosts || 0))}</div>
             </Card>
             <Card style={{ padding: 16 }}>
               <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Despesas</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.generalExpenses || expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0) || 0)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.red }}>{fmtFull(plData?.generalExpenses || 0)}</div>
             </Card>
             <Card style={{ padding: 16 }}>
               <div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", marginBottom: 6 }}>Lucro Líquido</div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: (plData?.netProfit || (totalProfit - expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0)) || 0) > 0 ? C.green : C.red }}>{fmtFull(plData?.netProfit || (totalProfit - expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0)) || 0)}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: (plData?.netProfit || 0) > 0 ? C.green : C.red }}>{fmtFull(plData?.netProfit || 0)}</div>
             </Card>
           </div>
 

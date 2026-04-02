@@ -29,12 +29,14 @@ router.get('/vehicle/:id', async (req, res) => {
 
     const vehicleQuery = `
       SELECT
-        id, make, model, year,
-        purchase_price, sale_price,
-        transport_cost, reconditioning_cost, documentation_cost,
-        status, created_at
-      FROM vehicles
-      WHERE id = $1 AND dealership_id = $2
+        inv.id, inv.make, inv.model, inv.year,
+        inv.purchase_price, inv.sale_price,
+        inv.status, inv.created_at,
+        COALESCE(SUM(vc.amount), 0) as total_costs
+      FROM inventory inv
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = inv.id
+      WHERE inv.id = $1 AND inv.dealership_id = $2
+      GROUP BY inv.id
     `;
 
     const vehicleResult = await pool.query(vehicleQuery, [id, dealershipId]);
@@ -59,6 +61,9 @@ router.get('/vehicle/:id', async (req, res) => {
     // Calcular P&L
     const profitData = calculateVehicleProfit({
       ...vehicle,
+      transport_cost: 0,
+      reconditioning_cost: 0,
+      documentation_cost: 0,
       ipva_due: ipvaDue,
     });
 
@@ -102,13 +107,12 @@ router.get('/comparison', async (req, res) => {
     const dealershipsQuery = `
       SELECT
         d.id, d.name,
-        COUNT(v.id) as vehicle_count,
-        SUM(COALESCE(v.purchase_price, 0) +
-            COALESCE(v.transport_cost, 0) +
-            COALESCE(v.reconditioning_cost, 0) +
-            COALESCE(v.documentation_cost, 0)) as total_cost
+        COUNT(inv.id) as vehicle_count,
+        SUM(COALESCE(inv.purchase_price, 0)) +
+        COALESCE(SUM(vc.amount), 0) as total_cost
       FROM dealerships d
-      LEFT JOIN vehicles v ON d.id = v.dealership_id
+      LEFT JOIN inventory inv ON d.id = inv.dealership_id
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = inv.id
       GROUP BY d.id, d.name
       ORDER BY d.name
     `;
@@ -119,16 +123,20 @@ router.get('/comparison', async (req, res) => {
     // Buscar todas as vendas e calcular lucro realizado
     const salesQuery = `
       SELECT
-        v.dealership_id,
-        SUM(v.sale_price - (COALESCE(v.purchase_price, 0) +
-            COALESCE(v.transport_cost, 0) +
-            COALESCE(v.reconditioning_cost, 0) +
-            COALESCE(v.documentation_cost, 0) +
+        inv.dealership_id,
+        SUM((COALESCE(inv.sold_price, inv.sale_price, 0)) -
+            (COALESCE(inv.purchase_price, 0) +
+            COALESCE(vc_costs.total_costs, 0) +
             COALESCE(i.ipva_due, 0))) as realized_profit
-      FROM vehicles v
-      LEFT JOIN ipva_tracking i ON v.id = i.vehicle_id AND i.dealership_id = v.dealership_id
-      WHERE v.status = 'sold'
-      GROUP BY v.dealership_id
+      FROM inventory inv
+      LEFT JOIN (
+        SELECT inventory_id, SUM(amount) as total_costs
+        FROM vehicle_costs
+        GROUP BY inventory_id
+      ) vc_costs ON vc_costs.inventory_id = inv.id
+      LEFT JOIN ipva_tracking i ON inv.id = i.vehicle_id AND i.dealership_id = inv.dealership_id
+      WHERE inv.status = 'sold'
+      GROUP BY inv.dealership_id
     `;
 
     const salesResult = await pool.query(salesQuery);
@@ -212,28 +220,27 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
     // Veículos vendidos neste mês
     const soldQuery = `
       SELECT
-        id, make, model, year,
-        purchase_price, sale_price,
-        transport_cost, reconditioning_cost, documentation_cost,
-        created_at
-      FROM vehicles
-      WHERE dealership_id = $1
-        AND status = 'sold'
-        AND created_at >= $2::date
-        AND created_at <= $3::date
+        inv.id, inv.make, inv.model, inv.year,
+        inv.purchase_price, inv.sale_price, inv.sold_price,
+        inv.created_at,
+        COALESCE(SUM(vc.amount), 0) as total_costs
+      FROM inventory inv
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = inv.id
+      WHERE inv.dealership_id = $1
+        AND inv.status = 'sold'
+        AND inv.created_at >= $2::date
+        AND inv.created_at <= $3::date
+      GROUP BY inv.id
     `;
 
     const soldResult = await pool.query(soldQuery, [dealershipId, startDate, endDate]);
 
     // Calcular P&L dos vendidos
-    const totalRevenue = soldResult.rows.reduce((sum, v) => sum + (v.sale_price || 0), 0);
+    const totalRevenue = soldResult.rows.reduce((sum, v) => sum + (v.sold_price || v.sale_price || 0), 0);
     const totalCost = soldResult.rows.reduce(
       (sum, v) =>
         sum +
-        ((v.purchase_price || 0) +
-          (v.transport_cost || 0) +
-          (v.reconditioning_cost || 0) +
-          (v.documentation_cost || 0)),
+        ((v.purchase_price || 0) + (v.total_costs || 0)),
       0
     );
     const netProfit = totalRevenue - totalCost;
@@ -268,22 +275,25 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
 router.get('/summary', async (req, res) => {
   try {
     const dealershipId = req.user.dealership_id;
+    console.log('[DEBUG] /financial/summary called with dealershipId:', dealershipId);
 
     const summaryQuery = `
       SELECT
-        COUNT(*) as total_vehicles,
-        SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) as vehicles_sold,
-        SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as vehicles_available,
-        SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as vehicles_maintenance,
-        SUM(COALESCE(purchase_price, 0)) as total_investment,
-        SUM(COALESCE(sale_price, 0) - (
-          COALESCE(purchase_price, 0) +
-          COALESCE(transport_cost, 0) +
-          COALESCE(reconditioning_cost, 0) +
-          COALESCE(documentation_cost, 0)
+        COUNT(inv.id) as total_vehicles,
+        SUM(CASE WHEN inv.status = 'sold' THEN 1 ELSE 0 END) as vehicles_sold,
+        SUM(CASE WHEN inv.status = 'available' THEN 1 ELSE 0 END) as vehicles_available,
+        SUM(CASE WHEN inv.status = 'maintenance' THEN 1 ELSE 0 END) as vehicles_maintenance,
+        SUM(COALESCE(inv.purchase_price, 0)) as total_investment,
+        SUM((COALESCE(inv.sold_price, inv.sale_price, 0)) - (
+          COALESCE(inv.purchase_price, 0) +
+          COALESCE(vc_totals.cost_sum, 0)
         )) as total_profit
-      FROM vehicles
-      WHERE dealership_id = $1
+      FROM inventory inv
+      LEFT JOIN (
+        SELECT inventory_id, SUM(amount) AS cost_sum
+        FROM vehicle_costs GROUP BY inventory_id
+      ) vc_totals ON vc_totals.inventory_id = inv.id
+      WHERE inv.dealership_id = $1
     `;
 
     const result = await pool.query(summaryQuery, [dealershipId]);
