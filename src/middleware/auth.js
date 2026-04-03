@@ -4,8 +4,9 @@
  */
 
 import jwt from 'jsonwebtoken';
+import { query } from '../config/database.js';
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   try {
     // Extrair token do header
     const authHeader = req.headers.authorization;
@@ -20,8 +21,20 @@ export const authMiddleware = (req, res, next) => {
     const jwtSecret = process.env.JWT_SECRET || 'SECRET_FALLBACK_UNSAFE_DEVELOPMENT_ONLY';
     const decoded = jwt.verify(token, jwtSecret);
 
-    // Extrair user ID from JWT claims (custom 'id' field from auth.js, fallback to standard 'sub' or 'user_id')
-    const userId = decoded.id || decoded.sub || decoded.user_id;
+    // Extrair user ID from JWT claims (custom 'id' field from auth.js, fallback to standard 'sub' ou 'user_id')
+    let userId = decoded.id || decoded.sub || decoded.user_id;
+
+    // Se não tem ID no token, buscar no banco pelo email
+    if (!userId && decoded.email) {
+      try {
+        const result = await query('SELECT id FROM users WHERE email = $1 LIMIT 1', [decoded.email]);
+        if (result.rows[0]) {
+          userId = result.rows[0].id;
+        }
+      } catch (dbErr) {
+        console.warn('[AUTH] Erro ao buscar user por email:', dbErr.message);
+      }
+    }
 
     if (!userId) {
       return res.status(401).json({ error: 'User ID not found in token' });
