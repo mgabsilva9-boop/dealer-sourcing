@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(curl -s http://localhost:3000/health)",
+      "Bash(curl -s http://localhost:3000/inventory/list)",
+      "Bash(curl -s -X POST http://localhost:3000/auth/login -H 'Content-Type: application/json' -d '{:*)",
+      "Bash(curl:*)",
+      "Bash(node -e ':*)",
+      "Bash(pkill -f \"node.*server.js\")",
+      "Bash(cmd /c \"set PORT=3000 && npm run dev:server\")",
+      "Bash(netstat -ano)",
+      "Bash(tee backend.log)",
+      "Bash(pkill -9 node sleep 2 netstat -ano)",
+      "Bash(wmic process:*)",
+      "Bash(PORT=3000 npm run dev:server)",
+      "Bash(vercel env:*)",
+      "Bash(vercel deploy:*)"
+    ]
+  }
+}
