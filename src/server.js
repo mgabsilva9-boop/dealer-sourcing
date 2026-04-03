@@ -167,5 +167,6 @@ startServer();
 
 export { app, startServer };
 export default app;
-// Redeploy forced at Tue Mar 31 19:41:21 2026
-// Force Railway redeploy - 1775254892
+// FORCED REBUILD - JWT_SECRET and DATABASE_URL synchronized
+// Thu Apr 03 22:38:00 UTC 2026 - @devops manual redeploy trigger
+// Build hash: auth-middleware-fix-v2
