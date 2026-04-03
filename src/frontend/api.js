@@ -30,6 +30,14 @@ async function fetchAPI(endpoint, options = {}) {
 
   const data = await response.json();
 
+  // Auto-logout se receber 401 (token inválido ou expirado)
+  if (response.status === 401) {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/'; // Redireciona para login
+    return; // Não continua a execução
+  }
+
   if (!response.ok) {
     throw new APIError(response.status, data.error || 'API Error', data);
   }
