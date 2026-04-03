@@ -16,7 +16,11 @@
       "Bash(wmic process:*)",
       "Bash(PORT=3000 npm run dev:server)",
       "Bash(vercel env:*)",
-      "Bash(vercel deploy:*)"
+      "Bash(vercel deploy:*)",
+      "Bash(node:*)",
+      "Bash(railway --version)",
+      "Bash(railway service:*)",
+      "Bash(railway link:*)"
     ]
   }
 }
