@@ -552,7 +552,7 @@ export default function App() {
       } catch (err) {
         console.error('Erro ao carregar estoque:', err);
         setVehicles([]);
-        setStockError('Não foi possível carregar o estoque. Verifique se o servidor está rodando (porta 9000).');
+        setStockError('Não foi possível carregar o estoque. Verifique se o servidor está rodando (porta 3000).');
       }
       try {
         const customersData = await crmAPI.list();

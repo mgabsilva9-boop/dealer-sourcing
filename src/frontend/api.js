@@ -3,8 +3,8 @@
  * Todas as chamadas HTTP para o backend
  */
 
-// URL do backend — em dev localhost:8000, em prod via VITE_API_URL
-const API_BASE = import.meta.env.DEV ? 'http://localhost:8000' : (import.meta.env.VITE_API_URL || '');
+// URL do backend — usa VITE_API_URL se disponível, senão localhost:3000
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 class APIError extends Error {
   constructor(status, message, data) {
