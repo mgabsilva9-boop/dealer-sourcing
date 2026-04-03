@@ -16,7 +16,20 @@ const router = express.Router();
 // ===== INICIALIZAR USUÁRIOS PADRÃO =====
 async function initDefaultUsers() {
   try {
-    // 1. Garantir que a tabela users tem as colunas corretas
+    // 0. Garantir que a tabela users existe com estrutura correta
+    await query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(200),
+        dealership_id UUID,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 1. Garantir que a tabela users tem as colunas corretas (para migrações)
     await query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
     `);
