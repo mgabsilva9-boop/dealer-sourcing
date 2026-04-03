@@ -38,9 +38,18 @@ const INIT_VEHICLES = [
   { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "Loja A", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
 ];
 
-const INIT_CRM = [];
+const INIT_CRM = [
+  { id: 1, name: "José Augusto Ferreira", phone: "(16) 99234-5678", email: "jose@email.com", interest: "Ram 1500 Classic", status: "lead", type: "Colecionador", notes: "Interessado em RAM 1500. Visitou showroom em Jan/2026." },
+  { id: 2, name: "Marcos Henrique Lima", phone: "(19) 98765-4321", email: "marcos@email.com", interest: "BMW M3", status: "active", type: "Empresário", notes: "CEO de startup. Procura carro premium para uso executivo." },
+  { id: 3, name: "Carla Beatriz Santos", phone: "(11) 97654-3210", email: "carla@email.com", interest: "Toyota SW4", status: "prospect", type: "Executiva", notes: "Interesse em SW4 Diamond. Lead qualificado de Facebook." },
+];
 
-const INIT_EXPENSES = [];
+const INIT_EXPENSES = [
+  { id: 1, category: "Aluguel", description: "Aluguel Galpão", amount: 3500, date: "2026-04-01", status: "paid" },
+  { id: 2, category: "Seguro", description: "Seguro Estoque", amount: 2200, date: "2026-03-20", status: "paid" },
+  { id: 3, category: "Marketing", description: "Marketing Digital", amount: 1800, date: "2026-04-05", status: "pending" },
+  { id: 4, category: "Operacional", description: "Financiamento Equipamentos", amount: 4500, date: "2026-03-01", status: "paid" },
+];
 
 const SOURCING = [
   { id: 1, platform: "WebMotors", make: "Ram", model: "1500 Laramie", year: 2024, price: 395000, fipe: 430000, discount: -8.1, km: 15000, location: "Sao Paulo, SP", score: 92, time: "2h atras", phone: "(11) 98765-4321", url: "https://webmotors.com.br/anuncio/123456", kmRating: "Baixa", owners: 1, accidents: 0, serviceHistory: "Completo (concess.)", bodyCondition: "Excelente" },
@@ -490,6 +499,7 @@ export default function App() {
   const [ipvaSummary, setIpvaSummary] = useState(null);
   const [ipvaLoading, setIpvaLoading] = useState(false);
   const [showIpvaForm, setShowIpvaForm] = useState(null);
+  const [ipvaFormVehicleId, setIpvaFormVehicleId] = useState('');
   const [ipvaFormState, setIpvaFormState] = useState('SP');
   const [ipvaFormYear, setIpvaFormYear] = useState(new Date().getFullYear());
   const [finData, setFinData] = useState(null);
@@ -1359,7 +1369,14 @@ export default function App() {
             </button>
 
             {showIpvaForm && <Card style={{ padding: 16, marginTop: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Veiculo</label>
+                  <select value={ipvaFormVehicleId} onChange={function(e) { setIpvaFormVehicleId(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
+                    <option value="">Selecione um veículo...</option>
+                    {vehicles.map(function(v) { return <option key={v.id} value={v.id}>{v.make} {v.model} ({v.year})</option>; })}
+                  </select>
+                </div>
                 <div>
                   <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Estado</label>
                   <select value={ipvaFormState} onChange={function(e) { setIpvaFormState(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
@@ -1378,7 +1395,7 @@ export default function App() {
                   <input type="number" value={ipvaFormYear} onChange={function(e) { setIpvaFormYear(Number(e.target.value)); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
                 </div>
               </div>
-              <button onClick={async function() { if (!ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormState, { year: ipvaFormYear }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
+              <button onClick={async function() { if (!ipvaFormVehicleId || !ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormVehicleId, { state: ipvaFormState, year: ipvaFormYear }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormVehicleId(''); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
             </Card>}
           </div>
 
