@@ -1,0 +1,23 @@
+DEPLOY STATUS - 7 de Abril 2026
+
+Correções implementadas:
+✅ Commit: 075a82a
+✅ Push para GitHub: Concluído
+✅ GitHub Actions: Acionado (build testado localmente)
+
+Status de Deploy:
+- Vercel (Frontend): Deploy automático via GitHub configurado
+- Railway (Backend): Aguardando trigger
+
+Arquivos modificados:
+- src/middleware/auth.js
+- src/routes/auth.js
+- src/frontend/App.jsx
+- src/routes/inventory.js
+
+Teste local:
+✅ Build: npm run build (OK)
+✅ DB: Verificação completa (OK)
+✅ Syntax: Sem erros
+
+Pronto para deploy em produção.
