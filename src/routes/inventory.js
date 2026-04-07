@@ -295,54 +295,52 @@ router.get('/list', authMiddleware, async (req, res) => {
   }
 });
 
-// POST / - Criar novo veículo (REST)
+// POST / - Criar novo veículo (REST consolidado)
 router.post('/', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[POST /] [${requestId}]`;
+
   try {
     const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs } = req.body;
+    const userId = req.user.id;
+    const dealershipId = req.user.dealership_id;
 
+    // Log entrada
+    console.log(`${logPrefix} Iniciando criação de veículo:`, {
+      userId,
+      dealershipId,
+      make,
+      model,
+      year,
+    });
+
+    // Validar entrada
     if (!make || !model) {
+      console.warn(`${logPrefix} Validação falhou: make ou model vazios`);
       return res.status(400).json({ error: 'Marca e modelo são obrigatórios' });
     }
 
+    // Validar dealership_id
+    if (!dealershipId) {
+      console.error(`${logPrefix} ERRO CRÍTICO: dealership_id ausente no token`);
+      return res.status(400).json({ error: 'dealership_id ausente no token' });
+    }
+
     // Inserir veículo
+    console.log(`${logPrefix} Inserindo veículo no banco`);
     const vehicleResult = await query(
       `INSERT INTO inventory
        (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [req.user.id, req.user.dealership_id, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
-    );
-
-    const vehicle = normalizeVehicle(vehicleResult.rows[0]);
-    res.status(201).json(vehicle);
-  } catch (error) {
-    console.error('Erro ao criar veículo:', error);
-    res.status(500).json({ error: 'Erro ao criar veículo' });
-  }
-});
-
-// POST /create - Criar novo veículo (LEGACY)
-router.post('/create', authMiddleware, async (req, res) => {
-  try {
-    const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs } = req.body;
-
-    if (!make || !model) {
-      return res.status(400).json({ error: 'Marca e modelo são obrigatórios' });
-    }
-
-    // Inserir veículo
-    const vehicleResult = await query(
-      `INSERT INTO inventory
-       (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-       RETURNING *`,
-      [req.user.id, req.user.dealership_id, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
+      [userId, dealershipId, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
     );
 
     const vehicleId = vehicleResult.rows[0].id;
 
     // Inserir custos se fornecidos
     if (costs && typeof costs === 'object') {
+      console.log(`${logPrefix} Inserindo custos do veículo`);
       for (const [category, amount] of Object.entries(costs)) {
         if (amount > 0) {
           await query(
@@ -368,13 +366,39 @@ router.post('/create', authMiddleware, async (req, res) => {
       GROUP BY i.id
     `, [vehicleId]);
 
+    const vehicle = normalizeVehicle(fullResult.rows[0]);
+
+    console.log(`${logPrefix} ✅ Veículo criado com sucesso:`, {
+      vehicleId: vehicle.id,
+      make: vehicle.make,
+      model: vehicle.model,
+    });
+
     res.status(201).json({
       message: 'Veículo criado com sucesso',
-      vehicle: normalizeVehicle(fullResult.rows[0]),
+      vehicle: vehicle,
     });
+
   } catch (error) {
-    console.error('Erro ao criar veículo:', error);
+    console.error(`${logPrefix} ❌ Erro ao criar veículo:`, {
+      error: error.message,
+      code: error.code,
+      detail: error.detail,
+      stack: error.stack.split('\n').slice(0, 3),
+    });
     res.status(500).json({ error: 'Erro ao criar veículo' });
+  }
+});
+
+// POST /create - DEPRECATED (mantido por compatibilidade, usa mesma lógica que POST /)
+router.post('/create', authMiddleware, async (req, res) => {
+  console.warn('[DEPRECATED] POST /inventory/create - use POST /inventory instead');
+  // Invocar handler do POST / manualmente
+  const handlers = router.stack.find(x => x.route && x.route.path === '/' && x.route.methods.post);
+  if (handlers) {
+    handlers.handle(req, res);
+  } else {
+    res.status(501).json({ error: 'Endpoint não configurado corretamente' });
   }
 });
 
@@ -580,44 +604,87 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
 // POST - Upload de imagem (base64 ou URL)
 router.post('/:id/upload-image', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[POST /:id/upload-image] [${requestId}]`;
+
   try {
     const { id } = req.params;
     const { imageBase64, imageUrl } = req.body;
+    const dealershipId = req.user.dealership_id;
 
-    // Validar se veículo pertence à loja (dealership)
-    const vehicleResult = await query(
-      'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
-      [id, req.user.dealership_id],
-    );
+    console.log(`${logPrefix} Iniciando upload para veículo ${id}`);
 
-    if (vehicleResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Veículo não encontrado' });
-    }
-
-    let finalImageUrl = imageUrl;
-
-    // Se enviou base64, salvar em URL temporária (simplificado - em prod usar Supabase Storage)
-    if (imageBase64) {
-      // Para MVP, apenas armazenar o base64 como data URI
-      finalImageUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
-    }
-
-    if (!finalImageUrl) {
+    // Validar entrada
+    if (!imageBase64 && !imageUrl) {
+      console.warn(`${logPrefix} Validação falhou: imageBase64 e imageUrl vazios`);
       return res.status(400).json({ error: 'imageBase64 ou imageUrl são obrigatórios' });
     }
 
+    // Validar se veículo pertence à loja (dealership)
+    const vehicleResult = await query(
+      'SELECT id, image_url FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, dealershipId],
+    );
+
+    if (vehicleResult.rows.length === 0) {
+      console.warn(`${logPrefix} Veículo não encontrado ou não pertence ao user`, {
+        vehicleId: id,
+        dealershipId,
+      });
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // Preparar URL final
+    let finalImageUrl = imageUrl;
+    if (imageBase64) {
+      // Validar formato base64
+      if (!imageBase64.match(/^data:image\/(jpeg|png|gif|webp);base64,/) && !imageBase64.match(/^[A-Za-z0-9+/=]+$/)) {
+        console.warn(`${logPrefix} Formato base64 inválido`);
+        return res.status(400).json({
+          error: 'Formato base64 inválido. Esperado: data:image/jpeg;base64,... ou base64 puro',
+        });
+      }
+      finalImageUrl = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
+    }
+
+    // Validar tamanho (base64 é ~1.3x do binário)
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+    if (finalImageUrl.length > maxSizeBytes) {
+      console.warn(`${logPrefix} Imagem muito grande`, { sizeBytes: finalImageUrl.length, maxSizeBytes });
+      return res.status(413).json({ error: 'Imagem muito grande (máx 10MB)' });
+    }
+
+    // Log imagem antiga se existir
+    const oldImage = vehicleResult.rows[0].image_url;
+    if (oldImage) {
+      console.log(`${logPrefix} Substituindo imagem anterior`);
+    }
+
     // Atualizar veículo com URL da imagem
+    console.log(`${logPrefix} Atualizando image_url do veículo`);
     const result = await query(
       'UPDATE inventory SET image_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 AND dealership_id = $3 RETURNING *',
-      [finalImageUrl, id, req.user.dealership_id],
+      [finalImageUrl, id, dealershipId],
     );
+
+    const vehicle = normalizeVehicle(result.rows[0]);
+
+    console.log(`${logPrefix} ✅ Imagem salva com sucesso`, {
+      vehicleId: vehicle.id,
+      imageSizeKb: Math.round(finalImageUrl.length / 1024),
+    });
 
     res.json({
       message: 'Imagem salva com sucesso',
-      vehicle: result.rows[0],
+      vehicle: vehicle,
     });
+
   } catch (error) {
-    console.error('Erro ao salvar imagem:', error);
+    console.error(`${logPrefix} ❌ Erro ao salvar imagem:`, {
+      error: error.message,
+      code: error.code,
+      stack: error.stack.split('\n').slice(0, 2),
+    });
     res.status(500).json({ error: 'Erro ao salvar imagem' });
   }
 });

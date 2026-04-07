@@ -115,6 +115,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Email ou senha inválidos' });
     }
 
+    // VALIDAÇÃO CRÍTICA: dealership_id deve existir
+    if (!user.dealership_id) {
+      console.error('[LOGIN] ERRO CRÍTICO: User sem dealership_id:', { id: user.id, email: user.email });
+      return res.status(500).json({
+        error: 'Erro interno: usuário sem loja configurada. Contate administrador.'
+      });
+    }
+
     // Debug: Log user data para verificar dealership_id
     console.log('[LOGIN] User found:', { id: user.id, email: user.email, dealership_id: user.dealership_id });
 

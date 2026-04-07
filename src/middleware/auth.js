@@ -40,10 +40,17 @@ export const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'User ID not found in token' });
     }
 
+    // VALIDAÇÃO CRÍTICA: dealership_id deve existir
+    if (!decoded.dealership_id) {
+      console.warn('[AUTH] Token missing dealership_id:', { userId, email: decoded.email });
+      return res.status(401).json({ error: 'Token inválido: dealership_id ausente' });
+    }
+
     // Adicionar dados do usuário ao request com explicit user ID
     req.user = {
       ...decoded,
       id: userId, // Ensure consistent access via req.user.id
+      dealership_id: decoded.dealership_id, // Garantir acesso consistente
     };
 
     next();

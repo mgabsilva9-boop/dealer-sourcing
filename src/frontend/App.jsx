@@ -263,20 +263,48 @@ function VehicleForm({ onAdd, onCancel }) {
       };
       try {
         var result = await inventoryAPI.create(vehicleData);
-        if (result && result.vehicle) {
-          onAdd(result.vehicle);
+
+        // Validar resposta
+        if (!result || !result.vehicle) {
+          throw new Error('Resposta inválida do servidor: ' + JSON.stringify(result));
         }
+
+        // SUCESSO: dados persistidos no banco
+        onAdd(result.vehicle);
+        setError(""); // Limpar erros anteriores
+        localStorage.removeItem("vehicleFormDraft"); // Limpar rascunho
+
       } catch (apiErr) {
-        // Se API falhar, criar localmente com ID gerado
-        var localVehicle = Object.assign({
-          id: Date.now(),
-          daysInStock: 0,
-          imageUrl: null
-        }, vehicleData);
-        onAdd(localVehicle);
+        // ERRO: NÃO criar localmente
+        console.error('[VehicleForm] API Error:', apiErr);
+
+        // Diferenciar tipos de erro
+        if (apiErr instanceof APIError) {
+          if (apiErr.status === 400) {
+            // Validação no servidor
+            setError('Dados inválidos: ' + apiErr.message);
+          } else if (apiErr.status === 401) {
+            // Problema de autenticação
+            setError('Sessão expirada. Por favor, faça login novamente.');
+            localStorage.clear();
+            window.location.href = '/';
+          } else if (apiErr.status === 500) {
+            // Erro interno do servidor
+            setError('Erro no servidor. Tente novamente em alguns minutos.');
+          } else {
+            setError('Erro: ' + apiErr.message);
+          }
+        } else {
+          // Erro de rede ou timeout
+          setError('Erro de conexão. Verifique sua internet e tente novamente.');
+        }
+
+        // IMPORTANTE: NÃO adicionar veículo localmente
+        // Dados devem ser persistidos no banco ou falha total
       }
     } catch (err) {
-      setError(err instanceof APIError ? err.message : "Erro ao adicionar veiculo");
+      console.error('[VehicleForm] Unexpected error:', err);
+      setError('Erro inesperado: ' + (err.message || 'desconhecido'));
     } finally {
       setLoading(false);
     }
