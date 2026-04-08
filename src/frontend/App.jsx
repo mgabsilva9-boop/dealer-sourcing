@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI } from "./api.js";
+import { StatusPillGroup, statusConfig } from "./components/StatusPills.jsx";
+import { CostsList } from "./components/CostCards.jsx";
 
 const C = {
   bg: "#f0f4f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
@@ -756,6 +758,33 @@ export default function App() {
     })();
   }, [vehicles, selV]);
 
+  var updateStatus = useCallback(async function(id, newStatus) {
+    var vehicle = vehicles.find(v => v.id === id);
+    if (!vehicle) return;
+    var updates = {
+      status: newStatus,
+      statusChangedAt: new Date().toISOString(),
+      statusChangedBy: user.name || "Sistema"
+    };
+    var updatedVehicle = Object.assign({}, vehicle, updates);
+    setVehicles(p => p.map(v => v.id === id ? updatedVehicle : v));
+    if (selV && selV.id === id) {
+      setSelV(updatedVehicle);
+    }
+    try {
+      const res = await inventoryAPI.update(id, updatedVehicle);
+      if (res && res.vehicle) {
+        setVehicles(p => p.map(v => v.id === id ? Object.assign({}, v, res.vehicle) : v));
+        if (selV && selV.id === id) {
+          setSelV(Object.assign({}, selV, res.vehicle));
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar status:', err);
+      alert("Erro ao atualizar status. Tente novamente.");
+    }
+  }, [vehicles, selV, user]);
+
   const loadFinancialMonthly = async function() {
     try {
       const result = await financialAPI.monthly(finYear, String(finMonth).padStart(2, '0'));
@@ -1084,10 +1113,10 @@ export default function App() {
                   <div style={{ color: C.textDim, fontSize: 13, marginTop: 3 }}>{sv.year} | {(sv.mileage || 0).toLocaleString()} km | {sv.location} | {sv.motor} | {sv.potencia}</div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                  <Tag color={(statusMap[sv.status] || statusMap.available).color} bg={(statusMap[sv.status] || statusMap.available).bg}>{(statusMap[sv.status] || statusMap.available).label}</Tag>
-                  <select value={sv.status} onChange={function(e) { upd(sv.id, "status", e.target.value); }} style={{ padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 11, color: C.textMid, background: C.surface, cursor: "pointer" }}>
-                    {Object.keys(statusMap).map(function(k) { return <option key={k} value={k}>{statusMap[k].label}</option>; })}
-                  </select>
+                  <StatusPillGroup
+                    vehicle={sv}
+                    onStatusChange={function(newStatus) { return updateStatus(sv.id, newStatus); }}
+                  />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
@@ -1097,65 +1126,34 @@ export default function App() {
                   <EditField label="Km" value={sv.mileage || 0} onChange={function(val) { upd(sv.id, "mileage", val); }} type="number" />
                   <EditField label="Localizacao" value={sv.location} onChange={function(val) { upd(sv.id, "location", val); }} />
 
-                  {/* CUSTOS DETALHADOS EXPANDÍVEL */}
+                  {/* CUSTOS DINÂMICOS - CARDS FLUTUANTES */}
                   <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid " + C.border }}>
-                    <button onClick={function() { setShowCosts(!showCosts); }} style={{ width: "100%", padding: "8px 10px", background: "transparent", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: 12, color: C.textMid, fontWeight: 600 }}>Custos Gerais</span>
-                      <span style={{ fontSize: 18, color: C.accent, fontWeight: 600 }}>{showCosts ? "−" : "+"}</span>
-                    </button>
-                    {showCosts && <div style={{ marginTop: 10, padding: "12px 10px", background: C.surfaceAlt, borderRadius: 6, border: "1px solid " + C.border }}>
-                      {/* CABEÇALHO */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, padding: "0 8px 8px", borderBottom: "1px solid " + C.border }}>
-                        <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", fontWeight: 600 }}>Categoria</span>
-                        <span style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase", textAlign: "right", fontWeight: 600 }}>Valor</span>
-                        <span />
-                      </div>
-
-                      {/* LINHAS EDITÁVEIS */}
-                      {Object.keys(sv.costs || {}).map(function(key) {
-                        return <div key={key} style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, alignItems: "center", padding: "6px 8px" }}>
-                          <input
-                            defaultValue={key}
-                            onBlur={function(e) { if (e.target.value !== key) renameCost(sv.id, key, e.target.value.trim()); }}
-                            onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
-                            style={{ padding: "4px 6px", border: "1px solid " + C.border, borderRadius: 3, fontSize: 11, fontFamily: FONT, outline: "none" }}
-                          />
-                          <input
-                            type="number"
-                            defaultValue={(sv.costs || {})[key] || 0}
-                            onBlur={function(e) { updCost(sv.id, key, Number(e.target.value)); }}
-                            onKeyDown={function(e) { if (e.key === "Enter") e.target.blur(); }}
-                            style={{ padding: "4px 6px", border: "1px solid " + C.border, borderRadius: 3, fontSize: 11, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
-                          />
-                          <button onClick={function() { deleteCost(sv.id, key); }}
-                            style={{ padding: "3px 4px", background: C.redBg, color: C.red, border: "none", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>✕</button>
-                        </div>;
-                      })}
-
-                      {/* LINHA DE ADICIONAR NOVO CUSTO */}
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 28px", gap: 6, alignItems: "center", padding: "6px 8px", borderTop: "1px solid " + C.border, marginTop: 6 }}>
-                        <input
-                          value={newCostKey}
-                          onChange={function(e) { setNewCostKey(e.target.value); }}
-                          placeholder="Nova categoria..."
-                          style={{ padding: "4px 6px", border: "1px dashed " + C.border, borderRadius: 3, fontSize: 11, fontFamily: FONT, outline: "none" }}
-                        />
-                        <input
-                          type="number"
-                          value={newCostVal}
-                          onChange={function(e) { setNewCostVal(Number(e.target.value)); }}
-                          style={{ padding: "4px 6px", border: "1px dashed " + C.border, borderRadius: 3, fontSize: 11, textAlign: "right", fontFamily: FONT, outline: "none", width: "100%", boxSizing: "border-box" }}
-                        />
-                        <button
-                          onClick={function() {
-                            if (!newCostKey) return;
-                            updCost(sv.id, newCostKey, newCostVal);
-                            setNewCostKey("");
-                            setNewCostVal(0);
-                          }}
-                          style={{ padding: "3px 4px", background: C.accent, color: "#fff", border: "none", borderRadius: 3, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>+</button>
-                      </div>
-                    </div>}
+                    <CostsList
+                      costs={sv.costs || {}}
+                      onAddCost={function(category, value) {
+                        updCost(sv.id, category, value);
+                      }}
+                      onEditCost={function(oldCategory, newCategory, value) {
+                        var newCosts = Object.assign({}, sv.costs || {});
+                        if (oldCategory !== newCategory) {
+                          delete newCosts[oldCategory];
+                        }
+                        newCosts[newCategory] = value;
+                        setVehicles(p => p.map(v => v.id === sv.id ? Object.assign({}, v, { costs: newCosts }) : v));
+                        setSelV(v => Object.assign({}, v, { costs: newCosts }));
+                        (async () => {
+                          try {
+                            const vehicle = vehicles.find(v => v.id === sv.id);
+                            await inventoryAPI.update(sv.id, Object.assign({}, vehicle, { costs: newCosts }));
+                          } catch (err) {
+                            console.error('Erro ao atualizar custo:', err);
+                          }
+                        })();
+                      }}
+                      onDeleteCost={function(category) {
+                        deleteCost(sv.id, category);
+                      }}
+                    />
                   </div>
                 </Card>
                 <Card style={{ padding: 14 }}>
