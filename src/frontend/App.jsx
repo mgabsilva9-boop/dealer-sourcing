@@ -1071,28 +1071,25 @@ export default function App() {
               var margin = vMargin(v);
               var st = statusMap[v.status] || statusMap.available;
               var imgKey = v.make + " " + v.model;
-              return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", display: "flex", overflow: "hidden", opacity: v.status === "sold" ? 0.7 : 1 }}>
-                <div style={{ width: 150, minHeight: 100, flexShrink: 0, background: C.surfaceAlt, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                  {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
+              return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", overflow: "hidden", opacity: v.status === "sold" ? 0.7 : 1 }}>
+                <div style={{ width: "100%", height: "250px", background: "linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", aspectRatio: "16 / 9" }}>
+                  {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
+                  <div style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}>
+                    <div style={{ background: st.color, color: "#fff", padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>{st.label}</div>
+                  </div>
                 </div>
-                <div style={{ flex: 1, padding: "12px 18px", display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ flex: 2 }}>
+                <div style={{ display: "flex", flexDirection: "column", padding: "14px 18px", gap: 8 }}>
+                  <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{v.make} {v.model}</div>
-                    <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km | {v.location}</div>
-                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 2, opacity: 0.6 }}>{v.motor} | {v.potencia}</div>
-                    {v.status === "sold" && v.soldTo && <div style={{ fontSize: 11, color: C.blue, marginTop: 3, fontWeight: 500 }}>Vendido {v.soldDate ? new Date(v.soldDate).toLocaleDateString("pt-BR") : ""} --- {v.soldTo}</div>}
+                    <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{v.year} • {(v.mileage || 0).toLocaleString()} km</div>
+                    <div style={{ fontSize: 13, color: C.green, fontWeight: 600, marginTop: 4 }}>R$ {(v.salePrice || 0).toLocaleString("pt-BR")}</div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "flex-end", minWidth: 100 }}>
-                    <Tag color={st.color} bg={st.bg}>{st.label}</Tag>
-                    <div style={{ fontSize: 11, color: C.textDim, marginTop: 4 }}>Custo <span style={{ color: C.red, fontWeight: 600 }}>{fmt(totalCosts(v))}</span></div>
-                    <div style={{ fontSize: 11, color: C.textDim }}>Venda <span style={{ color: C.green, fontWeight: 600 }}>{fmt(v.soldPrice || v.salePrice)}</span></div>
-                  </div>
-                  <div style={{ textAlign: "center", minWidth: 50, paddingLeft: 12, borderLeft: "1px solid " + C.borderLight }}>
-                    <div style={{ color: margin >= 25 ? C.green : margin >= 15 ? C.yellow : C.red, fontWeight: 700, fontSize: 15 }}>{margin}%</div>
-                    <div style={{ fontSize: 9, color: C.textDim }}>margem</div>
-                    <div style={{ fontSize: 11, color: vProfit(v) >= 0 ? C.green : C.red, fontWeight: 600, marginTop: 2 }}>{fmt(vProfit(v))}</div>
-                    <div style={{ fontSize: 9, color: C.textDim }}>lucro</div>
-                    {v.status !== "sold" && <div style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green, fontWeight: 700, fontSize: 16, marginTop: 4 }}>{v.daysInStock}d</div>}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid " + C.border }}>
+                    <div style={{ fontSize: 11, color: C.textDim }}>Custo: <span style={{ color: C.text, fontWeight: 600 }}>{fmt(totalCosts(v))}</span></div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: margin >= 25 ? C.green : margin >= 15 ? C.yellow : C.red, fontWeight: 700, fontSize: 13 }}>{margin}% margem</div>
+                      <div style={{ fontSize: 11, color: vProfit(v) >= 0 ? C.green : C.red, marginTop: 2 }}>{fmt(vProfit(v))}</div>
+                    </div>
                   </div>
                 </div>
               </Card>;
@@ -1115,8 +1112,8 @@ export default function App() {
                     var statusIdx = kPipeline.indexOf(v.status);
                     return <div key={v.id} draggable={true} onDragStart={function(e) { e.dataTransfer.setData('vehicleId', String(v.id)); setDraggingId(v.id); }} onDragEnd={function() { setDraggingId(null); setDragOverCol(null); }} onClick={function() { setSelV(v); }} style={{ cursor: "grab", opacity: draggingId === v.id ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
                       <Card style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ width: "100%", height: 80, background: C.surfaceAlt, borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
+                        <div style={{ width: "150px", height: "150px", background: "linear-gradient(45deg, #e5e7eb, #d1d5db)", borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "1 / 1", margin: "0 auto" }}>
+                          {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
                         </div>
                         <div>
                           <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
@@ -1143,17 +1140,26 @@ export default function App() {
         {tab === "inventory" && sv && <div>
           <button onClick={function() { setSelV(null); setShowCosts(false); }} style={{ background: C.surface, border: "1px solid " + C.border, color: C.textMid, padding: "7px 16px", borderRadius: 8, cursor: "pointer", marginBottom: 18, fontSize: 12 }}>Voltar</button>
           <Card style={{ overflow: "hidden" }}>
-            <div style={{ height: 160, background: C.surfaceAlt, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-              {!imgErr[sv.id] ? <img src={sv.imageUrl || IMGS[sv.make + " " + sv.model] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: C.textDim }}>Sem foto</span>}
+            <div style={{ height: 400, background: "linear-gradient(45deg, #e5e7eb, #d1d5db)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", aspectRatio: "16 / 9" }}>
+              {!imgErr[sv.id] ? <img src={sv.imageUrl || IMGS[sv.make + " " + sv.model] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ color: C.textDim }}>Sem foto</span>}
+
+              {/* Overlay gradiente preto no bottom */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "140px", background: "linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)", pointerEvents: "none", zIndex: 5 }} />
+
+              {/* Texto sobreposto */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 26px", color: "#fff", zIndex: 6 }}>
+                <h2 style={{ margin: "0 0 8px 0", fontSize: 28, fontWeight: 700 }}>{sv.make} {sv.model} {sv.year}</h2>
+                <p style={{ margin: 0, fontSize: 16, opacity: 0.95 }}>{(sv.mileage || 0).toLocaleString()} km • R$ {(sv.salePrice || 0).toLocaleString("pt-BR")}</p>
+              </div>
+
               <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); localStorage.setItem("vehicle_img_" + sv.id, base64); try { await inventoryAPI.uploadImage(sv.id, base64); } catch (apiErr) { console.log("API upload failed, usando localStorage:", apiErr); } alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
-              <label htmlFor={"img-" + sv.id} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: 600, opacity: 0, transition: "opacity 0.2s ease", zIndex: 10 }} onMouseEnter={function(e) { e.target.style.opacity = 1; }} onMouseLeave={function(e) { e.target.style.opacity = 0; }}>Alterar foto</label>
-              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { localStorage.removeItem("vehicle_img_" + sv.id); try { await inventoryAPI.deleteImage(sv.id); } catch (apiErr) { console.log("API delete failed, removido do localStorage:", apiErr); } setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 8, right: 8, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
+              <label htmlFor={"img-" + sv.id} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: 600, opacity: 0, transition: "opacity 0.2s ease", zIndex: 10 }} onMouseEnter={function(e) { e.target.style.opacity = 1; }} onMouseLeave={function(e) { e.target.style.opacity = 0; }}>Alterar foto</label>
+              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { localStorage.removeItem("vehicle_img_" + sv.id); try { await inventoryAPI.deleteImage(sv.id); } catch (apiErr) { console.log("API delete failed, removido do localStorage:", apiErr); } setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 16, right: 16, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
             </div>
             <div style={{ padding: 26 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{sv.make} {sv.model}</h2>
-                  <div style={{ color: C.textDim, fontSize: 13, marginTop: 3 }}>{sv.year} | {(sv.mileage || 0).toLocaleString()} km | {sv.location} | {sv.motor} | {sv.potencia}</div>
+                  <p style={{ margin: 0, fontSize: 13, color: C.textDim }}>{sv.location} • {sv.motor} • {sv.potencia}</p>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
                   <StatusPillGroup
