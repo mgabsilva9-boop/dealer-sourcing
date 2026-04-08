@@ -1,0 +1,186 @@
+================================================================================
+AUDIT EXECUTIVO — PROBLEMAS ENCONTRADOS PELO CLIENTE
+================================================================================
+Data: 2026-04-08
+Método: Análise estática de código-fonte (backend + frontend)
+URL: https://dealer-sourcing-frontend.vercel.app
+User: dono@brossmotors.com / bross2026
+
+================================================================================
+SUMÁRIO RÁPIDO
+================================================================================
+
+PROBLEMA #1: Estoque Tela Branca
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Status: ❓ Não Confirmado (requer execução)                                 │
+│ Severidade: 🔴 CRÍTICO                                                       │
+│                                                                              │
+│ O QUE CLIENTE VIU: Clicar em "ESTOQUE" → tela branca, sem veículos          │
+│                                                                              │
+│ ACHADO DE CÓDIGO:                                                            │
+│   ✅ Endpoint /inventory/list existe e parece correto                       │
+│   ✅ Frontend carrega com inventoryAPI.list()                               │
+│   ✅ Renderização de veículos está presente                                 │
+│   ⚠️ Possível erro silencioso de rede ou dados vazios                       │
+│                                                                              │
+│ TESTE MANUAL:                                                                │
+│   1. F12 → Network tab                                                       │
+│   2. Clicar aba "ESTOQUE"                                                   │
+│   3. Procurar: GET /inventory/list                                          │
+│   4. Verificar: Status 200? Response tem veículos? Console errors?          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PROBLEMA #2: Delete/Edit Gastos Não Funciona
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Status DELETE: ✅ Código OK (requer execução)                               │
+│ Status EDIT: ❌ FEATURE NÃO IMPLEMENTADA (confirmado)                       │
+│ Severidade: 🔴 CRÍTICO                                                       │
+│                                                                              │
+│ O QUE CLIENTE VIU:                                                           │
+│   - Deletar gasto → não sai da lista                                        │
+│   - Editar gasto → não funciona / não salva                                 │
+│   - Dados não persistem em F5                                               │
+│                                                                              │
+│ ACHADOS:                                                                     │
+│   ✅ DELETE endpoint existe (DELETE /expenses/:id)                          │
+│   ✅ DELETE frontend existe (botão "Del" linha 1660)                        │
+│   ❌ EDIT endpoint existe (PUT /expenses/:id)                               │
+│   ❌ EDIT frontend NÃO EXISTE (sem botão Edit, sem modal)                   │
+│                                                                              │
+│ CAUSA:                                                                       │
+│   Feature de editar gastos não foi implementada no frontend                 │
+│   Backend suporta, mas UI não permite                                       │
+│   Cliente só pode: CRIAR novo gasto OU DELETAR gasto                        │
+│                                                                              │
+│ SOLUÇÃO:                                                                     │
+│   Implementar modal/form de EDIT para gastos (usar padrão similar ao de     │
+│   veículos em inventory)                                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PROBLEMA #3: Clientes Faltam Campos (vehicle/valor/data)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Status: ✅ CONFIRMADO                                                        │
+│ Severidade: 🟡 ALTO                                                          │
+│                                                                              │
+│ O QUE CLIENTE VIU:                                                           │
+│   - Editar cliente → não consegue editar veículo, valor, data compra         │
+│   - Campos estão só para visualização, não editáveis                         │
+│                                                                              │
+│ ACHADO:                                                                      │
+│   ✅ Na CRIAÇÃO: vehicleBought, purchaseDate, purchaseValue estão presentes │
+│   ❌ Na EDIÇÃO: Estes 3 campos faltam EditField                             │
+│   ✅ Backend PUT suporta editar estes campos                                │
+│   ❌ Frontend não renderiza campos editáveis                                │
+│                                                                              │
+│ CAUSA:                                                                       │
+│   Campos mostrados em Cards de visualização apenas                          │
+│   EditField não foi criado para vehicle/data/valor                          │
+│                                                                              │
+│ SOLUÇÃO:                                                                     │
+│   Adicionar 3 linhas no Card "Perfil do Cliente" (ou novo card):            │
+│     <EditField label="Veiculo" value={c.vehicleBought} ... />               │
+│     <EditField label="Data Compra" value={c.purchaseDate} ... />            │
+│     <EditField label="Valor" value={c.purchaseValue} ... />                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+PROBLEMA #4: 80% dos Saves com Erro
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Status: ❓ Não Confirmado (requer execução)                                 │
+│ Severidade: 🔴 CRÍTICO                                                       │
+│                                                                              │
+│ O QUE CLIENTE VIU:                                                           │
+│   - Criar/editar/deletar items → muitas falhas silenciosas                   │
+│   - Sem toasts de erro, sem mensagens, só "não funciona"                    │
+│                                                                              │
+│ ACHADO DE CÓDIGO:                                                            │
+│   ✅ Todos endpoints têm try/catch + error handling                         │
+│   ✅ Todos CRUDs têm try/catch + alert no frontend                          │
+│   ✅ Validações implementadas                                                │
+│   ⚠️ Mas precisa execução para ver erros REAIS                              │
+│                                                                              │
+│ POSSÍVEIS CAUSAS (em ordem de probabilidade):                               │
+│   1. Token JWT vencido → 401 → auto-logout                                  │
+│   2. dealership_id ausente em JWT → 400 erro                                │
+│   3. API_BASE incorreta em produção → requests falham silenciosamente        │
+│   4. CORS misconfigured → browser bloqueia requests                         │
+│   5. Database connection failure → 5xx errors                               │
+│                                                                              │
+│ TESTE MANUAL:                                                                │
+│   1. F12 → Network + Console tabs                                           │
+│   2. Tentar CREATE novo gasto                                               │
+│   3. Verificar:                                                              │
+│      - POST request chegou? (sim/não)                                       │
+│      - Status code? (200, 201, 400, 401, 500?)                              │
+│      - Console tem erros? (quais?)                                          │
+│   4. Tentar EDIT gasto (se feature existir)                                 │
+│   5. Tentar DELETE gasto                                                    │
+│   6. Recarregar (F5) — dados persistem?                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+MATRIZ DE SEVERITY
+================================================================================
+
+CRÍTICO (Bloqueia Uso):
+  ❌ #2 Edit Gastos — Feature não implementada (sem UI para editar)
+  ❓ #1 Estoque Branca — Tela vazia em aba de estoque
+  ❓ #4 80% Saves Erro — Muitas operações falhando
+
+ALTO (Afeta Funcionalidade):
+  ❌ #3 Clientes Campos — 3 campos não editáveis (vehicle/data/valor)
+
+================================================================================
+PRÓXIMOS PASSOS
+================================================================================
+
+IMEDIATO (hoje):
+  1. Executar testes manuais em produção com DevTools aberto
+  2. Capturar screenshots de erros e status codes
+  3. Confirmar os 4 problemas com dados reais
+
+CURTO PRAZO (próximos 2-3 dias):
+  1. Corrigir #3 (adicionar EditFields para 3 campos em Clientes)
+     ↳ Prioridade: 🟡 ALTO
+     ↳ Esforço: 15-20 min (simples copy-paste de EditField)
+
+  2. Implementar Edit para #2 (Gastos)
+     ↳ Prioridade: 🔴 CRÍTICO
+     ↳ Esforço: 1-2 horas (requer modal/form novo)
+
+  3. Diagnosticar #1 e #4
+     ↳ Depende de dados do DevTools
+     ↳ Possíveis fixes:
+        - Validar dealership_id no token
+        - Verificar CORS headers
+        - Testar API_BASE em produção
+
+================================================================================
+EVIDÊNCIA DE FUNCIONAMENTO
+================================================================================
+
+Sinais positivos no código que sugerem as features DEVEM funcionar
+(quando executadas corretamente):
+
+  ✅ Seed de dados funciona (5 veículos + 3 clientes criados on boot)
+  ✅ Todos endpoints têm authMiddleware + dealership_id checks
+  ✅ CRUDs têm validações completas
+  ✅ Frontend tem try/catch em todas operações
+  ✅ Estado React atualiza otimisticamente
+  ✅ Toasts implementadas
+
+Conclusão: Code quality não é o problema. Provavelmente:
+  • Erro de configuração em produção (env vars, JWT)
+  • Erro de rede/CORS
+  • Feature realmente não implementada (Edit Gastos)
+
+================================================================================
+ARQUIVO DE DETALHES
+================================================================================
+
+Análise completa em: AUDIT_USER_FINDINGS_VALIDATED.md
+  • Código-fonte analisado
+  • Line numbers referenciados
+  • Possíveis causas detalhadas
+  • Recomendações de solução
+
+================================================================================
