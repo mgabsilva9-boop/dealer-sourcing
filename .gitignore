@@ -7,6 +7,9 @@ yarn.lock
 .env
 .env.local
 .env.*.local
+.env.production
+.env.production.local
+.railway.env
 
 # IDE
 .vscode/

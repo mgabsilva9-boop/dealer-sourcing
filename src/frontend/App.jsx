@@ -996,25 +996,19 @@ export default function App() {
       return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) {
         e.preventDefault();
         var vehicleId = e.dataTransfer.getData('vehicleId');
-        console.log(`[Kanban onDrop] Drop event em status=${status}, vehicleId=${vehicleId}`);
 
         if (vehicleId) {
           var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; });
-          console.log(`[Kanban onDrop] Veículo encontrado:`, origVehicle);
 
           if (origVehicle && origVehicle.status === status) {
-            console.log(`[Kanban onDrop] ⚠️ Veículo já está em status=${status}, cancelando`);
             setDragOverCol(null);
             setDraggingId(null);
             return;
           }
 
-          console.log(`[Kanban onDrop] 📤 Movendo veículo ${vehicleId} de ${origVehicle ? origVehicle.status : '?'} para ${status}`);
           setDragOverCol(null);
           setDraggingId(null);
           moveVehicleToStatus(vehicleId, status);
-        } else {
-          console.warn(`[Kanban onDrop] ⚠️ vehicleId vazio`);
         }
       }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
         <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
