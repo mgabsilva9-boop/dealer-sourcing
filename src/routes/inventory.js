@@ -147,6 +147,12 @@ async function initTables() {
       console.log(`  ℹ️ Backfilled ${backfillResult.rows.length} vehicles with sold_price/sold_date`);
     }
 
+    // Soft-delete column para queries que usam deleted_at IS NULL
+    await query(`
+      ALTER TABLE inventory
+        ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP DEFAULT NULL;
+    `);
+
     console.log('✅ Tabelas de inventory verificadas/criadas');
   } catch (error) {
     console.error('Erro ao criar tabelas:', error.message);
