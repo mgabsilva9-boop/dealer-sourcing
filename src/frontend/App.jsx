@@ -548,7 +548,6 @@ export default function App() {
     async function restoreSession() {
       try {
         const token = localStorage.getItem('token');
-        console.log('[useEffect.restoreSession] Token present?', !!token);
 
         if (!token) {
           // Sem token → usuário não está logado
@@ -557,19 +556,16 @@ export default function App() {
         }
 
         // Validar se token ainda é válido (chamando /auth/me)
-        console.log('[useEffect.restoreSession] Validating token...');
         const response = await authAPI.me();
 
         if (!response || !response.id) {
           // Token inválido/expirado → remover e logout
-          console.warn('[useEffect.restoreSession] Invalid token response, logging out');
           localStorage.removeItem('token');
           if (isMounted) setUser(null);
           return;
         }
 
         // Token válido → restaurar user
-        console.log('[useEffect.restoreSession] Token válido, restaurando user:', response.email);
         if (isMounted) {
           setUser({
             id: response.id,
@@ -595,7 +591,6 @@ export default function App() {
     // Cleanup: sinalizar que component foi unmounted
     return function cleanup() {
       isMounted = false;
-      console.log('[useEffect.restoreSession] Cleanup: unmounted');
     };
   }, []); // Dependencies array vazio = disparar só uma vez
 
@@ -604,7 +599,6 @@ export default function App() {
   useEffect(function() {
     if (!user) return;
     (async function() {
-      const startTime = performance.now();
       try {
         // ✅ FASE 1: Paralelizar todas as 6 requisições simultaneamente
         const [vehiclesData, customersData, expensesData, sourcingData, ipvaListData, ipvaSummaryData] =
@@ -664,8 +658,6 @@ export default function App() {
           setIpvaSummary(ipvaSummaryData);
         }
 
-        const endTime = performance.now();
-        console.log(`[Perf] Dashboard load time: ${(endTime - startTime).toFixed(0)}ms`);
         setLoaded(true);
       } catch (err) {
         console.error('Erro ao carregar dados do dashboard:', err);
@@ -711,7 +703,6 @@ export default function App() {
 
   var upd = useCallback(function(id, field, val) {
     var vehicleToSend = null;
-    console.log(`[upd] Iniciando atualização: id=${id}, field=${field}, val=${val}, tipo de id=${typeof id}`);
 
     // Atualizar localmente e capturar veículo atualizado
     setVehicles(function(prev) {
@@ -722,11 +713,9 @@ export default function App() {
         if (vIdStr !== idStr) return v;
 
         vehicleToSend = Object.assign({}, v, { [field]: val });
-        console.log(`[upd] ✅ Veículo encontrado: ${v.make} ${v.model}, atualizando ${field} para ${val}`);
         return vehicleToSend;
       });
       if (!vehicleToSend) {
-        console.warn(`[upd] ⚠️ Veículo não encontrado com ID=${id}. IDs disponíveis:`, prev.map(v => ({ id: v.id, tipo: typeof v.id })));
       }
       return next;
     });
@@ -743,9 +732,7 @@ export default function App() {
     if (vehicleToSend) {
       (async function() {
         try {
-          console.log(`[upd] 📤 Enviando para backend: inventoryAPI.update(${id}, ...)`, vehicleToSend);
           const res = await inventoryAPI.update(id, vehicleToSend);
-          console.log(`[upd] 📥 Resposta recebida:`, res);
           if (res && res.vehicle) {
             setVehicles(function(prev) {
               return prev.map(function(v) {
@@ -761,7 +748,6 @@ export default function App() {
             }
             // Limpar draft após salvar com sucesso
             localStorage.removeItem("vehicle_draft_" + id);
-            console.log(`[upd] ✅ Veículo ${field} atualizado com sucesso`);
             // Mostrar feedback apenas para mudanças de status (drag-drop)
             if (field === 'status') {
               var statusLabel = kColumnMap[val] ? kColumnMap[val].label : val;
@@ -886,10 +872,8 @@ export default function App() {
     }
   };
 
-  if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
-
-  // ✅ BUG FIX #2: plData agora é calculado automaticamente quando vehicles/expenses mudam
-  // MOVED AFTER if (!user) CHECK to prevent hook violations
+  // ✅ HOOKS SECTION: All useMemo must be BEFORE any conditional returns
+  // plData: P&L calculation memoized to prevent recalculation
   const plData = useMemo(() => {
     const soldVehicles = vehicles.filter(v => v.status === "sold");
     const grossRevenue = soldVehicles.reduce((a, v) => a + (v.soldPrice || v.salePrice || 0), 0);
@@ -905,59 +889,9 @@ export default function App() {
       grossProfit,
       netProfit,
     };
-  }, [vehicles, expenses]); // Re-calcula quando vehicles ou expenses mudam
+  }, [vehicles, expenses]);
 
-  var canSwitch = user.access === "all";
-  var allF = dealer === "all" ? vehicles : vehicles.filter(function(v) { return v.location === dealer; });
-  var activeV = allF.filter(function(v) { return v.status !== "sold"; });
-  var soldV = allF.filter(function(v) { return v.status === "sold"; });
-  var dispV = invFilter === "sold" ? soldV : invFilter === "active" ? activeV : allF;
-  var totalStock = activeV.reduce(function(a, v) { return a + totalCosts(v); }, 0);
-  var totalProfit = soldV.reduce(function(a, v) { return a + vProfit(v); }, 0);
-  var avail = activeV.filter(function(v) { return v.status === "available"; }).length;
-
-  var now = new Date();
-  var weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
-  var expThisWeek = expenses.filter(function(e) { var d = new Date(e.due); return e.status !== "paid" && d <= weekEnd; });
-  var expThisWeekTotal = expThisWeek.reduce(function(a, e) { return a + e.value; }, 0);
-  var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-  var lastMonth = (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()) + "-" + String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, "0");
-  var profitThisMonth = soldV.filter(function(v) { return v.soldDate && v.soldDate.startsWith(thisMonth); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
-  var profitLastMonth = soldV.filter(function(v) { return v.soldDate && v.soldDate.startsWith(lastMonth); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
-
-  var months = []; vehicles.forEach(function(v) { if (v.soldDate) { var m = v.soldDate.slice(0, 7); if (months.indexOf(m) === -1) months.push(m); } }); months.sort().reverse();
-  var balSold = vehicles.filter(function(v) { return v.status === "sold" && v.soldDate && v.soldDate.startsWith(balMonth); });
-
-  // Kanban helpers
-  var kPipeline = ["maintenance", "available", "reserved", "sold"];
-  var kColumnMap = { maintenance: { label: "Recondicionamento", color: C.red }, available: { label: "Disponível", color: C.green }, reserved: { label: "Reservado", color: C.yellow }, sold: { label: "Vendido", color: C.blue } };
-  var moveVehicle = function(vehicleId, direction) {
-    var v = vehicles.find(x => x.id === vehicleId);
-    if (!v) return;
-    var idx = kPipeline.indexOf(v.status);
-    var newStatus = kPipeline[idx + direction];
-    if (!newStatus) return;
-    upd(vehicleId, "status", newStatus);
-  };
-
-  var moveVehicleToStatus = function(vehicleId, newStatus) {
-    if (!newStatus) return;
-    // Converter vehicleId para número se for string numérica (para compatibilidade com dados locais/históricos)
-    var normalizedId = isNaN(vehicleId) ? vehicleId : Number(vehicleId);
-    upd(normalizedId, "status", newStatus);
-  };
-
-  var cP = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + vProfit(v); }, 0); };
-  var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
-  var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
-
-  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["financial","Financeiro"],["ipva","IPVA"],["expenses","Gastos Gerais"],["crm","Clientes"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"]];
-  var monthLabel = function(m) { var parts = m.split("-"); var names = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return names[parseInt(parts[1])] + " " + parts[0]; };
-
-  // Selected vehicle detail data
-  var sv = selV ? vehicles.find(function(x) { return x.id === selV.id; }) : null;
-
-  // ✅ HOTFIX: Memoize lista content OUTSIDE conditional JSX to prevent React hook #310 violation
+  // listaContent: Memoized list of vehicle cards to prevent unnecessary re-renders
   var listaContent = useMemo(function() {
     return dispV.map(function(v) {
       var margin = vMargin(v);
@@ -988,7 +922,7 @@ export default function App() {
     });
   }, [dispV, imgErr, statusMap]);
 
-  // ✅ HOTFIX: Memoize kanban content OUTSIDE conditional JSX to prevent React hook #310 violation
+  // kanbanContent: Memoized kanban board columns to prevent unnecessary re-renders
   var kanbanContent = useMemo(function() {
     return kPipeline.map(function(status) {
       var col = kColumnMap[status];
@@ -1045,6 +979,58 @@ export default function App() {
     });
   }, [allF, imgErr, kPipeline, kColumnMap, draggingId]);
 
+  if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
+
+  var canSwitch = user.access === "all";
+  var allF = dealer === "all" ? vehicles : vehicles.filter(function(v) { return v.location === dealer; });
+  var activeV = allF.filter(function(v) { return v.status !== "sold"; });
+  var soldV = allF.filter(function(v) { return v.status === "sold"; });
+  var dispV = invFilter === "sold" ? soldV : invFilter === "active" ? activeV : allF;
+  var totalStock = activeV.reduce(function(a, v) { return a + totalCosts(v); }, 0);
+  var totalProfit = soldV.reduce(function(a, v) { return a + vProfit(v); }, 0);
+  var avail = activeV.filter(function(v) { return v.status === "available"; }).length;
+
+  var now = new Date();
+  var weekEnd = new Date(now); weekEnd.setDate(now.getDate() + 7);
+  var expThisWeek = expenses.filter(function(e) { var d = new Date(e.due); return e.status !== "paid" && d <= weekEnd; });
+  var expThisWeekTotal = expThisWeek.reduce(function(a, e) { return a + e.value; }, 0);
+  var thisMonth = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  var lastMonth = (now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()) + "-" + String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, "0");
+  var profitThisMonth = soldV.filter(function(v) { return v.soldDate && v.soldDate.startsWith(thisMonth); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
+  var profitLastMonth = soldV.filter(function(v) { return v.soldDate && v.soldDate.startsWith(lastMonth); }).reduce(function(a, v) { return a + vProfit(v); }, 0);
+
+  var months = []; vehicles.forEach(function(v) { if (v.soldDate) { var m = v.soldDate.slice(0, 7); if (months.indexOf(m) === -1) months.push(m); } }); months.sort().reverse();
+  var balSold = vehicles.filter(function(v) { return v.status === "sold" && v.soldDate && v.soldDate.startsWith(balMonth); });
+
+  // Kanban helpers
+  var kPipeline = ["maintenance", "available", "reserved", "sold"];
+  var kColumnMap = { maintenance: { label: "Recondicionamento", color: C.red }, available: { label: "Disponível", color: C.green }, reserved: { label: "Reservado", color: C.yellow }, sold: { label: "Vendido", color: C.blue } };
+  var moveVehicle = function(vehicleId, direction) {
+    var v = vehicles.find(x => x.id === vehicleId);
+    if (!v) return;
+    var idx = kPipeline.indexOf(v.status);
+    var newStatus = kPipeline[idx + direction];
+    if (!newStatus) return;
+    upd(vehicleId, "status", newStatus);
+  };
+
+  var moveVehicleToStatus = function(vehicleId, newStatus) {
+    if (!newStatus) return;
+    // Converter vehicleId para número se for string numérica (para compatibilidade com dados locais/históricos)
+    var normalizedId = isNaN(vehicleId) ? vehicleId : Number(vehicleId);
+    upd(normalizedId, "status", newStatus);
+  };
+
+  var cP = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + vProfit(v); }, 0); };
+  var cR = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0); };
+  var cCost = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + totalCosts(v); }, 0); };
+
+  var tabList = [["dashboard","Dashboard"],["inventory","Estoque"],["financial","Financeiro"],["ipva","IPVA"],["expenses","Gastos Gerais"],["crm","Clientes"],["sourcing","Busca IA"],["whatsapp","WhatsApp IA"]];
+  var monthLabel = function(m) { var parts = m.split("-"); var names = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return names[parseInt(parts[1])] + " " + parts[0]; };
+
+  // Selected vehicle detail data
+  var sv = selV ? vehicles.find(function(x) { return x.id === selV.id; }) : null;
+
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
       {/* HEADER */}
@@ -1070,15 +1056,12 @@ export default function App() {
                 // Notificar backend para blacklist token (logout seguro)
                 const token = localStorage.getItem('token');
                 if (token) {
-                  console.log('[logout] Calling /auth/logout endpoint...');
                   await authAPI.logout();
                 }
               } catch (error) {
-                console.error('[logout] Error calling endpoint:', error);
                 // Mesmo se falhar, fazer logout local (segurança)
               } finally {
                 // SEMPRE remover token do localStorage (CRÍTICO!)
-                console.log('[logout] Removing token from localStorage');
                 localStorage.removeItem('token');
                 setUser(null);
               }
@@ -1248,9 +1231,9 @@ export default function App() {
                 <p style={{ margin: 0, fontSize: 16, opacity: 0.95 }}>{(sv.mileage || 0).toLocaleString()} km • R$ {(sv.salePrice || 0).toLocaleString("pt-BR")}</p>
               </div>
 
-              <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); localStorage.setItem("vehicle_img_" + sv.id, base64); try { await inventoryAPI.uploadImage(sv.id, base64); } catch (apiErr) { console.log("API upload failed, usando localStorage:", apiErr); } alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
+              <input type="file" id={"img-" + sv.id} accept="image/*" style={{ display: "none" }} onChange={async function(e) { if (e.target.files && e.target.files[0]) { var file = e.target.files[0]; var reader = new FileReader(); reader.onload = async function(ev) { try { var base64 = ev.target.result; setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: false }); }); localStorage.setItem("vehicle_img_" + sv.id, base64); try { await inventoryAPI.uploadImage(sv.id, base64); } catch (apiErr) { } alert("Imagem salva com sucesso!"); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: base64 }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); } catch (err) { alert("Erro ao salvar imagem: " + (err instanceof APIError ? err.message : err.message)); } }; reader.readAsDataURL(file); } }} />
               <label htmlFor={"img-" + sv.id} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 13, color: "#fff", fontWeight: 600, opacity: 0, transition: "opacity 0.2s ease", zIndex: 10 }} onMouseEnter={function(e) { e.target.style.opacity = 1; }} onMouseLeave={function(e) { e.target.style.opacity = 0; }}>Alterar foto</label>
-              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { localStorage.removeItem("vehicle_img_" + sv.id); try { await inventoryAPI.deleteImage(sv.id); } catch (apiErr) { console.log("API delete failed, removido do localStorage:", apiErr); } setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 16, right: 16, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
+              {!imgErr[sv.id] && <button onClick={async function() { if (confirm("Deletar esta imagem?")) { try { localStorage.removeItem("vehicle_img_" + sv.id); try { await inventoryAPI.deleteImage(sv.id); } catch (apiErr) { } setImgErr(function(p) { return Object.assign({}, p, { [sv.id]: true }); }); var updV = vehicles.map(function(v) { return v.id === sv.id ? Object.assign({}, v, { imageUrl: null }) : v; }); setVehicles(updV); setSelV(updV.find(function(v) { return v.id === sv.id; })); alert("Imagem deletada com sucesso!"); } catch (err) { alert("Erro ao deletar imagem: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ position: "absolute", bottom: 16, right: 16, padding: "6px 12px", background: C.red, color: "#fff", border: "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", zIndex: 11 }}>Deletar</button>}
             </div>
             <div style={{ padding: 26 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
