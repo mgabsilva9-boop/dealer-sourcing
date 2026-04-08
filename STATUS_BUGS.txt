@@ -1,0 +1,77 @@
+FASE 1 - BUG FIXES STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ BUG #1: EXPENSES NÃO SALVAM
+   Status:  CORRIGIDO
+   Arquivo: src/routes/expenses.js (94-105)
+   Fix:     Error handling: 409 para duplicatas + hint
+   Commit:  f6ba28b
+   
+✅ BUG #2: FINANCIAL TAB NÃO SINCRONIZA
+   Status:  CORRIGIDO
+   Arquivo: src/frontend/App.jsx (1, 521, 623, 759-786)
+   Fix:     useState → useMemo, auto-recalc on vehicles/expenses change
+   Commit:  f6ba28b
+   
+✅ BUG #3: VEHICLE SOLD DESAPARECE
+   Status:  CORRIGIDO
+   Arquivo: src/routes/inventory.js (608)
+   Fix:     CURRENT_DATE → CURRENT_TIMESTAMP em sold_date
+   Commit:  f6ba28b
+   
+✅ BUG #4: EDIT ENDPOINTS 500
+   Status:  ✅ JÁ ESTAVA CORRIGIDO
+   Arquivo: src/routes/inventory.js (551-583)
+   Status:  Validações robustas, retorna 400 com mensagem
+   Commit:  (código anterior)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEPLOY TIMELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ 2026-04-07 14:30  - Commit f6ba28b (fixes)
+✅ 2026-04-07 14:35  - Git push origin main
+✅ 2026-04-07 14:40  - Railway webhook + redeploy
+🔄 2026-04-07 14:50  - Código em produção (~10 min build)
+📋 2026-04-07 15:30  - Testes de validação (VERIFICATION_TESTS.md)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUICK VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Health Check:
+  curl https://dealer-sourcing-api-production.up.railway.app/health
+
+Bug #1 Test:
+  curl -X POST https://dealer-sourcing-api-production.up.railway.app/expenses/create
+
+Bug #2 Test:
+  1. Go to https://dealer-sourcing.vercel.app
+  2. Mark vehicle as 'sold' in Estoque tab
+  3. Check Financeiro tab for updated numbers
+
+Bug #3 Test:
+  Mark vehicle as sold → F5 → Verify still 'sold' with valid sold_date
+
+Bug #4 Test:
+  curl -X PUT /inventory/1 -d '{"year": 1800}'   (expect 400)
+  curl -X PUT /inventory/1 -d '{"purchasePrice": 100K, "salePrice": 50K}'  (expect 400)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Technical Details:     BUGS_FIXED_FASE_1.md
+Verification Tests:   VERIFICATION_TESTS.md
+Executive Summary:    FASE_1_SUMMARY.txt
+Quick Status:         STATUS_BUGS.txt (this file)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NEXT: FASE 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Design Visual:   Custos dinâmicos + Status
+Dashboards:      Tendências + Previsões
+WhatsApp AI:     Lead qualification bot
+Mobile App:      FlutterFlow prototype
+
