@@ -1,0 +1,199 @@
+================================================================================
+DIAGNÓSTICO EXECUTIVO: 4 PROBLEMAS CRÍTICOS NO GARAGEM DASHBOARD
+================================================================================
+
+PROJETO: Garagem (Dealer Sourcing MVP)
+DATA: 2026-04-07
+STATUS: 4 BUGS CRÍTICOS IDENTIFICADOS - MVP NÃO PRONTO PARA PRODUÇÃO
+
+================================================================================
+PROBLEMA #1: DASHBOARD FINANCEIRO NÃO ATUALIZA EM TEMPO REAL
+================================================================================
+
+SINTOMA:
+  - Usuário adiciona novo carro com preço R$ 100K
+  - Dashboard mostra "Custos Gerais" = R$ 0 (não muda)
+  - P&L não atualiza
+  - Só atualiza após F5 (refresh manual)
+
+CAUSA RAIZ:
+  - useEffect tem dependência vazia [] → executa APENAS no mount
+  - Sem polling automático ou WebSocket
+  - Sem invalidação de cache após criar/atualizar veículo
+
+ARQUIVO AFETADO:
+  /src/frontend/pages/DashboardFinancial.jsx (linhas 13-59)
+
+SEVERIDADE: CRÍTICO
+IMPACTO: Usuário toma decisões financeiras com dados até 5 min atrasados
+
+SOLUÇÃO ESTIMADA:
+  - Implementar React Query com auto-refetch
+  - Tempo: 1-2 horas
+
+================================================================================
+PROBLEMA #2: CRIAR/DELETAR GASTOS DÁ ERRO
+================================================================================
+
+SINTOMA:
+  - Clica em "+ Nova Despesa" → erro genérico
+  - Tenta deletar gasto → error, mas às vezes desaparece e volta ao F5
+  - Tenta editar gasto → error vago
+  - Mensagem: "Erro ao adicionar despesa" (sem detalhes)
+
+CAUSA RAIZ:
+  - Backend não valida se req.user.dealership_id existe
+  - Erros PostgreSQL retornam 500 genérico, não erro específico
+  - Falta logging detalhado
+  - Validação de tipo de dados inadequada (string vs number, date format)
+
+ARQUIVOS AFETADOS:
+  /src/routes/expenses.js (linhas 33-65, 106-136, 138-159)
+  /src/frontend/App.jsx (linhas 1490, 1507)
+
+SEVERIDADE: CRÍTICO
+IMPACTO: Módulo Financeiro completamente não-funcional
+         Usuário não consegue registrar despesas → auditoria impossível
+         P&L incompleto e inconsistente
+
+SOLUÇÃO ESTIMADA:
+  - Adicionar validações explícitas (dealership_id, tipos, format)
+  - Melhorar error messages (detalhes técnicos)
+  - Implementar retry logic no frontend
+  - Tempo: 2-4 horas
+
+================================================================================
+PROBLEMA #3: CARRO VENDIDO/RESERVADO DESAPARECE APÓS F5
+================================================================================
+
+SINTOMA:
+  - Seleciona carro no estoque
+  - Clica "Marcar como Vendido"
+  - Status muda na hora (visual atualiza)
+  - Recarrega página (F5)
+  - Carro desaparece da lista ou volta ao status anterior
+
+CAUSA RAIZ:
+  - Coluna sold_date não inicializa corretamente
+  - Query de listagem sem índice composto (dealership_id, status)
+  - PostgreSQL pode retornar dados inconsistentes com table scan lento
+
+ARQUIVO AFETADO:
+  /src/routes/inventory.js (linhas 522-530, 240-261)
+
+SEVERIDADE: ALTO
+IMPACTO: Double-booking de venda
+         Dois vendedores tentam vender mesmo carro
+         Operações de estoque confusas
+
+SOLUÇÃO ESTIMADA:
+  - Adicionar índice: (dealership_id, status)
+  - Validar sold_date inicialização
+  - Forçar TIMESTAMPTZ consistente
+  - Tempo: 1-2 horas
+
+================================================================================
+PROBLEMA #4: EDIÇÕES DÃO ERRO (CARRO/CLIENTE/GASTO)
+================================================================================
+
+SINTOMA:
+  - Editar informação de carro → "Erro ao atualizar veículo"
+  - Editar cliente → erro
+  - Editar gasto → erro
+  - Mensagens vagas sem detalhe técnico
+
+CAUSA RAIZ:
+  - Sem validação de tipo de dados PRÉ-envio
+  - Backend rejeita valores inválidos com erro 500 genérico
+  - Sem sanitização de strings (XSS risk)
+  - Sem validação de negócio (ex: purchasePrice > salePrice)
+
+ARQUIVOS AFETADOS:
+  /src/routes/inventory.js (linhas 502-580)
+  /src/frontend/App.jsx (linhas 681, 657-701)
+
+SEVERIDADE: ALTO
+IMPACTO: Usuário não consegue corrigir dados
+         Sempre cria novo ao invés de editar
+         Duplicação de registros
+
+SOLUÇÃO ESTIMADA:
+  - Adicionar validações frontend (antes de enviar)
+  - Adicionar validações backend (type, business logic)
+  - Melhorar error messages
+  - Tempo: 2-3 horas
+
+================================================================================
+RESUMO DE IMPACTO
+================================================================================
+
+PROBLEMA          SEVERIDADE    MÓDULO AFETADO         IMPACTO NEGÓCIO
+──────────────────────────────────────────────────────────────────────────────
+#1 Dashboard      CRÍTICO       Financeiro             Decisões com dados antigos
+#2 Gastos erro    CRÍTICO       Financeiro             P&L quebrado, auditoria falha
+#3 Carro some     ALTO          Estoque/Vendas         Double-booking de venda
+#4 Edições erro   ALTO          Todos os módulos       Dados desatualizados
+
+CONCLUSÃO: MVP NÃO ESTÁ PRONTO PARA PRODUÇÃO
+
+================================================================================
+SEQUÊNCIA DE FIX RECOMENDADA
+================================================================================
+
+FASE 1 (Unblock Crítico): 2-4 HORAS
+  1. Fix #2 (Gastos) - URGENTE - bloqueia tudo
+  2. Fix #1 (Dashboard) - URGENTE - Financeiro não funciona
+
+FASE 2 (Consistência): 2-3 HORAS
+  3. Fix #3 (Carro desaparece)
+  4. Fix #4 (Edições)
+
+TOTAL ESTIMADO: 6-8 HORAS
+
+================================================================================
+ARQUIVOS CHAVE
+================================================================================
+
+/src/frontend/pages/DashboardFinancial.jsx        → Problema #1
+/src/routes/expenses.js                           → Problema #2
+/src/routes/inventory.js                          → Problemas #3, #4
+/src/routes/financial.js                          → Suporta #1
+/src/frontend/App.jsx                             → Suporta #2, #4
+/src/frontend/api.js                              → Endpoints OK
+
+================================================================================
+PRÓXIMOS PASSOS
+================================================================================
+
+1. Comunicar ao cliente (antes de fix):
+   - 4 bugs críticos identificados
+   - Estimar 6-8h para correção
+   - Propor prorrogação ou redução de scope
+
+2. Executar fix em ordem (Fase 1 depois Fase 2)
+
+3. Testar cada fix com checklist incluído no relatório completo
+
+4. Deploy após validação completa
+
+5. Melhorar observabilidade:
+   - Implementar Sentry para erros em produção
+   - Setup de alerts para 500 errors
+   - Logs estruturados com context
+
+================================================================================
+RELATÓRIO COMPLETO
+================================================================================
+
+Veja: /DIAGNOSIS_DASHBOARD_ISSUES.md
+
+Contém:
+- Análise técnica detalhada (código+linhas)
+- Root cause analysis completo
+- Soluções propostas com exemplos
+- Testes de validação pós-fix
+- Timeline e estimativas
+
+================================================================================
+FIM DO SUMÁRIO
+================================================================================

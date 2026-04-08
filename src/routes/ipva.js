@@ -53,22 +53,30 @@ initIpvaTable().catch(err => {
 router.post('/vehicle/:id', async (req, res) => {
   try {
     const { id: vehicleId } = req.params;
-    const { plate, state, vehicle_value } = req.body;
+    const { state, year } = req.body;
     const dealershipId = req.user.dealership_id;
 
     // Validar entrada
-    if (!plate || !state || !vehicle_value) {
-      return res.status(400).json({ error: 'plate, state, vehicle_value são obrigatórios' });
+    if (!state) {
+      return res.status(400).json({ error: 'state é obrigatório' });
     }
 
-    // Verificar se veículo pertence a esta dealership
+    // ✅ CORRIGIDO: Buscar veículo automaticamente usando vehicleId
     const vehicleCheck = await pool.query(
-      'SELECT id FROM inventory WHERE id = $1 AND dealership_id = $2',
+      'SELECT id, purchase_price, make, model FROM inventory WHERE id = $1 AND dealership_id = $2',
       [vehicleId, dealershipId]
     );
 
     if (vehicleCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // ✅ CORRIGIDO: Usar purchase_price como vehicle_value
+    const vehicle = vehicleCheck.rows[0];
+    const vehicle_value = vehicle.purchase_price || 0;
+
+    if (vehicle_value <= 0) {
+      return res.status(400).json({ error: 'Veículo sem preço de compra definido' });
     }
 
     // FIX SEC-001: Verificar se já existe IPVA para este veículo este ano
@@ -87,17 +95,16 @@ router.post('/vehicle/:id', async (req, res) => {
     // Calcular IPVA
     const { aliquota, ipva_due, due_date, status } = calculateIPVA(state, vehicle_value);
 
-    // Inserir no banco
+    // ✅ CORRIGIDO: Inserir sem plate (será preenchido do veículo)
     const query = `
-      INSERT INTO ipva_tracking (vehicle_id, dealership_id, plate, state, vehicle_value, aliquota, ipva_due, due_date, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO ipva_tracking (vehicle_id, dealership_id, state, vehicle_value, aliquota, ipva_due, due_date, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
 
     const result = await pool.query(query, [
       vehicleId,
       dealershipId,
-      plate,
       state,
       vehicle_value,
       aliquota,

@@ -159,13 +159,10 @@ function LoginScreen({ onLogin }) {
         setError("Resposta do servidor inválida");
       }
     } catch (err) {
-      // Fallback: validação local se API não responder
-      const found = USERS.find(function(u) { return u.user === emailInput.toLowerCase().trim() && u.pass === passInput; });
-      if (found) {
-        onLogin(found);
-      } else {
-        setError(err instanceof APIError ? err.message : "Erro ao conectar. Tente novamente.");
-      }
+      // CRÍTICO: NÃO permitir fallback local
+      // Se API falhar, retornar erro claro ao usuário
+      console.error('[LOGIN] Erro ao conectar com servidor:', err);
+      setError('Erro ao conectar com servidor. Verifique sua conexão e tente novamente.');
     } finally {
       setLoading(false);
     }
