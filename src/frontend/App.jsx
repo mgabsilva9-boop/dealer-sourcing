@@ -1,3 +1,4 @@
+// Version: 1.5.0-RC1 (undefined.map fix deployed)
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI } from "./api.js";
 import { StatusPillGroup, statusConfig } from "./components/StatusPills.jsx";
