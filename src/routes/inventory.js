@@ -584,6 +584,9 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     console.log(`${logPrefix} Validações OK, atualizando no banco`);
 
+    // ✅ BUG FIX: Garantir que soldPrice seja null e não undefined para PostgreSQL
+    const soldPriceValue = soldPrice !== undefined ? soldPrice : null;
+
     const result = await query(
       `UPDATE inventory
        SET make = COALESCE($1, make),
@@ -599,7 +602,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
            potencia = COALESCE($11, potencia),
            features = COALESCE($12, features),
            sold_price = CASE
-             WHEN $15 IS NOT NULL THEN $15
+             WHEN $15::numeric IS NOT NULL THEN $15::numeric
              WHEN $9 = 'sold' AND sold_price IS NULL THEN sale_price
              WHEN $9 != 'sold' AND sold_price IS NOT NULL THEN NULL
              ELSE sold_price
@@ -612,7 +615,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $13 AND dealership_id = $14
        RETURNING *`,
-      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id, soldPrice || null],
+      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id, soldPriceValue],
     );
 
     if (result.rows.length === 0) {
