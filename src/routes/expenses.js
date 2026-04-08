@@ -96,11 +96,16 @@ router.post('/create', authMiddleware, async (req, res) => {
       message: error.message,
       code: error.code,
       detail: error.detail,
+      stack: error.stack,
     });
-    res.status(500).json({
+
+    // Retornar erro específico com contexto
+    const statusCode = error.code === '23505' ? 409 : 500; // 409 = duplicate
+    res.status(statusCode).json({
       error: 'Erro ao criar despesa',
       code: error.code,
       detail: error.message,
+      hint: error.code === '23505' ? 'Despesa duplicada' : 'Verifique o log do servidor',
     });
   }
 });

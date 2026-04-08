@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI } from "./api.js";
 
 const C = {
@@ -518,7 +518,6 @@ export default function App() {
   const [newCostVal, setNewCostVal] = useState(0);
   const [draggingId, setDraggingId] = useState(null);
   const [dragOverCol, setDragOverCol] = useState(null);
-  const [plData, setPlData] = useState(null);
   const [stockError, setStockError] = useState("");
   const [ipvaList, setIpvaList] = useState([]);
   const [ipvaSummary, setIpvaSummary] = useState(null);
@@ -618,12 +617,6 @@ export default function App() {
         }
       } catch (err) {
         console.error('Erro ao carregar sourcing:', err);
-      }
-      try {
-        const pl = await inventoryAPI.plSummary();
-        if (pl) setPlData(pl);
-      } catch (err) {
-        console.error('Erro ao carregar P&L:', err);
       }
       setLoaded(true);
     })();
@@ -771,6 +764,24 @@ export default function App() {
       console.error('Erro ao carregar financeiro mensal:', err);
     }
   };
+
+  // ✅ BUG FIX #2: plData agora é calculado automaticamente quando vehicles/expenses mudam
+  const plData = useMemo(() => {
+    const soldVehicles = vehicles.filter(v => v.status === "sold");
+    const grossRevenue = soldVehicles.reduce((a, v) => a + (v.soldPrice || v.salePrice || 0), 0);
+    const totalVehicleCosts = soldVehicles.reduce((a, v) => a + totalCosts(v), 0);
+    const generalExpenses = expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0);
+    const grossProfit = grossRevenue - totalVehicleCosts;
+    const netProfit = grossProfit - generalExpenses;
+
+    return {
+      grossRevenue,
+      totalVehicleCosts,
+      generalExpenses,
+      grossProfit,
+      netProfit,
+    };
+  }, [vehicles, expenses]); // Re-calcula quando vehicles ou expenses mudam
 
   if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
 

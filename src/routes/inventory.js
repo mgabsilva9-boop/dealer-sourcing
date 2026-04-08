@@ -605,7 +605,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
              ELSE sold_price
            END,
            sold_date = CASE
-             WHEN $9 = 'sold' AND sold_date IS NULL THEN CURRENT_DATE
+             WHEN $9 = 'sold' AND sold_date IS NULL THEN CURRENT_TIMESTAMP
              WHEN $9 != 'sold' AND sold_date IS NOT NULL THEN NULL
              ELSE sold_date
            END,
