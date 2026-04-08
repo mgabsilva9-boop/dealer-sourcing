@@ -326,6 +326,43 @@ router.post('/', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'dealership_id ausente no token' });
     }
 
+    // ✅ VALIDAR year (1900 até ano atual + 1)
+    if (year !== undefined && year !== null) {
+      const yearNum = parseInt(year, 10);
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
+        console.warn(`${logPrefix} Validação: year inválido - ${year}`);
+        return res.status(400).json({ error: `Ano deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+      }
+    }
+
+    // ✅ VALIDAR purchasePrice
+    if (purchasePrice !== undefined && purchasePrice !== null) {
+      const purchasePriceNum = parseFloat(purchasePrice);
+      if (isNaN(purchasePriceNum) || purchasePriceNum < 0) {
+        console.warn(`${logPrefix} Validação: purchasePrice inválido - ${purchasePrice}`);
+        return res.status(400).json({ error: 'Preço de compra deve ser um número >= 0' });
+      }
+    }
+
+    // ✅ VALIDAR salePrice
+    if (salePrice !== undefined && salePrice !== null) {
+      const salePriceNum = parseFloat(salePrice);
+      if (isNaN(salePriceNum) || salePriceNum < 0) {
+        console.warn(`${logPrefix} Validação: salePrice inválido - ${salePrice}`);
+        return res.status(400).json({ error: 'Preço de venda deve ser um número >= 0' });
+      }
+    }
+
+    // ✅ VALIDAR business logic: purchasePrice não deve ser > salePrice
+    if (purchasePrice !== undefined && salePrice !== undefined && purchasePrice !== null && salePrice !== null) {
+      if (parseFloat(purchasePrice) > parseFloat(salePrice)) {
+        console.warn(`${logPrefix} Validação: purchasePrice (${purchasePrice}) > salePrice (${salePrice})`);
+        return res.status(400).json({ error: 'Preço de compra não pode ser maior que preço de venda' });
+      }
+    }
+
+    console.log(`${logPrefix} Validações OK, inserindo no banco`);
+
     // Inserir veículo
     console.log(`${logPrefix} Inserindo veículo no banco`);
     const vehicleResult = await query(
