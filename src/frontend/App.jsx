@@ -680,16 +680,26 @@ export default function App() {
 
   var upd = useCallback(function(id, field, val) {
     var vehicleToSend = null;
+    console.log(`[upd] Iniciando atualização: id=${id}, field=${field}, val=${val}, tipo de id=${typeof id}`);
+
     // Atualizar localmente e capturar veículo atualizado
     setVehicles(function(prev) {
       var next = prev.map(function(v) {
-        if (v.id !== id) return v;
+        // Comparação robusta de IDs: converter ambos para string para comparação
+        var vIdStr = String(v.id);
+        var idStr = String(id);
+        if (vIdStr !== idStr) return v;
+
         vehicleToSend = Object.assign({}, v, { [field]: val });
+        console.log(`[upd] ✅ Veículo encontrado: ${v.make} ${v.model}, atualizando ${field} para ${val}`);
         return vehicleToSend;
       });
+      if (!vehicleToSend) {
+        console.warn(`[upd] ⚠️ Veículo não encontrado com ID=${id}. IDs disponíveis:`, prev.map(v => ({ id: v.id, tipo: typeof v.id })));
+      }
       return next;
     });
-    if (selV && selV.id === id) {
+    if (selV && String(selV.id) === String(id)) {
       setSelV(function(p) {
         return Object.assign({}, p, { [field]: val });
       });
@@ -702,23 +712,34 @@ export default function App() {
     if (vehicleToSend) {
       (async function() {
         try {
+          console.log(`[upd] 📤 Enviando para backend: inventoryAPI.update(${id}, ...)`, vehicleToSend);
           const res = await inventoryAPI.update(id, vehicleToSend);
+          console.log(`[upd] 📥 Resposta recebida:`, res);
           if (res && res.vehicle) {
             setVehicles(function(prev) {
               return prev.map(function(v) {
-                return v.id === id ? Object.assign({}, v, res.vehicle) : v;
+                var vIdStr = String(v.id);
+                var idStr = String(id);
+                return vIdStr === idStr ? Object.assign({}, v, res.vehicle) : v;
               });
             });
-            if (selV && selV.id === id) {
+            if (selV && String(selV.id) === String(id)) {
               setSelV(function(p) {
                 return Object.assign({}, p, res.vehicle);
               });
             }
             // Limpar draft após salvar com sucesso
             localStorage.removeItem("vehicle_draft_" + id);
+            console.log(`[upd] ✅ Veículo ${field} atualizado com sucesso`);
+            // Mostrar feedback apenas para mudanças de status (drag-drop)
+            if (field === 'status') {
+              var statusLabel = kColumnMap[val] ? kColumnMap[val].label : val;
+              showToast(`Status alterado para: ${statusLabel}`, 'success');
+            }
           }
         } catch (err) {
-          console.error('Erro ao atualizar veículo:', err);
+          console.error('❌ Erro ao atualizar veículo:', err);
+          showToast(`Erro ao atualizar ${field}`, 'error');
         }
       })();
     }
@@ -889,7 +910,9 @@ export default function App() {
 
   var moveVehicleToStatus = function(vehicleId, newStatus) {
     if (!newStatus) return;
-    upd(vehicleId, "status", newStatus);
+    // Converter vehicleId para número se for string numérica (para compatibilidade com dados locais/históricos)
+    var normalizedId = isNaN(vehicleId) ? vehicleId : Number(vehicleId);
+    upd(normalizedId, "status", newStatus);
   };
 
   var cP = function(l) { return l.filter(function(v) { return v.status === "sold"; }).reduce(function(a, v) { return a + vProfit(v); }, 0); };
@@ -1100,7 +1123,30 @@ export default function App() {
               return kPipeline.map(function(status) {
                 var col = kColumnMap[status];
                 var statusVehicles = allF.filter(function(v) { return v.status === status; });
-                return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) { e.preventDefault(); var vehicleId = e.dataTransfer.getData('vehicleId'); if (vehicleId) { var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; }); setDragOverCol(null); setDraggingId(null); moveVehicleToStatus(vehicleId, status); } }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
+                return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) {
+                  e.preventDefault();
+                  var vehicleId = e.dataTransfer.getData('vehicleId');
+                  console.log(`[Kanban onDrop] Drop event em status=${status}, vehicleId=${vehicleId}`);
+
+                  if (vehicleId) {
+                    var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; });
+                    console.log(`[Kanban onDrop] Veículo encontrado:`, origVehicle);
+
+                    if (origVehicle && origVehicle.status === status) {
+                      console.log(`[Kanban onDrop] ⚠️ Veículo já está em status=${status}, cancelando`);
+                      setDragOverCol(null);
+                      setDraggingId(null);
+                      return;
+                    }
+
+                    console.log(`[Kanban onDrop] 📤 Movendo veículo ${vehicleId} de ${origVehicle ? origVehicle.status : '?'} para ${status}`);
+                    setDragOverCol(null);
+                    setDraggingId(null);
+                    moveVehicleToStatus(vehicleId, status);
+                  } else {
+                    console.warn(`[Kanban onDrop] ⚠️ vehicleId vazio`);
+                  }
+                }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
                   <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span>{col.label}</span>
                     <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>({statusVehicles.length})</span>
