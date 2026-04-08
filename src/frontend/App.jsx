@@ -569,13 +569,26 @@ export default function App() {
   }, []);
 
   // Carregar vehicles, customers e expenses do backend
+  // OTIMIZAÇÃO: Usar Promise.all para paralelizar 6 requisições
   useEffect(function() {
     if (!user) return;
     (async function() {
+      const startTime = performance.now();
       try {
-        const vehiclesData = await inventoryAPI.list();
+        // ✅ FASE 1: Paralelizar todas as 6 requisições simultaneamente
+        const [vehiclesData, customersData, expensesData, sourcingData, ipvaListData, ipvaSummaryData] =
+          await Promise.all([
+            inventoryAPI.list().catch(() => ({})),
+            crmAPI.list().catch(() => ({})),
+            expensesAPI.list().catch(() => ({})),
+            sourcingAPI.list().catch(() => ({})),
+            ipvaAPI.list().catch(() => []),
+            ipvaAPI.summary().catch(() => null)
+          ]);
+
+        // Vehicles
         let loadedVehicles = vehiclesData && vehiclesData.vehicles && vehiclesData.vehicles.length > 0 ? vehiclesData.vehicles : INIT_VEHICLES;
-        // Recuperar imagens e drafts do localStorage
+        // Recuperar imagens e drafts do localStorage (otimizado)
         loadedVehicles = loadedVehicles.map(function(v) {
           var imgKey = "vehicle_img_" + v.id;
           var draftKey = "vehicle_draft_" + v.id;
@@ -592,58 +605,42 @@ export default function App() {
           return updated;
         });
         setVehicles(loadedVehicles);
-      } catch (err) {
-        console.error('Erro ao carregar estoque:', err);
-        setVehicles([]);
-        setStockError('Não foi possível carregar o estoque. Verifique se o servidor está rodando (porta 3000).');
-      }
-      try {
-        const customersData = await crmAPI.list();
+
+        // Customers
         if (customersData && customersData.customers && customersData.customers.length > 0) {
           setCustomers(customersData.customers);
         } else {
           setCustomers(INIT_CRM);
         }
-      } catch (err) {
-        console.error('Erro ao carregar clientes:', err);
-        setCustomers(INIT_CRM);
-      }
-      try {
-        const expensesData = await expensesAPI.list();
+
+        // Expenses
         if (expensesData && expensesData.expenses && expensesData.expenses.length > 0) {
           setExpenses(expensesData.expenses);
         } else {
           setExpenses(INIT_EXPENSES);
         }
-      } catch (err) {
-        console.error('Erro ao carregar despesas:', err);
-        setExpenses(INIT_EXPENSES);
-      }
-      try {
-        const sourcingData = await sourcingAPI.list();
+
+        // Sourcing
         if (sourcingData && sourcingData.results) {
           setSourcing(sourcingData.results);
         }
-      } catch (err) {
-        console.error('Erro ao carregar sourcing:', err);
-      }
-      try {
-        const ipvaListData = await ipvaAPI.list();
+
+        // IPVA
         if (ipvaListData && ipvaListData.length > 0) {
           setIpvaList(ipvaListData);
         }
-      } catch (err) {
-        console.error('Erro ao carregar lista IPVA:', err);
-      }
-      try {
-        const ipvaSummaryData = await ipvaAPI.summary();
         if (ipvaSummaryData) {
           setIpvaSummary(ipvaSummaryData);
         }
+
+        const endTime = performance.now();
+        console.log(`[Perf] Dashboard load time: ${(endTime - startTime).toFixed(0)}ms`);
+        setLoaded(true);
       } catch (err) {
-        console.error('Erro ao carregar summary IPVA:', err);
+        console.error('Erro ao carregar dados do dashboard:', err);
+        setStockError('Não foi possível carregar dados. Verifique se o servidor está rodando.');
+        setLoaded(true);
       }
-      setLoaded(true);
     })();
   }, [user]);
 
@@ -1067,72 +1064,76 @@ export default function App() {
           {addingV && <VehicleForm onAdd={function(nv) { setVehicles(function(p) { return p.concat([nv]); }); setAddingV(false); }} onCancel={function() { setAddingV(false); }} />}
 
           {invView === "lista" && <div style={{ display: "grid", gap: 10 }}>
-            {dispV.map(function(v) {
-              var margin = vMargin(v);
-              var st = statusMap[v.status] || statusMap.available;
-              var imgKey = v.make + " " + v.model;
-              return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", overflow: "hidden", opacity: v.status === "sold" ? 0.7 : 1 }}>
-                <div style={{ width: "100%", height: "250px", background: "linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", aspectRatio: "16 / 9" }}>
-                  {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
-                  <div style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}>
-                    <div style={{ background: st.color, color: "#fff", padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>{st.label}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", padding: "14px 18px", gap: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{v.make} {v.model}</div>
-                    <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{v.year} • {(v.mileage || 0).toLocaleString()} km</div>
-                    <div style={{ fontSize: 13, color: C.green, fontWeight: 600, marginTop: 4 }}>R$ {(v.salePrice || 0).toLocaleString("pt-BR")}</div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid " + C.border }}>
-                    <div style={{ fontSize: 11, color: C.textDim }}>Custo: <span style={{ color: C.text, fontWeight: 600 }}>{fmt(totalCosts(v))}</span></div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ color: margin >= 25 ? C.green : margin >= 15 ? C.yellow : C.red, fontWeight: 700, fontSize: 13 }}>{margin}% margem</div>
-                      <div style={{ fontSize: 11, color: vProfit(v) >= 0 ? C.green : C.red, marginTop: 2 }}>{fmt(vProfit(v))}</div>
+            {useMemo(function() {
+              return dispV.map(function(v) {
+                var margin = vMargin(v);
+                var st = statusMap[v.status] || statusMap.available;
+                var imgKey = v.make + " " + v.model;
+                return <Card key={v.id} onClick={function() { setSelV(v); }} style={{ cursor: "pointer", overflow: "hidden", opacity: v.status === "sold" ? 0.7 : 1 }}>
+                  <div style={{ width: "100%", height: "250px", background: "linear-gradient(90deg, #e5e7eb 0%, #d1d5db 100%)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative", aspectRatio: "16 / 9" }}>
+                    {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || IMGS[v.make + " " + v.model + " " + v.year] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 12, color: C.textDim }}>Sem foto</span>}
+                    <div style={{ position: "absolute", top: 8, right: 8, zIndex: 10 }}>
+                      <div style={{ background: st.color, color: "#fff", padding: "4px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>{st.label}</div>
                     </div>
                   </div>
-                </div>
-              </Card>;
-            })}
+                  <div style={{ display: "flex", flexDirection: "column", padding: "14px 18px", gap: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{v.make} {v.model}</div>
+                      <div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{v.year} • {(v.mileage || 0).toLocaleString()} km</div>
+                      <div style={{ fontSize: 13, color: C.green, fontWeight: 600, marginTop: 4 }}>R$ {(v.salePrice || 0).toLocaleString("pt-BR")}</div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid " + C.border }}>
+                      <div style={{ fontSize: 11, color: C.textDim }}>Custo: <span style={{ color: C.text, fontWeight: 600 }}>{fmt(totalCosts(v))}</span></div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ color: margin >= 25 ? C.green : margin >= 15 ? C.yellow : C.red, fontWeight: 700, fontSize: 13 }}>{margin}% margem</div>
+                        <div style={{ fontSize: 11, color: vProfit(v) >= 0 ? C.green : C.red, marginTop: 2 }}>{fmt(vProfit(v))}</div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>;
+              });
+            }, [dispV, imgErr, statusMap])}
           </div>}
 
           {invView === "kanban" && <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-            {kPipeline.map(function(status) {
-              var col = kColumnMap[status];
-              var statusVehicles = allF.filter(function(v) { return v.status === status; });
-              return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) { e.preventDefault(); var vehicleId = e.dataTransfer.getData('vehicleId'); if (vehicleId) { var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; }); setDragOverCol(null); setDraggingId(null); moveVehicleToStatus(vehicleId, status); } }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
-                <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span>{col.label}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>({statusVehicles.length})</span>
-                </div>
-                <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}>
-                  {statusVehicles.length === 0 && <div style={{ fontSize: 12, color: C.textDim, textAlign: "center", opacity: 0.5, marginTop: 20 }}>Vazio</div>}
-                  {statusVehicles.map(function(v) {
-                    var imgKey = v.make + " " + v.model;
-                    var statusIdx = kPipeline.indexOf(v.status);
-                    return <div key={v.id} draggable={true} onDragStart={function(e) { e.dataTransfer.setData('vehicleId', String(v.id)); setDraggingId(v.id); }} onDragEnd={function() { setDraggingId(null); setDragOverCol(null); }} onClick={function() { setSelV(v); }} style={{ cursor: "grab", opacity: draggingId === v.id ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
-                      <Card style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
-                        <div style={{ width: "150px", height: "150px", background: "linear-gradient(45deg, #e5e7eb, #d1d5db)", borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "1 / 1", margin: "0 auto" }}>
-                          {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
-                          <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMid, paddingTop: 6, borderTop: "1px solid " + C.border }}>
-                          <span><strong style={{ color: vMargin(v) >= 25 ? C.green : vMargin(v) >= 15 ? C.yellow : C.red }}>{vMargin(v)}%</strong></span>
-                          <span style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green }}><strong>{v.daysInStock}d</strong></span>
-                        </div>
-                        <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
-                          {statusIdx > 0 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, -1); }} style={{ padding: "4px 8px", background: C.border, color: C.text, border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>←</button>}
-                          {statusIdx < kPipeline.length - 1 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, 1); }} style={{ padding: "4px 8px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>→</button>}
-                        </div>
-                      </Card>
-                    </div>;
-                  })}
-                </div>
-              </div>;
-            })}
+            {useMemo(function() {
+              return kPipeline.map(function(status) {
+                var col = kColumnMap[status];
+                var statusVehicles = allF.filter(function(v) { return v.status === status; });
+                return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) { e.preventDefault(); var vehicleId = e.dataTransfer.getData('vehicleId'); if (vehicleId) { var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; }); setDragOverCol(null); setDraggingId(null); moveVehicleToStatus(vehicleId, status); } }} style={{ background: C.surface, border: dragOverCol === status ? "2px dashed " + C.accent : "1px solid " + C.border, borderRadius: 10, overflow: "hidden", transition: "border 0.2s ease" }}>
+                  <div style={{ background: col.color, color: "#fff", padding: "12px 14px", fontWeight: 600, fontSize: 13, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>{col.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 500, opacity: 0.8 }}>({statusVehicles.length})</span>
+                  </div>
+                  <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, minHeight: 200 }}>
+                    {statusVehicles.length === 0 && <div style={{ fontSize: 12, color: C.textDim, textAlign: "center", opacity: 0.5, marginTop: 20 }}>Vazio</div>}
+                    {statusVehicles.map(function(v) {
+                      var imgKey = v.make + " " + v.model;
+                      var statusIdx = kPipeline.indexOf(v.status);
+                      return <div key={v.id} draggable={true} onDragStart={function(e) { e.dataTransfer.setData('vehicleId', String(v.id)); setDraggingId(v.id); }} onDragEnd={function() { setDraggingId(null); setDragOverCol(null); }} onClick={function() { setSelV(v); }} style={{ cursor: "grab", opacity: draggingId === v.id ? 0.5 : 1, transition: "opacity 0.2s ease" }}>
+                        <Card style={{ cursor: "pointer", padding: 10, borderLeft: "4px solid " + col.color, display: "flex", flexDirection: "column", gap: 8 }}>
+                          <div style={{ width: "150px", height: "150px", background: "linear-gradient(45deg, #e5e7eb, #d1d5db)", borderRadius: 6, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "1 / 1", margin: "0 auto" }}>
+                            {!imgErr[v.id] ? <img src={v.imageUrl || IMGS[imgKey] || ""} alt="" onError={function() { setImgErr(function(p) { return Object.assign({}, p, { [v.id]: true }); }); }} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }} /> : <span style={{ fontSize: 11, color: C.textDim }}>Sem foto</span>}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{v.make} {v.model}</div>
+                            <div style={{ fontSize: 10, color: C.textDim, marginTop: 2 }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMid, paddingTop: 6, borderTop: "1px solid " + C.border }}>
+                            <span><strong style={{ color: vMargin(v) >= 25 ? C.green : vMargin(v) >= 15 ? C.yellow : C.red }}>{vMargin(v)}%</strong></span>
+                            <span style={{ color: v.daysInStock > 45 ? C.red : v.daysInStock > 30 ? C.yellow : C.green }}><strong>{v.daysInStock}d</strong></span>
+                          </div>
+                          <div style={{ display: "flex", gap: 4, justifyContent: "center", marginTop: 4 }}>
+                            {statusIdx > 0 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, -1); }} style={{ padding: "4px 8px", background: C.border, color: C.text, border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>←</button>}
+                            {statusIdx < kPipeline.length - 1 && <button onClick={function(e) { e.stopPropagation(); moveVehicle(v.id, 1); }} style={{ padding: "4px 8px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 10, cursor: "pointer", fontWeight: 600 }}>→</button>}
+                          </div>
+                        </Card>
+                      </div>;
+                    })}
+                  </div>
+                </div>;
+              });
+            }, [allF, imgErr, kPipeline, kColumnMap, draggingId])}
           </div>}
         </div>}
 
