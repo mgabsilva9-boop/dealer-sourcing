@@ -181,17 +181,18 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
               boxSizing: "border-box",
             }}
           >
-            <option value="">Selecione ou digite uma categoria</option>
+            <option value="">Selecione uma categoria</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
               </option>
             ))}
+            <option value="__custom__">Personalizado...</option>
           </select>
-          {!category && (
+          {category === "__custom__" ? (
             <input
-              placeholder="Ou digite uma categoria customizada"
-              value={category}
+              placeholder="Digite uma categoria customizada"
+              value=""
               onChange={(e) => {
                 setCategory(e.target.value);
                 if (error) setError("");
@@ -208,7 +209,7 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
                 marginTop: 6,
               }}
             />
-          )}
+          ) : null}
         </div>
 
         <div style={{ marginBottom: 16 }}>

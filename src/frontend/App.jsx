@@ -313,6 +313,12 @@ function VehicleForm({ onAdd, onCancel }) {
     newF[key] = val;
     setF(newF);
     localStorage.setItem("vehicleFormDraft", JSON.stringify(newF));
+    // Clear the validation error for this field
+    if (validationErrors[key]) {
+      var newErrors = Object.assign({}, validationErrors);
+      delete newErrors[key];
+      setValidationErrors(newErrors);
+    }
   };
   return <Card style={{ padding: 22, marginBottom: 16 }}>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.5fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -532,6 +538,7 @@ export default function App() {
   const [finMonth, setFinMonth] = useState(new Date().getMonth() + 1);
   const [finYear, setFinYear] = useState(new Date().getFullYear());
   const [finMonthlyData, setFinMonthlyData] = useState([]);
+  const [toasts, setToasts] = useState([]);
 
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
   useEffect(function() {
@@ -640,6 +647,18 @@ export default function App() {
     })();
   }, [user]);
 
+  // Toast helper function
+  var showToast = function(message, type, duration) {
+    type = type || 'success';
+    duration = duration || 3000;
+    var id = Math.random().toString(36).substr(2, 9);
+    var toast = { id: id, message: message, type: type };
+    setToasts(function(prev) { return prev.concat([toast]); });
+    setTimeout(function() {
+      setToasts(function(prev) { return prev.filter(function(t) { return t.id !== id; }); });
+    }, duration);
+  };
+
   var searchSourcing = function() {
     setSourcingLoading(true);
     (async function() {
@@ -737,9 +756,11 @@ export default function App() {
                 return Object.assign({}, p, res.vehicle);
               });
             }
+            showToast('Custo adicionado com sucesso!', 'success');
           }
         } catch (err) {
           console.error('Erro ao atualizar custos:', err);
+          showToast('Erro ao salvar custo', 'error');
         }
       })();
     }
@@ -769,8 +790,14 @@ export default function App() {
     setVehicles(p => p.map(v => v.id === id ? Object.assign({}, v, { costs: newCosts }) : v));
     if (selV && selV.id === id) setSelV(v => Object.assign({}, v, { costs: newCosts }));
     (async () => {
-      try { await inventoryAPI.update(id, Object.assign({}, vehicle, { costs: newCosts })); }
-      catch (err) { console.error(err); }
+      try {
+        await inventoryAPI.update(id, Object.assign({}, vehicle, { costs: newCosts }));
+        showToast('Custo deletado com sucesso!', 'success');
+      }
+      catch (err) {
+        console.error(err);
+        showToast('Erro ao deletar custo', 'error');
+      }
     })();
   }, [vehicles, selV]);
 
@@ -1161,8 +1188,10 @@ export default function App() {
                           try {
                             const vehicle = vehicles.find(v => v.id === sv.id);
                             await inventoryAPI.update(sv.id, Object.assign({}, vehicle, { costs: newCosts }));
+                            showToast('Custo atualizado com sucesso!', 'success');
                           } catch (err) {
                             console.error('Erro ao atualizar custo:', err);
+                            showToast('Erro ao salvar custo', 'error');
                           }
                         })();
                       }}
@@ -1587,6 +1616,27 @@ export default function App() {
           </Card>
         </div>}
       </div>
+
+      {/* TOAST CONTAINER */}
+      <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, display: "flex", flexDirection: "column", gap: 12 }}>
+        {toasts.map(function(toast) {
+          var bg = toast.type === 'success' ? C.greenBg : C.redBg;
+          var color = toast.type === 'success' ? C.green : C.red;
+          return <div key={toast.id} style={{ background: bg, color: color, padding: "12px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500, boxShadow: "0 4px 12px rgba(0,0,0,0.15)", animation: "slideIn 0.3s ease, slideOut 0.3s ease 2.7s forwards" }}>{toast.message}</div>;
+        })}
+      </div>
+
+      {/* Toast animations */}
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(400px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+          from { transform: translateX(0); opacity: 1; }
+          to { transform: translateX(400px); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
