@@ -93,9 +93,10 @@ function Tag({ children, color, bg }) { return <span style={{ display: "inline-b
 function MiniBar({ label, value }) { var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30; var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red; return <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 11, color: C.textMid, width: 28, textAlign: "right" }}>{value}</span><div style={{ flex: 1, height: 4, background: C.borderLight, borderRadius: 2 }}><div style={{ width: w + "%", height: "100%", background: c, borderRadius: 2 }} /></div></div>; }
 
 function MiniDonut({ segments, size = 80 }) {
-  var grad = segments.map(function(s) {
+  var safeSegments = segments || [];
+  var grad = safeSegments.map(function(s) {
     var acc = 0;
-    for (var i = 0; i < segments.indexOf(s); i++) acc += segments[i].pct;
+    for (var i = 0; i < safeSegments.indexOf(s); i++) acc += safeSegments[i].pct;
     var next = acc + s.pct;
     return s.color + " " + acc + "% " + next + "%";
   }).join(", ");
@@ -108,10 +109,11 @@ function MiniDonut({ segments, size = 80 }) {
 }
 
 function BarChart({ data, height = 120 }) {
-  var max = Math.max.apply(null, data.map(function(d) { return d.value; }).concat([1]));
+  var safeData = data || [];
+  var max = Math.max.apply(null, safeData.map(function(d) { return d.value; }).concat([1]));
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: height }}>
-      {data.map(function(d, i) {
+      {safeData.map(function(d, i) {
         return (
           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <div style={{ fontSize: 9, color: C.textDim }}>{d.label2 || ""}</div>
@@ -924,15 +926,18 @@ export default function App() {
 
   // kanbanContent: Memoized kanban board columns to prevent unnecessary re-renders
   var kanbanContent = useMemo(function() {
-    return kPipeline.map(function(status) {
+    var safeKPipeline = kPipeline || [];
+    var safeAllF = allF || [];
+    var safeVehicles = vehicles || [];
+    return safeKPipeline.map(function(status) {
       var col = kColumnMap[status];
-      var statusVehicles = allF.filter(function(v) { return v.status === status; });
+      var statusVehicles = safeAllF.filter(function(v) { return v.status === status; });
       return <div key={status} onDragOver={function(e) { e.preventDefault(); setDragOverCol(status); }} onDragLeave={function() { setDragOverCol(null); }} onDrop={async function(e) {
         e.preventDefault();
         var vehicleId = e.dataTransfer.getData('vehicleId');
 
         if (vehicleId) {
-          var origVehicle = vehicles.find(function(v) { return String(v.id) === vehicleId; });
+          var origVehicle = safeVehicles.find(function(v) { return String(v.id) === vehicleId; });
 
           if (origVehicle && origVehicle.status === status) {
             setDragOverCol(null);
