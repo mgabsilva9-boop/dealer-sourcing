@@ -170,18 +170,30 @@ router.get('/summary', async (req, res) => {
 
     const result = await pool.query(query, [dealershipId]);
 
-    // Agrupar por status
+    // Agrupar por status com formato simples para frontend
     const summary = {
-      paid: { count: 0, total: 0 },
-      pending: { count: 0, total: 0 },
-      urgent: { count: 0, total: 0 },
+      paid: 0,
+      pending: 0,
+      urgent: 0,
+      paid_amount: 0,
+      pending_amount: 0,
+      urgent_amount: 0,
     };
 
     result.rows.forEach((row) => {
-      summary[row.status] = {
-        count: parseInt(row.count) || 0,
-        total: parseInt(row.total_due) || 0,
-      };
+      const count = parseInt(row.count) || 0;
+      const total = parseInt(row.total_due) || 0;
+
+      if (row.status === 'paid') {
+        summary.paid = count;
+        summary.paid_amount = total;
+      } else if (row.status === 'pending') {
+        summary.pending = count;
+        summary.pending_amount = total;
+      } else if (row.status === 'urgent') {
+        summary.urgent = count;
+        summary.urgent_amount = total;
+      }
     });
 
     res.json(summary);
@@ -220,10 +232,8 @@ router.get('/list', async (req, res) => {
 
     const result = await pool.query(query, params);
 
-    res.json({
-      count: result.rows.length,
-      ipva_records: result.rows,
-    });
+    // Retornar array direto para compatibilidade com frontend
+    res.json(result.rows);
   } catch (error) {
     console.error('❌ Erro ao listar IPVA:', error);
     res.status(500).json({ error: error.message });
