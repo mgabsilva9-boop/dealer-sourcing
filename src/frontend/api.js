@@ -69,8 +69,17 @@ export const authAPI = {
     return result;
   },
 
-  logout() {
-    localStorage.removeItem('token');
+  async logout() {
+    try {
+      // Chamar endpoint /auth/logout para adicionar token à blacklist
+      const response = await fetchAPI('/auth/logout', {
+        method: 'POST'
+      });
+      console.log('[authAPI.logout] Backend logout successful:', response);
+    } catch (error) {
+      console.warn('[authAPI.logout] Backend logout failed:', error.message);
+      // Não rethrow — logout local sempre funciona
+    }
   },
 
   async me() {

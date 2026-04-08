@@ -541,32 +541,63 @@ export default function App() {
   const [toasts, setToasts] = useState([]);
 
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
+  // BONUS FIX: Implementa cleanup flag para evitar setState after unmount (race condition)
   useEffect(function() {
-    var token = localStorage.getItem('token');
-    console.log('[useEffect] Session restore: token present?', !!token);
-    if (!token) return;
-    (async function() {
+    var isMounted = true; // Flag para evitar setState após unmount
+
+    async function restoreSession() {
       try {
-        console.log('[useEffect] Calling authAPI.me()...');
-        var me = await authAPI.me();
-        console.log('[useEffect] Got user data:', me);
-        if (me && me.id) {
-          console.log('[useEffect] Setting user with dealership_id:', me.dealership_id);
+        const token = localStorage.getItem('token');
+        console.log('[useEffect.restoreSession] Token present?', !!token);
+
+        if (!token) {
+          // Sem token → usuário não está logado
+          if (isMounted) setUser(null);
+          return;
+        }
+
+        // Validar se token ainda é válido (chamando /auth/me)
+        console.log('[useEffect.restoreSession] Validating token...');
+        const response = await authAPI.me();
+
+        if (!response || !response.id) {
+          // Token inválido/expirado → remover e logout
+          console.warn('[useEffect.restoreSession] Invalid token response, logging out');
+          localStorage.removeItem('token');
+          if (isMounted) setUser(null);
+          return;
+        }
+
+        // Token válido → restaurar user
+        console.log('[useEffect.restoreSession] Token válido, restaurando user:', response.email);
+        if (isMounted) {
           setUser({
-            id: me.id,
-            name: me.name,
-            email: me.email,
-            dealership_id: me.dealership_id,
-            label: me.name,
+            id: response.id,
+            name: response.name,
+            email: response.email,
+            dealership_id: response.dealership_id,
+            label: response.name,
             access: "all"
           });
         }
-      } catch (e) {
-        console.error('[useEffect] Error restoring session:', e);
-        localStorage.removeItem('token');
+      } catch (error) {
+        console.error('[useEffect.restoreSession] Error:', error);
+        if (isMounted) {
+          // Erro na validação → assumir logout (token inválido/expirado)
+          localStorage.removeItem('token');
+          setUser(null);
+        }
       }
-    })();
-  }, []);
+    }
+
+    restoreSession(); // Disparar uma vez
+
+    // Cleanup: sinalizar que component foi unmounted
+    return function cleanup() {
+      isMounted = false;
+      console.log('[useEffect.restoreSession] Cleanup: unmounted');
+    };
+  }, []); // Dependencies array vazio = disparar só uma vez
 
   // Carregar vehicles, customers e expenses do backend
   // OTIMIZAÇÃO: Usar Promise.all para paralelizar 6 requisições
@@ -945,7 +976,24 @@ export default function App() {
             <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
             <span style={{ fontSize: 12, color: C.headerMuted }}>{user.label}</span>
             <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
-            <button onClick={function() { localStorage.removeItem('token'); setUser(null); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11 }}>Sair</button>
+            <button onClick={async function() {
+              try {
+                // Notificar backend para blacklist token (logout seguro)
+                const token = localStorage.getItem('token');
+                if (token) {
+                  console.log('[logout] Calling /auth/logout endpoint...');
+                  await authAPI.logout();
+                }
+              } catch (error) {
+                console.error('[logout] Error calling endpoint:', error);
+                // Mesmo se falhar, fazer logout local (segurança)
+              } finally {
+                // SEMPRE remover token do localStorage (CRÍTICO!)
+                console.log('[logout] Removing token from localStorage');
+                localStorage.removeItem('token');
+                setUser(null);
+              }
+            }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11 }}>Sair</button>
           </div>
         </div>
       </div>
