@@ -13,6 +13,9 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ===== TOKEN BLACKLIST (In-memory para MVP, use Redis em produção) =====
+const tokenBlacklist = new Set();
+
 // ===== INICIALIZAR USUÁRIOS PADRÃO =====
 async function initDefaultUsers() {
   try {
@@ -41,6 +44,9 @@ async function initDefaultUsers() {
     `);
     await query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS dealership_id UUID;
+    `);
+    await query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'manager';
     `);
 
     // 2. Criar unique constraint em email (idempotent)
@@ -126,13 +132,14 @@ router.post('/login', async (req, res) => {
     // Debug: Log user data para verificar dealership_id
     console.log('[LOGIN] User found:', { id: user.id, email: user.email, dealership_id: user.dealership_id });
 
-    // Gerar JWT com dealership_id (crítico para RLS)
+    // Gerar JWT com dealership_id e role (crítico para RLS e permissions)
     const jwtSecret = process.env.JWT_SECRET || 'SECRET_FALLBACK_UNSAFE_DEVELOPMENT_ONLY';
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         dealership_id: user.dealership_id, // CRÍTICO para RLS (AC6 test)
+        role: user.role || 'manager', // CRÍTICO para granular permissions (AC2 test)
       },
       jwtSecret,
       { expiresIn: '7d' },
@@ -150,6 +157,7 @@ router.post('/login', async (req, res) => {
         name: user.name,
         email: user.email,
         dealership_id: user.dealership_id,
+        role: user.role || 'manager',
       },
     });
   } catch (error) {
@@ -192,12 +200,13 @@ router.post('/register', async (req, res) => {
 
     const user = result.rows[0];
 
-    // Gerar JWT com dealership_id (crítico para RLS)
+    // Gerar JWT com dealership_id e role (crítico para RLS e permissions)
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         dealership_id: user.dealership_id, // CRÍTICO para RLS
+        role: user.role || 'manager', // CRÍTICO para granular permissions
       },
       process.env.JWT_SECRET,
       { expiresIn: '7d' },
@@ -235,11 +244,24 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ===== LOGOUT (opcional, client-side é suficiente) =====
+// ===== LOGOUT (revoga token) =====
 router.post('/logout', authMiddleware, (req, res) => {
-  // Em produção, você poderia adicionar token a uma blacklist
-  res.json({ message: 'Logout realizado com sucesso' });
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      tokenBlacklist.add(token);
+      console.log('[LOGOUT] Token adicionado à blacklist:', { userId: req.user.id, tokenLength: token.length });
+    }
+    res.json({ message: 'Logout realizado com sucesso' });
+  } catch (error) {
+    console.error('[LOGOUT] Erro ao fazer logout:', error);
+    res.status(500).json({ error: 'Erro ao fazer logout' });
+  }
 });
+
+// Exportar blacklist para uso em middleware
+export { tokenBlacklist };
 
 // ===== ALTERAR SENHA =====
 router.put('/change-password', authMiddleware, async (req, res) => {

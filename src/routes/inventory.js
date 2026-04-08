@@ -257,7 +257,7 @@ router.get('/', authMiddleware, async (req, res) => {
         ) AS costs_json
       FROM inventory i
       LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
-      WHERE i.dealership_id = $1
+      WHERE i.dealership_id = $1 AND i.deleted_at IS NULL
       GROUP BY i.id
       ORDER BY i.created_at DESC
     `, [dealershipId]);
@@ -288,7 +288,7 @@ router.get('/list', authMiddleware, async (req, res) => {
         ) AS costs_json
       FROM inventory i
       LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
-      WHERE i.dealership_id = $1
+      WHERE i.dealership_id = $1 AND i.deleted_at IS NULL
       GROUP BY i.id
       ORDER BY i.created_at DESC
     `, [dealershipId]);
@@ -438,17 +438,6 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 // POST /create - DEPRECATED (mantido por compatibilidade, usa mesma lógica que POST /)
-router.post('/create', authMiddleware, async (req, res) => {
-  console.warn('[DEPRECATED] POST /inventory/create - use POST /inventory instead');
-  // Invocar handler do POST / manualmente
-  const handlers = router.stack.find(x => x.route && x.route.path === '/' && x.route.methods.post);
-  if (handlers) {
-    handlers.handle(req, res);
-  } else {
-    res.status(501).json({ error: 'Endpoint não configurado corretamente' });
-  }
-});
-
 // GET /pl-summary - P&L consolidado calculado no banco (AC5)
 router.get('/pl-summary', authMiddleware, async (req, res) => {
   try {
@@ -716,8 +705,9 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(401).json({ error: 'dealership_id ausente no token' });
     }
 
+    // CRÍTICO #8: Usar soft-delete ao invés de DELETE permanente
     const result = await query(
-      'DELETE FROM inventory WHERE id = $1 AND dealership_id = $2 RETURNING id',
+      'UPDATE inventory SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1 AND dealership_id = $2 RETURNING id',
       [id, dealershipId],
     );
 
@@ -726,7 +716,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Veículo não encontrado' });
     }
 
-    console.log(`${logPrefix} ✅ Veículo deletado com sucesso: ${id}`);
+    console.log(`${logPrefix} ✅ Veículo marcado como deletado (soft-delete): ${id}`);
 
     res.json({
       message: 'Veículo deletado com sucesso',
@@ -877,6 +867,147 @@ router.delete('/:id/image', authMiddleware, async (req, res) => {
       code: error.code,
       detail: error.message,
     });
+  }
+});
+
+// ============================================
+// POST /inventory/:id/costs — Adicionar custo a um veículo
+// ============================================
+// CRÍTICO #6: Novos endpoints de custo (Phase 2)
+
+router.post('/:id/costs', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { category, value } = req.body;
+    const dealershipId = req.user.dealership_id;
+
+    // Validações
+    if (!category || typeof category !== 'string' || category.trim().length === 0) {
+      return res.status(400).json({ error: 'Category é obrigatória e não pode estar vazia' });
+    }
+
+    if (value === undefined || value === null || typeof value !== 'number' || value <= 0) {
+      return res.status(400).json({ error: 'Value deve ser um número positivo' });
+    }
+
+    // Verificar se veículo existe e pertence à loja
+    const vehicleCheck = await query(
+      'SELECT id FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, dealershipId]
+    );
+
+    if (vehicleCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // Inserir custo
+    const result = await query(
+      `INSERT INTO vehicle_costs (inventory_id, category, amount, created_at)
+       VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+       RETURNING id, inventory_id, category, amount, created_at`,
+      [id, category.trim(), value]
+    );
+
+    const cost = result.rows[0];
+    res.status(201).json({
+      id: cost.id,
+      inventory_id: cost.inventory_id,
+      category: cost.category,
+      value: parseFloat(cost.amount),
+      created_at: cost.created_at,
+    });
+  } catch (error) {
+    console.error('Erro ao adicionar custo:', error);
+    res.status(500).json({ error: 'Erro ao adicionar custo', message: error.message });
+  }
+});
+
+// ============================================
+// PATCH /inventory/:id/costs/:costId — Editar custo de um veículo
+// ============================================
+
+router.patch('/:id/costs/:costId', authMiddleware, async (req, res) => {
+  try {
+    const { id, costId } = req.params;
+    const { category, value } = req.body;
+    const dealershipId = req.user.dealership_id;
+
+    // Validar pelo menos um campo para atualizar
+    if (!category && value === undefined) {
+      return res.status(400).json({ error: 'Pelo menos category ou value deve ser fornecido' });
+    }
+
+    // Validar category se fornecido
+    if (category !== undefined) {
+      if (typeof category !== 'string' || category.trim().length === 0) {
+        return res.status(400).json({ error: 'Category deve ser uma string não-vazia' });
+      }
+    }
+
+    // Validar value se fornecido
+    if (value !== undefined) {
+      if (typeof value !== 'number' || value <= 0) {
+        return res.status(400).json({ error: 'Value deve ser um número positivo' });
+      }
+    }
+
+    // Verificar se veículo existe e pertence à loja
+    const vehicleCheck = await query(
+      'SELECT id FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, dealershipId]
+    );
+
+    if (vehicleCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Veículo não encontrado' });
+    }
+
+    // Verificar se custo existe e pertence ao veículo
+    const costCheck = await query(
+      'SELECT id, inventory_id FROM vehicle_costs WHERE id = $1 AND inventory_id = $2',
+      [costId, id]
+    );
+
+    if (costCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Custo não encontrado para este veículo' });
+    }
+
+    // Preparar UPDATE dinamicamente
+    const updates = [];
+    const params = [costId];
+    let paramIndex = 2;
+
+    if (category !== undefined) {
+      updates.push(`category = $${paramIndex}`);
+      params.push(category.trim());
+      paramIndex++;
+    }
+
+    if (value !== undefined) {
+      updates.push(`amount = $${paramIndex}`);
+      params.push(value);
+      paramIndex++;
+    }
+
+    const updateQuery = `
+      UPDATE vehicle_costs
+      SET ${updates.join(', ')}
+      WHERE id = $1
+      RETURNING id, inventory_id, category, amount, created_at
+    `;
+
+    const result = await query(updateQuery, params);
+    const cost = result.rows[0];
+
+    res.json({
+      id: cost.id,
+      inventory_id: cost.inventory_id,
+      category: cost.category,
+      value: parseFloat(cost.amount),
+      created_at: cost.created_at,
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar custo:', error);
+    res.status(500).json({ error: 'Erro ao atualizar custo', message: error.message });
   }
 });
 

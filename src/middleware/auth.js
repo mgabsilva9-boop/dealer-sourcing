@@ -1,10 +1,16 @@
 /**
  * Middleware de Autenticação JWT
- * Verifica se o token é válido e extrai dados do usuário
+ * Verifica se o token é válido, não está na blacklist, e extrai dados do usuário
  */
 
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
+// Nota: tokenBlacklist será injetado ao registrar a rota auth em server.js
+let tokenBlacklist = new Set(); // Fallback se não for injetado
+
+export function setTokenBlacklist(blacklist) {
+  tokenBlacklist = blacklist;
+}
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -16,6 +22,11 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7); // Remove "Bearer "
+
+    // Verificar se token está na blacklist (logout)
+    if (tokenBlacklist.has(token)) {
+      return res.status(401).json({ error: 'Token foi revogado (logout realizado)' });
+    }
 
     // Verificar e decodificar token
     const jwtSecret = process.env.JWT_SECRET || 'SECRET_FALLBACK_UNSAFE_DEVELOPMENT_ONLY';

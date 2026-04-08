@@ -8,10 +8,12 @@ import './config/env.js';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { pool } from './config/database.js';
+import logger from './lib/logger.js';
 
 // Importar rotas
-import authRoutes from './routes/auth.js';
+import authRoutes, { tokenBlacklist } from './routes/auth.js';
 import searchRoutes from './routes/search.js';
 import vehiclesRoutes from './routes/vehicles.js';
 import historyRoutes from './routes/history.js';
@@ -23,10 +25,14 @@ import metricsRoutes from './routes/metrics.js';
 import cacheRoutes from './routes/cache.js';
 import financialRoutes from './routes/financial.js';
 import ipvaRoutes from './routes/ipva.js';
+import { setTokenBlacklist } from './middleware/auth.js';
 
 // Inicializar Express
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Injetar token blacklist no middleware (CRÍTICO #3)
+setTokenBlacklist(tokenBlacklist);
 
 // ===== MIDDLEWARE =====
 
@@ -67,9 +73,49 @@ app.use(cors({
   credentials: true,
 }));
 
-// Logger simples
+// Rate limiting (CRÍTICO #4)
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // 100 requests por janela
+  message: 'Muitas requisições deste IP, tente novamente depois',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5, // 5 tentativas por hora
+  message: 'Muitas tentativas de login, tente novamente em 1 hora',
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Não contar requisições bem-sucedidas
+});
+
+// Aplicar rate limiting geral
+app.use(generalLimiter);
+
+// Logger middleware (CRÍTICO #7)
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  logger.info('Request', {
+    method: req.method,
+    path: req.path,
+    userId: req.user?.id || 'anonymous',
+    dealershipId: req.user?.dealership_id || 'none',
+  });
+
+  // Capture response time
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.info('Response', {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      duration: `${duration}ms`,
+      userId: req.user?.id || 'anonymous',
+    });
+  });
+
   next();
 });
 
@@ -93,6 +139,8 @@ app.use('/api/cache', cacheRoutes);
 
 // ===== ROTAS =====
 
+// Aplicar rate limiting específico para login
+app.use('/auth/login', loginLimiter);
 app.use('/auth', authRoutes);
 app.use('/search', searchRoutes);
 app.use('/vehicles', vehiclesRoutes);
@@ -107,7 +155,14 @@ app.use('/ipva', ipvaRoutes);
 // ===== ERROR HANDLING =====
 
 app.use((err, req, res, _next) => {
-  console.error('❌ Erro:', err);
+  logger.error('Unhandled Error', {
+    message: err.message,
+    stack: err.stack,
+    status: err.status || 500,
+    userId: req.user?.id || 'anonymous',
+    path: req.path,
+    method: req.method,
+  });
 
   res.status(err.status || 500).json({
     error: err.message || 'Erro interno do servidor',

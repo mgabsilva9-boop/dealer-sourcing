@@ -103,7 +103,7 @@ router.get('/comparison', async (req, res) => {
       params = [];
     }
 
-    // Buscar todas as dealerships
+    // Buscar todas as dealerships (com RLS filter)
     const dealershipsQuery = `
       SELECT
         d.id, d.name,
@@ -113,14 +113,15 @@ router.get('/comparison', async (req, res) => {
       FROM dealerships d
       LEFT JOIN inventory inv ON d.id = inv.dealership_id
       LEFT JOIN vehicle_costs vc ON vc.inventory_id = inv.id
+      WHERE ${dealershipFilter}
       GROUP BY d.id, d.name
       ORDER BY d.name
     `;
 
-    const dealershipsResult = await pool.query(dealershipsQuery);
+    const dealershipsResult = await pool.query(dealershipsQuery, params);
     const dealerships = dealershipsResult.rows;
 
-    // Buscar todas as vendas e calcular lucro realizado
+    // Buscar todas as vendas e calcular lucro realizado (com RLS filter)
     const salesQuery = `
       SELECT
         inv.dealership_id,
@@ -135,11 +136,11 @@ router.get('/comparison', async (req, res) => {
         GROUP BY inventory_id
       ) vc_costs ON vc_costs.inventory_id = inv.id
       LEFT JOIN ipva_tracking i ON inv.id = i.vehicle_id AND i.dealership_id = inv.dealership_id
-      WHERE inv.status = 'sold'
+      WHERE inv.status = 'sold' AND ${dealershipFilter}
       GROUP BY inv.dealership_id
     `;
 
-    const salesResult = await pool.query(salesQuery);
+    const salesResult = await pool.query(salesQuery, params);
     const profitMap = {};
     salesResult.rows.forEach((row) => {
       profitMap[row.dealership_id] = row.realized_profit || 0;
