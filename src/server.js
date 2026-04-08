@@ -84,7 +84,7 @@ const generalLimiter = rateLimit({
 
 const loginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
-  max: 5, // 5 tentativas por hora
+  max: isDev ? 9999 : 5, // 9999 em dev (sem limite prático), 5 em produção
   message: 'Muitas tentativas de login, tente novamente em 1 hora',
   standardHeaders: true,
   legacyHeaders: false,
