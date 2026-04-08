@@ -200,7 +200,13 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
 
     const monthStr = String(monthInt).padStart(2, '0');
     const startDate = `${yearInt}-${monthStr}-01`;
-    const endDate = `${yearInt}-${monthStr}-31`;
+
+    // BUG FIX #9: Calculate the last day of the month correctly
+    // Instead of hardcoding day=31 (fails for April, June, Sept, Nov, and Feb),
+    // we calculate it by finding the last day using date arithmetic
+    const lastDayOfMonth = new Date(yearInt, monthInt, 0).getDate(); // day 0 of next month = last day of current month
+    const endDateDay = String(lastDayOfMonth).padStart(2, '0');
+    const endDate = `${yearInt}-${monthStr}-${endDateDay}`;
 
     // Veículos vendidos neste mês (com custos agregados)
     const soldQuery = `

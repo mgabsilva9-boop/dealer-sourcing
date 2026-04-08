@@ -34,6 +34,8 @@ function normalizeVehicle(row) {
     costs,
     soldPrice: parseFloat(row.sold_price) || null,
     soldDate: row.sold_date ? String(row.sold_date).slice(0, 10) : null,
+    statusChangedAt: row.status_changed_at || null,
+    statusChangedBy: row.status_changed_by || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -124,6 +126,14 @@ async function initTables() {
       ALTER TABLE inventory
         ADD COLUMN IF NOT EXISTS sold_price DECIMAL(15, 2),
         ADD COLUMN IF NOT EXISTS sold_date  DATE;
+    `);
+
+    // BUG FIX #8: Add status_changed_at and status_changed_by columns
+    // Frontend expects statusChangedAt and statusChangedBy to track status changes
+    await query(`
+      ALTER TABLE inventory
+        ADD COLUMN IF NOT EXISTS status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS status_changed_by UUID;
     `);
 
     // Backfill de veículos já marcados como vendidos
@@ -507,8 +517,19 @@ router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
+    // BUG FIX #8: Include status_changed_at and status_changed_by with costs aggregation
     const vehicleResult = await query(
-      'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
+      `SELECT
+        i.*,
+        EXTRACT(DAY FROM (NOW() - i.created_at)) AS days_in_stock,
+        COALESCE(
+          json_object_agg(vc.category, vc.amount) FILTER (WHERE vc.category IS NOT NULL),
+          '{}'::json
+        ) AS costs_json
+      FROM inventory i
+      LEFT JOIN vehicle_costs vc ON vc.inventory_id = i.id
+      WHERE i.id = $1 AND i.dealership_id = $2
+      GROUP BY i.id`,
       [id, req.user.dealership_id],
     );
 
@@ -516,20 +537,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Veículo não encontrado' });
     }
 
-    const costsResult = await query(
-      'SELECT category, amount FROM vehicle_costs WHERE inventory_id = $1',
-      [id],
-    );
-
-    const costs = {};
-    costsResult.rows.forEach((row) => {
-      costs[row.category] = row.amount;
-    });
-
-    res.json({
-      ...vehicleResult.rows[0],
-      costs,
-    });
+    res.json(normalizeVehicle(vehicleResult.rows[0]));
   } catch (error) {
     console.error('Erro ao buscar veículo:', error);
     res.status(500).json({ error: 'Erro ao buscar veículo' });
@@ -587,6 +595,16 @@ router.put('/:id', authMiddleware, async (req, res) => {
     // ✅ BUG FIX: Garantir que soldPrice seja null e não undefined para PostgreSQL
     const soldPriceValue = soldPrice !== undefined ? soldPrice : null;
 
+    // BUG FIX #8: Track status changes with timestamp and user ID
+    // Check if status is being changed
+    const oldStatusResult = await query(
+      'SELECT status FROM inventory WHERE id = $1 AND dealership_id = $2',
+      [id, req.user.dealership_id],
+    );
+
+    const oldStatus = oldStatusResult.rows.length > 0 ? oldStatusResult.rows[0].status : null;
+    const statusChanged = status !== undefined && status !== null && status !== oldStatus;
+
     const result = await query(
       `UPDATE inventory
        SET make = COALESCE($1, make),
@@ -612,10 +630,18 @@ router.put('/:id', authMiddleware, async (req, res) => {
              WHEN $9 != 'sold' AND sold_date IS NOT NULL THEN NULL
              ELSE sold_date
            END,
+           status_changed_at = CASE
+             WHEN $16::boolean THEN CURRENT_TIMESTAMP
+             ELSE status_changed_at
+           END,
+           status_changed_by = CASE
+             WHEN $16::boolean THEN $17::uuid
+             ELSE status_changed_by
+           END,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $13 AND dealership_id = $14
        RETURNING *`,
-      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id, soldPriceValue],
+      [make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, id, req.user.dealership_id, soldPriceValue, statusChanged, req.user.id],
     );
 
     if (result.rows.length === 0) {
