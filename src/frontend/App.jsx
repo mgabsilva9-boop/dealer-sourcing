@@ -620,6 +620,22 @@ export default function App() {
       } catch (err) {
         console.error('Erro ao carregar sourcing:', err);
       }
+      try {
+        const ipvaListData = await ipvaAPI.list();
+        if (ipvaListData && ipvaListData.length > 0) {
+          setIpvaList(ipvaListData);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar lista IPVA:', err);
+      }
+      try {
+        const ipvaSummaryData = await ipvaAPI.summary();
+        if (ipvaSummaryData) {
+          setIpvaSummary(ipvaSummaryData);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar summary IPVA:', err);
+      }
       setLoaded(true);
     })();
   }, [user]);
@@ -882,7 +898,7 @@ export default function App() {
             <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
             <span style={{ fontSize: 12, color: C.headerMuted }}>{user.label}</span>
             <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
-            <button onClick={function() { setUser(null); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11 }}>Sair</button>
+            <button onClick={function() { localStorage.removeItem('token'); setUser(null); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11 }}>Sair</button>
           </div>
         </div>
       </div>

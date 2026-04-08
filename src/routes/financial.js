@@ -202,22 +202,7 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
     const startDate = `${yearInt}-${monthStr}-01`;
     const endDate = `${yearInt}-${monthStr}-31`;
 
-    // Resumo de transações
-    const transactionsQuery = `
-      SELECT
-        type,
-        COUNT(*) as count,
-        SUM(amount) as total
-      FROM financial_transactions
-      WHERE dealership_id = $1
-        AND transaction_date >= $2::date
-        AND transaction_date <= $3::date
-      GROUP BY type
-    `;
-
-    const txResult = await pool.query(transactionsQuery, [dealershipId, startDate, endDate]);
-
-    // Veículos vendidos neste mês
+    // Veículos vendidos neste mês (com custos agregados)
     const soldQuery = `
       SELECT
         inv.id, inv.make, inv.model, inv.year,
@@ -235,6 +220,27 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
 
     const soldResult = await pool.query(soldQuery, [dealershipId, startDate, endDate]);
 
+    // Despesas gerenciais neste mês (se tabela expenses existe)
+    const expensesQuery = `
+      SELECT
+        category,
+        COUNT(*) as count,
+        SUM(amount) as total
+      FROM expenses
+      WHERE dealership_id = $1
+        AND date >= $2::date
+        AND date <= $3::date
+      GROUP BY category
+    `;
+
+    let expensesResult = null;
+    try {
+      expensesResult = await pool.query(expensesQuery, [dealershipId, startDate, endDate]);
+    } catch (err) {
+      // Tabela expenses pode não existir, continuar sem ela
+      console.log('[DEBUG] Expenses table not available or no data');
+    }
+
     // Calcular P&L dos vendidos
     const totalRevenue = soldResult.rows.reduce((sum, v) => sum + (v.sold_price || v.sale_price || 0), 0);
     const totalCost = soldResult.rows.reduce(
@@ -245,6 +251,17 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
     );
     const netProfit = totalRevenue - totalCost;
 
+    // Agrupar despesas por categoria
+    const expensesByCategory = {};
+    if (expensesResult && expensesResult.rows) {
+      expensesResult.rows.forEach((row) => {
+        expensesByCategory[row.category] = {
+          count: parseInt(row.count) || 0,
+          total: parseInt(row.total) || 0,
+        };
+      });
+    }
+
     const report = {
       period: `${year}-${monthStr}`,
       vehicles_sold: soldResult.rows.length,
@@ -254,7 +271,7 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
         net_profit: netProfit,
         margin_percentage: totalCost > 0 ? ((netProfit / totalCost) * 100).toFixed(2) : 0,
       },
-      transactions_by_type: txResult.rows,
+      expenses_by_category: expensesByCategory,
       vehicles: soldResult.rows.map((v) => ({
         ...v,
         profit: calculateVehicleProfit(v).margin,

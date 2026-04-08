@@ -82,7 +82,12 @@ function StatusPill({ status, isActive, onClick, disabled }) {
 
 function StatusMetadata({ vehicle }) {
   if (!vehicle.statusChangedAt || !vehicle.statusChangedBy) {
-    return null;
+    return (
+      <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, fontSize: 11, color: C.textDim }}>
+        <div>Status: <strong>{statusConfig[vehicle.status]?.label || "---"}</strong></div>
+        <div style={{ marginTop: 4 }}>Última alteração: Nunca alterado</div>
+      </div>
+    );
   }
 
   const date = new Date(vehicle.statusChangedAt);
@@ -114,7 +119,6 @@ function StatusPillGroup({ vehicle, onStatusChange, loading = false }) {
       setShowConfirm(null);
     } catch (err) {
       console.error("Erro ao mudar status:", err);
-      alert("Erro ao mudar status. Tente novamente.");
     } finally {
       setConfirmLoading(false);
     }

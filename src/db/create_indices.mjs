@@ -1,8 +1,10 @@
 import pg from 'pg';
 const { Pool } = pg;
 
+const url = process.env.DATABASE_URL || 'postgresql://localhost/garagem';
+
 const pool = new Pool({
-  connectionString: 'postgresql://postgres.bxnennpxirlwfukyjsqk:BarufiPenteado0987!@aws-1-sa-east-1.pooler.supabase.com:6543/postgres'
+  connectionString: url
 });
 
 async function createIndices() {

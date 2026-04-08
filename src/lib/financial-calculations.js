@@ -83,11 +83,8 @@ export function calculateIPVA(state, vehicleValue, referenceDate = new Date()) {
   // Determinar status
   const daysUntilDue = Math.floor((dueDate - referenceDate) / (1000 * 60 * 60 * 24));
   let status = 'pending';
-  if (daysUntilDue < 15) {
-    status = 'urgent';
-  }
-  if (daysUntilDue < 0) {
-    status = 'overdue'; // Vencido
+  if (daysUntilDue < 0 || daysUntilDue < 15) {
+    status = 'urgent'; // Urgent covers both overdue and < 15 days
   }
 
   return {
