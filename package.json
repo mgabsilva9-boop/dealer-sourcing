@@ -11,6 +11,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:production": "node test/smoke/production.test.js",
+    "test:crm": "node test/integration/crm.integration.js",
     "verify:api": "node test/verify-api-config.js"
   },
   "keywords": [
