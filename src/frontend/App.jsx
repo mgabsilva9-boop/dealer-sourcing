@@ -893,9 +893,18 @@ export default function App() {
     };
   }, [vehicles, expenses]);
 
+  // ✅ CALCULATE VARIABLES BEFORE USING IN useMemo
+  var canSwitch = user && user.access === "all";
+  var allF = !user || dealer === "all" ? (vehicles || []) : (vehicles || []).filter(function(v) { return v.location === dealer; });
+  var activeV = (allF || []).filter(function(v) { return v.status !== "sold"; });
+  var soldV = (allF || []).filter(function(v) { return v.status === "sold"; });
+  var dispV = invFilter === "sold" ? (soldV || []) : invFilter === "active" ? (activeV || []) : (allF || []);
+  var kPipeline = ["maintenance", "available", "reserved", "sold"];
+  var kColumnMap = { maintenance: { label: "Recondicionamento", color: C.red }, available: { label: "Disponível", color: C.green }, reserved: { label: "Reservado", color: C.yellow }, sold: { label: "Vendido", color: C.blue } };
+
   // listaContent: Memoized list of vehicle cards to prevent unnecessary re-renders
   var listaContent = useMemo(function() {
-    return dispV.map(function(v) {
+    return (dispV || []).map(function(v) {
       var margin = vMargin(v);
       var st = statusMap[v.status] || statusMap.available;
       var imgKey = v.make + " " + v.model;
@@ -985,12 +994,6 @@ export default function App() {
   }, [allF, imgErr, kPipeline, kColumnMap, draggingId]);
 
   if (!user) return <LoginScreen onLogin={function(u) { setUser(u); if (u.access !== "all") setDealer(u.access); }} />;
-
-  var canSwitch = user.access === "all";
-  var allF = dealer === "all" ? vehicles : vehicles.filter(function(v) { return v.location === dealer; });
-  var activeV = allF.filter(function(v) { return v.status !== "sold"; });
-  var soldV = allF.filter(function(v) { return v.status === "sold"; });
-  var dispV = invFilter === "sold" ? soldV : invFilter === "active" ? activeV : allF;
   var totalStock = activeV.reduce(function(a, v) { return a + totalCosts(v); }, 0);
   var totalProfit = soldV.reduce(function(a, v) { return a + vProfit(v); }, 0);
   var avail = activeV.filter(function(v) { return v.status === "available"; }).length;
@@ -1007,9 +1010,6 @@ export default function App() {
   var months = []; vehicles.forEach(function(v) { if (v.soldDate) { var m = v.soldDate.slice(0, 7); if (months.indexOf(m) === -1) months.push(m); } }); months.sort().reverse();
   var balSold = vehicles.filter(function(v) { return v.status === "sold" && v.soldDate && v.soldDate.startsWith(balMonth); });
 
-  // Kanban helpers
-  var kPipeline = ["maintenance", "available", "reserved", "sold"];
-  var kColumnMap = { maintenance: { label: "Recondicionamento", color: C.red }, available: { label: "Disponível", color: C.green }, reserved: { label: "Reservado", color: C.yellow }, sold: { label: "Vendido", color: C.blue } };
   var moveVehicle = function(vehicleId, direction) {
     var v = vehicles.find(x => x.id === vehicleId);
     if (!v) return;
