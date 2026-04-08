@@ -501,9 +501,51 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
 // PUT - Atualizar veículo
 router.put('/:id', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[PUT /:id] [${requestId}]`;
+
   try {
     const { id } = req.params;
     const { make, model, year, purchasePrice, salePrice, fipePrice, mileage, location, status, motor, potencia, features, costs, soldPrice } = req.body;
+    const dealershipId = req.user.dealership_id;
+
+    console.log(`${logPrefix} Iniciando atualização de veículo ${id}`);
+
+    // ✅ VALIDAR tipos de dados
+    if (year !== undefined && year !== null) {
+      const yearNum = parseInt(year, 10);
+      if (isNaN(yearNum) || yearNum < 1900 || yearNum > new Date().getFullYear() + 1) {
+        console.warn(`${logPrefix} Validação: year inválido - ${year}`);
+        return res.status(400).json({ error: `Ano deve estar entre 1900 e ${new Date().getFullYear() + 1}` });
+      }
+    }
+
+    // ✅ VALIDAR purchasePrice e salePrice
+    if (purchasePrice !== undefined && purchasePrice !== null) {
+      const purchasePriceNum = parseFloat(purchasePrice);
+      if (isNaN(purchasePriceNum) || purchasePriceNum < 0) {
+        console.warn(`${logPrefix} Validação: purchasePrice inválido - ${purchasePrice}`);
+        return res.status(400).json({ error: 'Preço de compra deve ser um número >= 0' });
+      }
+    }
+
+    if (salePrice !== undefined && salePrice !== null) {
+      const salePriceNum = parseFloat(salePrice);
+      if (isNaN(salePriceNum) || salePriceNum < 0) {
+        console.warn(`${logPrefix} Validação: salePrice inválido - ${salePrice}`);
+        return res.status(400).json({ error: 'Preço de venda deve ser um número >= 0' });
+      }
+    }
+
+    // ✅ VALIDAR business logic: purchasePrice não deve ser > salePrice
+    if (purchasePrice !== undefined && salePrice !== undefined && purchasePrice !== null && salePrice !== null) {
+      if (parseFloat(purchasePrice) > parseFloat(salePrice)) {
+        console.warn(`${logPrefix} Validação: purchasePrice (${purchasePrice}) > salePrice (${salePrice})`);
+        return res.status(400).json({ error: 'Preço de compra não pode ser maior que preço de venda' });
+      }
+    }
+
+    console.log(`${logPrefix} Validações OK, atualizando no banco`);
 
     const result = await query(
       `UPDATE inventory
@@ -522,10 +564,12 @@ router.put('/:id', authMiddleware, async (req, res) => {
            sold_price = CASE
              WHEN $15 IS NOT NULL THEN $15
              WHEN $9 = 'sold' AND sold_price IS NULL THEN sale_price
+             WHEN $9 != 'sold' AND sold_price IS NOT NULL THEN NULL
              ELSE sold_price
            END,
            sold_date = CASE
              WHEN $9 = 'sold' AND sold_date IS NULL THEN CURRENT_DATE
+             WHEN $9 != 'sold' AND sold_date IS NOT NULL THEN NULL
              ELSE sold_date
            END,
            updated_at = CURRENT_TIMESTAMP
@@ -569,36 +613,69 @@ router.put('/:id', authMiddleware, async (req, res) => {
       GROUP BY i.id
     `, [id]);
 
+    console.log(`${logPrefix} ✅ Veículo atualizado com sucesso`);
+
     res.json({
       message: 'Veículo atualizado com sucesso',
       vehicle: normalizeVehicle(fullResult.rows[0]),
     });
   } catch (error) {
-    console.error('Erro ao atualizar veículo:', error);
-    res.status(500).json({ error: 'Erro ao atualizar veículo' });
+    console.error(`${logPrefix} ❌ Erro ao atualizar veículo:`, {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+    res.status(500).json({
+      error: 'Erro ao atualizar veículo',
+      code: error.code,
+      detail: error.message,
+    });
   }
 });
 
 // DELETE - Deletar veículo
 router.delete('/:id', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[DELETE /:id] [${requestId}]`;
+
   try {
     const { id } = req.params;
+    const dealershipId = req.user.dealership_id;
+
+    console.log(`${logPrefix} Iniciando deleção de veículo ${id}`);
+
+    // ✅ VALIDAR dealership_id
+    if (!dealershipId) {
+      console.error(`${logPrefix} ERRO: dealership_id ausente no token`);
+      return res.status(401).json({ error: 'dealership_id ausente no token' });
+    }
 
     const result = await query(
       'DELETE FROM inventory WHERE id = $1 AND dealership_id = $2 RETURNING id',
-      [id, req.user.dealership_id],
+      [id, dealershipId],
     );
 
     if (result.rows.length === 0) {
+      console.warn(`${logPrefix} Veículo não encontrado ou não pertence à dealership`);
       return res.status(404).json({ error: 'Veículo não encontrado' });
     }
+
+    console.log(`${logPrefix} ✅ Veículo deletado com sucesso: ${id}`);
 
     res.json({
       message: 'Veículo deletado com sucesso',
     });
   } catch (error) {
-    console.error('Erro ao deletar veículo:', error);
-    res.status(500).json({ error: 'Erro ao deletar veículo' });
+    console.error(`${logPrefix} ❌ Erro ao deletar veículo:`, {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+    res.status(500).json({
+      error: 'Erro ao deletar veículo',
+      code: error.code,
+      detail: error.message,
+    });
   }
 });
 
@@ -691,33 +768,49 @@ router.post('/:id/upload-image', authMiddleware, async (req, res) => {
 
 // DELETE - Deletar imagem
 router.delete('/:id/image', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[DELETE /:id/image] [${requestId}]`;
+
   try {
     const { id } = req.params;
-    console.log('[DELETE /:id/image] Deletando imagem do veículo', id);
+    const dealershipId = req.user.dealership_id;
+
+    console.log(`${logPrefix} Deletando imagem do veículo ${id}`);
 
     // Validar se veículo pertence à loja (dealership)
     const vehicleResult = await query(
       'SELECT * FROM inventory WHERE id = $1 AND dealership_id = $2',
-      [id, req.user.dealership_id],
+      [id, dealershipId],
     );
 
     if (vehicleResult.rows.length === 0) {
+      console.warn(`${logPrefix} Veículo não encontrado ou não pertence à dealership`);
       return res.status(404).json({ error: 'Veículo não encontrado' });
     }
 
     // Deletar imagem (set NULL)
     const result = await query(
       'UPDATE inventory SET image_url = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND dealership_id = $2 RETURNING *',
-      [id, req.user.dealership_id],
+      [id, dealershipId],
     );
+
+    console.log(`${logPrefix} ✅ Imagem deletada com sucesso`);
 
     res.json({
       message: 'Imagem deletada com sucesso',
       vehicle: result.rows[0],
     });
   } catch (error) {
-    console.error('Erro ao deletar imagem:', error);
-    res.status(500).json({ error: 'Erro ao deletar imagem' });
+    console.error(`${logPrefix} ❌ Erro ao deletar imagem:`, {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+    res.status(500).json({
+      error: 'Erro ao deletar imagem',
+      code: error.code,
+      detail: error.message,
+    });
   }
 });
 

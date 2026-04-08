@@ -17,8 +17,15 @@ export function DashboardFinancial() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // ✅ CORRIGIDO: Polling automático a cada 30s para atualizar dados em tempo real
   useEffect(() => {
     loadData();
+
+    // Executar loadData a cada 30 segundos
+    const interval = setInterval(loadData, 30000);
+
+    // Cleanup: limpar interval ao desmontar componente
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {

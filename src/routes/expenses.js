@@ -31,12 +31,43 @@ router.get('/list', authMiddleware, async (req, res) => {
 
 // POST - Criar nova despesa
 router.post('/create', authMiddleware, async (req, res) => {
+  const requestId = Math.random().toString(16).substring(2, 10);
+  const logPrefix = `[POST /expenses/create] [${requestId}]`;
+
   try {
     const { category, description, amount, status, date } = req.body;
+    const userId = req.user.id;
+    const dealershipId = req.user.dealership_id;
 
-    if (!category || !amount) {
-      return res.status(400).json({ error: 'Categoria e valor são obrigatórios' });
+    console.log(`${logPrefix} Iniciando criação de despesa`);
+
+    // ✅ VALIDAR dealership_id (CRÍTICO)
+    if (!dealershipId) {
+      console.error(`${logPrefix} ERRO: dealership_id ausente no token`);
+      return res.status(401).json({ error: 'dealership_id ausente no token' });
     }
+
+    // ✅ VALIDAR categoria
+    if (!category || category.trim() === '') {
+      console.warn(`${logPrefix} Validação: categoria vazia`);
+      return res.status(400).json({ error: 'Categoria é obrigatória' });
+    }
+
+    // ✅ VALIDAR amount (tipo de dado)
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum < 0) {
+      console.warn(`${logPrefix} Validação: amount inválido - ${amount}`);
+      return res.status(400).json({ error: 'Valor deve ser um número >= 0' });
+    }
+
+    // ✅ VALIDAR date format (YYYY-MM-DD)
+    const dateStr = date || new Date().toISOString().split('T')[0];
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      console.warn(`${logPrefix} Validação: date inválido - ${dateStr}`);
+      return res.status(400).json({ error: 'Data deve estar em formato YYYY-MM-DD' });
+    }
+
+    console.log(`${logPrefix} Validações OK, inserindo no banco`);
 
     const result = await query(
       `INSERT INTO expenses
@@ -44,23 +75,33 @@ router.post('/create', authMiddleware, async (req, res) => {
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
-        req.user.id,
-        req.user.dealership_id,
-        category,
+        userId,
+        dealershipId,
+        category.trim(),
         description || '',
-        amount,
+        amountNum,
         status || 'pending',
-        date || new Date().toISOString().split('T')[0],
+        dateStr,
       ],
     );
+
+    console.log(`${logPrefix} ✅ Despesa criada com sucesso: ${result.rows[0].id}`);
 
     res.status(201).json({
       message: 'Despesa criada com sucesso',
       expense: result.rows[0],
     });
   } catch (error) {
-    console.error('Erro ao criar despesa:', error);
-    res.status(500).json({ error: 'Erro ao criar despesa' });
+    console.error(`${logPrefix} ❌ Erro ao criar despesa:`, {
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+    });
+    res.status(500).json({
+      error: 'Erro ao criar despesa',
+      code: error.code,
+      detail: error.message,
+    });
   }
 });
 
