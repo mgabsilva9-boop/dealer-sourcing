@@ -1410,6 +1410,7 @@ export default function App() {
           <div style={{ display: "flex", gap: 8, marginBottom: 16, borderBottom: "1px solid " + C.border, paddingBottom: 12 }}>
             <button onClick={function() { setFinSub('overview'); }} style={{ padding: "8px 12px", background: finSub === 'overview' ? C.accent : "transparent", color: finSub === 'overview' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Visão Geral</button>
             <button onClick={function() { setFinSub('vehicles'); }} style={{ padding: "8px 12px", background: finSub === 'vehicles' ? C.accent : "transparent", color: finSub === 'vehicles' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Por Veículo</button>
+            <button onClick={function() { setFinSub('byloja'); }} style={{ padding: "8px 12px", background: finSub === 'byloja' ? C.accent : "transparent", color: finSub === 'byloja' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Comparar Lojas</button>
             <button onClick={function() { setFinSub('monthly'); }} style={{ padding: "8px 12px", background: finSub === 'monthly' ? C.accent : "transparent", color: finSub === 'monthly' ? "#fff" : C.textMid, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Mensal</button>
           </div>
 
@@ -1467,6 +1468,46 @@ export default function App() {
               </table>
             </div>
           </Card>}
+
+          {finSub === 'byloja' && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {(function() {
+              var lojas = [
+                { label: "Loja A", location: "Loja A" },
+                { label: "Loja B", location: "Loja B" }
+              ];
+              return lojas.map(function(loja) {
+                var lojaVehicles = (vehicles || []).filter(function(v) { return v.location === loja.location; });
+                var lojaSold = lojaVehicles.filter(function(v) { return v.status === "sold"; });
+                var lojaRevenue = lojaSold.reduce(function(a, v) { return a + (v.soldPrice || v.salePrice || 0); }, 0);
+                var lojaCosts = lojaSold.reduce(function(a, v) { return a + totalCosts(v); }, 0);
+                var lojaProfit = lojaRevenue - lojaCosts;
+                return <Card key={loja.location} style={{ padding: 20 }}>
+                  <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>{loja.label}</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 4 }}>Faturamento</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>{fmtFull(lojaRevenue)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 4 }}>Custos</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: C.red }}>{fmtFull(lojaCosts)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 4 }}>Lucro</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: lojaProfit > 0 ? C.green : C.red }}>{fmtFull(lojaProfit)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: C.textDim, marginBottom: 4 }}>Vendas</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: C.blue }}>{lojaSold.length}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, borderTop: "1px solid " + C.border, paddingTop: 12, color: C.textDim }}>
+                    Margem média: <strong style={{ color: C.text }}>{lojaSold.length > 0 ? ((lojaProfit / lojaRevenue) * 100).toFixed(1) : 0}%</strong>
+                  </div>
+                </Card>;
+              });
+            })()}
+          </div>}
 
           {finSub === 'monthly' && <Card style={{ padding: 20 }}>
             <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Relatório Mensal</h3>
