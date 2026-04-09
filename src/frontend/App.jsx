@@ -721,8 +721,8 @@ export default function App() {
       setSelV(function(p) {
         var update = {};
         update[field] = val;
-        // Se editar salePrice de carro vendido, sincronizar soldPrice também
-        if (field === 'salePrice' && p.status === 'sold') {
+        // Se editar salePrice e o carro tem soldPrice definido, sincronizar
+        if (field === 'salePrice' && p.soldPrice != null) {
           update.soldPrice = val;
         }
         return Object.assign({}, p, update);
