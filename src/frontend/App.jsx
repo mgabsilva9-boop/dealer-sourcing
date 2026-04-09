@@ -27,9 +27,9 @@ const IMGS = {
 };
 
 const USERS = [
-  { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "threeon2026", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
-  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "bross2026", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
-  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "lojab2026", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
+  { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
+  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
+  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
 ];
 
 // ─── REAL DATA FROM SPREADSHEET ─────────────────────────────────────

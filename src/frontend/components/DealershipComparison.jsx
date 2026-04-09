@@ -57,7 +57,7 @@ export function DealershipComparison({ dealerships }) {
                   isBest(d, 'total_cost') ? 'bg-green-50 font-semibold' : ''
                 }`}
               >
-                R$ {(d.total_cost / 100).toLocaleString('pt-BR')}
+                R$ {d.total_cost.toLocaleString('pt-BR')}
               </td>
             ))}
           </tr>
@@ -72,7 +72,7 @@ export function DealershipComparison({ dealerships }) {
                   d.realized_profit > 0 ? 'text-green-700' : 'text-red-700'
                 } ${isBest(d, 'realized_profit') ? 'bg-green-50' : ''}`}
               >
-                R$ {(d.realized_profit / 100).toLocaleString('pt-BR')}
+                R$ {d.realized_profit.toLocaleString('pt-BR')}
               </td>
             ))}
           </tr>

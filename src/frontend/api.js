@@ -122,7 +122,7 @@ export const inventoryAPI = {
   },
 
   async create(vehicleData) {
-    return fetchAPI('/inventory/create', {
+    return fetchAPI('/inventory', {
       method: 'POST',
       body: JSON.stringify(vehicleData),
     });

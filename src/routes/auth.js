@@ -60,19 +60,27 @@ async function initDefaultUsers() {
       END $$;
     `);
 
-    // 3. Criar dealership BrossMotors se não existir
-    const dealershipId = '11111111-1111-1111-1111-111111111111';
+    // 3. Criar dealerships BrossMotors se não existirem
+    const dealershipLojaA = '11111111-1111-1111-1111-111111111111';
+    const dealershipLojaB = '22222222-2222-2222-2222-222222222222';
+
     await query(`
       INSERT INTO dealerships (id, name, created_at, updated_at)
-      VALUES ($1, 'BrossMotors', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ($1, 'BrossMotors - Loja A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO NOTHING;
-    `, [dealershipId]);
+    `, [dealershipLojaA]);
+
+    await query(`
+      INSERT INTO dealerships (id, name, created_at, updated_at)
+      VALUES ($1, 'BrossMotors - Loja B', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      ON CONFLICT (id) DO NOTHING;
+    `, [dealershipLojaB]);
 
     // 4. Criar os 3 usuários padrão — senhas fixas para desenvolvimento (não mudar)
     const defaultUsers = [
-      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin' },
-      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono' },
-      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente' },
+      { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin', dealershipId: dealershipLojaA },
+      { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono', dealershipId: dealershipLojaA },
+      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente', dealershipId: dealershipLojaB },
     ];
 
     for (const u of defaultUsers) {
@@ -81,7 +89,7 @@ async function initDefaultUsers() {
         INSERT INTO users (email, password, name, dealership_id)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT ON CONSTRAINT users_email_unique DO UPDATE SET password = EXCLUDED.password;
-      `, [u.email, hash, u.name, dealershipId]);
+      `, [u.email, hash, u.name, u.dealershipId]);
     }
 
     console.log('✅ Usuários padrão verificados/criados');

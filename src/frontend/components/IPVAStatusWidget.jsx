@@ -76,7 +76,7 @@ export function IPVAStatusWidget({ ipvaRecords = [] }) {
           <p className="font-semibold text-green-700">✅ Pagos</p>
           <p className="text-2xl font-bold text-green-900">{byStatus.paid.length}</p>
           <p className="text-sm text-green-600">
-            R$ {(totalPaid / 100).toLocaleString('pt-BR')}
+            R$ {totalPaid.toLocaleString('pt-BR')}
           </p>
         </div>
 
@@ -85,7 +85,7 @@ export function IPVAStatusWidget({ ipvaRecords = [] }) {
           <p className="font-semibold text-yellow-700">⏱️ Pendentes</p>
           <p className="text-2xl font-bold text-yellow-900">{byStatus.pending.length}</p>
           <p className="text-sm text-yellow-600">
-            R$ {(totalPending / 100).toLocaleString('pt-BR')}
+            R$ {totalPending.toLocaleString('pt-BR')}
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export function IPVAStatusWidget({ ipvaRecords = [] }) {
           <p className="font-semibold text-red-700">🔴 Urgentes</p>
           <p className="text-2xl font-bold text-red-900">{byStatus.urgent.length}</p>
           <p className="text-sm text-red-600">
-            R$ {(totalUrgent / 100).toLocaleString('pt-BR')}
+            R$ {totalUrgent.toLocaleString('pt-BR')}
           </p>
         </div>
       </div>

@@ -154,7 +154,7 @@ router.get('/comparison', async (req, res) => {
       total_cost: parseInt(d.total_cost) || 0,
       realized_profit: profitMap[d.id] || 0,
       avg_margin: d.vehicle_count > 0
-        ? parseFloat(((profitMap[d.id] || 0) / parseInt(d.vehicle_count) / 10000).toFixed(2))
+        ? parseFloat(((profitMap[d.id] || 0) / parseInt(d.vehicle_count)).toFixed(2))
         : 0,
     }));
 

@@ -8,7 +8,7 @@ import DealershipComparison from '../components/DealershipComparison';
 import AlertsStockWidget from '../components/AlertsStockWidget';
 import IPVAStatusWidget from '../components/IPVAStatusWidget';
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function DashboardFinancial() {
   const [vehicles, setVehicles] = useState([]);
@@ -56,7 +56,7 @@ export function DashboardFinancial() {
       });
       if (ipvaRes.ok) {
         const data = await ipvaRes.json();
-        setIPVARecords(data.ipva_records || []);
+        setIPVARecords(Array.isArray(data) ? data : (data.ipva_records || []));
       }
     } catch (error) {
       console.error('❌ Erro ao carregar dados:', error);

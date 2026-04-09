@@ -4,7 +4,7 @@
 
 export function AlertsStockWidget({ vehicles = [] }) {
   const alertVehicles = vehicles.filter((v) => {
-    const daysInStock = Math.floor((Date.now() - new Date(v.created_at)) / (1000 * 60 * 60 * 24));
+    const daysInStock = Math.floor((Date.now() - new Date(v.createdAt || v.created_at)) / (1000 * 60 * 60 * 24));
     return daysInStock > 45;
   });
 
@@ -21,7 +21,7 @@ export function AlertsStockWidget({ vehicles = [] }) {
       <h3 className="font-semibold text-lg text-red-700">⚠️ Alertas de Estoque Prolongado</h3>
 
       {alertVehicles.slice(0, 5).map((v) => {
-        const daysInStock = Math.floor((Date.now() - new Date(v.created_at)) / (1000 * 60 * 60 * 24));
+        const daysInStock = Math.floor((Date.now() - new Date(v.createdAt || v.created_at)) / (1000 * 60 * 60 * 24));
         const dailyCost = (v.purchase_price || 0) * 0.002; // ~0.2% ao dia em custo
         const lostValue = dailyCost * (daysInStock - 45);
 
