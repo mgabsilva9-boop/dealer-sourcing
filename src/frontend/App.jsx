@@ -848,7 +848,7 @@ export default function App() {
       setSelV(updatedVehicle);
     }
     try {
-      const res = await inventoryAPI.update(id, updatedVehicle);
+      const res = await inventoryAPI.update(id, updates);
       if (res && res.vehicle) {
         setVehicles(p => p.map(v => v.id === id ? Object.assign({}, v, res.vehicle) : v));
         if (selV && selV.id === id) {
