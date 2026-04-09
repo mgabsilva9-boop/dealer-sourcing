@@ -726,11 +726,13 @@ export default function App() {
     if (vehicleToSend) {
       localStorage.setItem("vehicle_draft_" + id, JSON.stringify(vehicleToSend));
     }
-    // Enviar para backend com dados corretos
+    // Enviar apenas o campo alterado para o backend (evita validações cruzadas de preço)
     if (vehicleToSend) {
+      var payload = {};
+      payload[field] = val;
       (async function() {
         try {
-          const res = await inventoryAPI.update(id, vehicleToSend);
+          const res = await inventoryAPI.update(id, payload);
           if (res && res.vehicle) {
             setVehicles(function(prev) {
               return prev.map(function(v) {
@@ -759,6 +761,8 @@ export default function App() {
       })();
     }
   }, [selV]);
+
+
 
   var updCost = useCallback(function(id, costField, val) {
     var vehicleToSend = null;

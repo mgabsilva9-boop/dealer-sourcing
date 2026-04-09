@@ -370,8 +370,11 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     // ✅ VALIDAR business logic: purchasePrice não deve ser > salePrice
+    // Só bloqueia quando ambos são enviados explicitamente com valores > 0
     if (purchasePrice !== undefined && salePrice !== undefined && purchasePrice !== null && salePrice !== null) {
-      if (parseFloat(purchasePrice) > parseFloat(salePrice)) {
+      const purchaseNum = parseFloat(purchasePrice);
+      const saleNum = parseFloat(salePrice);
+      if (!isNaN(purchaseNum) && !isNaN(saleNum) && purchaseNum > 0 && saleNum > 0 && purchaseNum > saleNum) {
         console.warn(`${logPrefix} Validação: purchasePrice (${purchasePrice}) > salePrice (${salePrice})`);
         return res.status(400).json({ error: 'Preço de compra não pode ser maior que preço de venda' });
       }
@@ -578,8 +581,11 @@ router.put('/:id', authMiddleware, async (req, res) => {
     }
 
     // ✅ VALIDAR business logic: purchasePrice não deve ser > salePrice
+    // Só bloqueia quando ambos são enviados explicitamente com valores > 0
     if (purchasePrice !== undefined && salePrice !== undefined && purchasePrice !== null && salePrice !== null) {
-      if (parseFloat(purchasePrice) > parseFloat(salePrice)) {
+      const purchaseNum = parseFloat(purchasePrice);
+      const saleNum = parseFloat(salePrice);
+      if (!isNaN(purchaseNum) && !isNaN(saleNum) && purchaseNum > 0 && saleNum > 0 && purchaseNum > saleNum) {
         console.warn(`${logPrefix} Validação: purchasePrice (${purchasePrice}) > salePrice (${salePrice})`);
         return res.status(400).json({ error: 'Preço de compra não pode ser maior que preço de venda' });
       }
