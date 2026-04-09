@@ -616,8 +616,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
            features = COALESCE($12, features),
            sold_price = CASE
              WHEN $15::numeric IS NOT NULL THEN $15::numeric
-             WHEN $9 = 'sold' AND sold_price IS NULL THEN sale_price
-             WHEN $9 != 'sold' AND sold_price IS NOT NULL THEN NULL
+             WHEN $9 = 'sold' THEN COALESCE($5, sale_price)
+             WHEN $9 != 'sold' THEN NULL
              ELSE sold_price
            END,
            sold_date = CASE
