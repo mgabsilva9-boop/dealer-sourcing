@@ -719,7 +719,13 @@ export default function App() {
     });
     if (selV && String(selV.id) === String(id)) {
       setSelV(function(p) {
-        return Object.assign({}, p, { [field]: val });
+        var update = {};
+        update[field] = val;
+        // Se editar salePrice de carro vendido, sincronizar soldPrice também
+        if (field === 'salePrice' && p.status === 'sold') {
+          update.soldPrice = val;
+        }
+        return Object.assign({}, p, update);
       });
     }
     // Auto-save no localStorage
