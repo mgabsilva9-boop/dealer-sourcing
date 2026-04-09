@@ -1030,7 +1030,7 @@ export default function App() {
   var monthLabel = function(m) { var parts = m.split("-"); var names = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return names[parseInt(parts[1])] + " " + parts[0]; };
 
   // Selected vehicle detail data
-  var sv = selV ? vehicles.find(function(x) { return x.id === selV.id; }) : null;
+  var sv = selV;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
