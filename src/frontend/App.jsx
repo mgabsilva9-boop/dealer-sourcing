@@ -47,12 +47,7 @@ const INIT_CRM = [
   { id: 3, name: "Carla Beatriz Santos", phone: "(11) 97654-3210", email: "carla@email.com", interest: "Toyota SW4", status: "prospect", type: "Executiva", notes: "Interesse em SW4 Diamond. Lead qualificado de Facebook." },
 ];
 
-const INIT_EXPENSES = [
-  { id: 1, category: "Aluguel", description: "Aluguel Galpão", amount: 3500, date: "2026-04-01", status: "paid" },
-  { id: 2, category: "Seguro", description: "Seguro Estoque", amount: 2200, date: "2026-03-20", status: "paid" },
-  { id: 3, category: "Marketing", description: "Marketing Digital", amount: 1800, date: "2026-04-05", status: "pending" },
-  { id: 4, category: "Operacional", description: "Financiamento Equipamentos", amount: 4500, date: "2026-03-01", status: "paid" },
-];
+const INIT_EXPENSES = [];
 
 const SOURCING = [
   { id: 1, platform: "WebMotors", make: "Ram", model: "1500 Laramie", year: 2024, price: 395000, fipe: 430000, discount: -8.1, km: 15000, location: "Sao Paulo, SP", score: 92, time: "2h atras", phone: "(11) 98765-4321", url: "https://webmotors.com.br/anuncio/123456", kmRating: "Baixa", owners: 1, accidents: 0, serviceHistory: "Completo (concess.)", bodyCondition: "Excelente" },
