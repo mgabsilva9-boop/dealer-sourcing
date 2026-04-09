@@ -100,16 +100,20 @@ function CostCard({ category, value, onEdit, onDelete, editable = true }) {
 
 function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCancel }) {
   const [category, setCategory] = useState(initialCategory || "");
+  const [customText, setCustomText] = useState(
+    initialCategory && !categories.includes(initialCategory) ? initialCategory : ""
+  );
   const [value, setValue] = useState(initialValue || 0);
   const [error, setError] = useState("");
 
   const validate = () => {
     setError("");
-    if (!category || category.trim() === "") {
+    const finalCategory = customText || category;
+    if (!finalCategory || finalCategory.trim() === "") {
       setError("Categoria é obrigatória");
       return false;
     }
-    if (category.length > 50) {
+    if (finalCategory.length > 50) {
       setError("Categoria não pode ter mais de 50 caracteres");
       return false;
     }
@@ -126,7 +130,8 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
 
   const handleSave = () => {
     if (!validate()) return;
-    onSave(category.trim(), Number(value));
+    const finalCategory = customText || category;
+    onSave(finalCategory.trim(), Number(value));
   };
 
   return (
@@ -164,10 +169,16 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
             Categoria
           </label>
           <select
-            value={category}
+            value={customText ? "__custom__" : category}
             onChange={(e) => {
               const val = e.target.value;
-              setCategory(val);
+              if (val === "__custom__") {
+                setCategory("");
+                setCustomText("");
+              } else {
+                setCategory(val);
+                setCustomText("");
+              }
               if (error) setError("");
             }}
             style={{
@@ -189,14 +200,16 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
             ))}
             <option value="__custom__">Personalizado...</option>
           </select>
-          {category === "__custom__" ? (
+          {customText !== "" || (category === "" && initialCategory && !categories.includes(initialCategory)) ? (
             <input
               placeholder="Digite uma categoria customizada"
-              value=""
+              value={customText || (initialCategory && !categories.includes(initialCategory) ? initialCategory : "")}
               onChange={(e) => {
-                setCategory(e.target.value);
+                setCustomText(e.target.value);
+                setCategory("");
                 if (error) setError("");
               }}
+              autoFocus
               style={{
                 width: "100%",
                 padding: "10px 12px",
@@ -263,7 +276,7 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
           </button>
           <button
             onClick={handleSave}
-            disabled={!category || isNaN(value) || value < 0}
+            disabled={!(customText || category) || isNaN(value) || value < 0}
             style={{
               flex: 1,
               padding: "10px 14px",
@@ -273,8 +286,8 @@ function CostCardEdit({ initialCategory, initialValue, categories, onSave, onCan
               borderRadius: 8,
               fontSize: 13,
               fontWeight: 600,
-              cursor: !category || isNaN(value) || value < 0 ? "default" : "pointer",
-              opacity: !category || isNaN(value) || value < 0 ? 0.5 : 1,
+              cursor: !(customText || category) || isNaN(value) || value < 0 ? "default" : "pointer",
+              opacity: !(customText || category) || isNaN(value) || value < 0 ? 0.5 : 1,
               fontFamily: FONT,
             }}
           >

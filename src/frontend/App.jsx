@@ -874,7 +874,7 @@ export default function App() {
   const loadFinancialMonthly = async function() {
     try {
       const result = await financialAPI.monthly(finYear, String(finMonth).padStart(2, '0'));
-      setFinMonthlyData(result.transactions || []);
+      setFinMonthlyData(result.vehicles || []);
     } catch (err) {
       console.error('Erro ao carregar financeiro mensal:', err);
     }

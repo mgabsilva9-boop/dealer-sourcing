@@ -220,8 +220,8 @@ router.get('/report/monthly/:year/:month', async (req, res) => {
       LEFT JOIN vehicle_costs vc ON vc.inventory_id = inv.id
       WHERE inv.dealership_id = $1
         AND inv.status = 'sold'
-        AND inv.created_at >= $2::date
-        AND inv.created_at <= $3::date
+        AND inv.sold_date >= $2::date
+        AND inv.sold_date <= $3::date
       GROUP BY inv.id
     `;
 

@@ -9,6 +9,30 @@ import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// ===== NORMALIZATION FUNCTION =====
+function normalizeCustomer(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone || '',
+    email: row.email || '',
+    cpf: row.cpf || '',
+    vehicleBought: row.vehicle_bought || '',
+    purchaseDate: row.purchase_date || null,
+    purchaseValue: parseFloat(row.purchase_value) || 0,
+    notes: row.notes || '',
+    style: row.style || '',
+    region: row.region || '',
+    collector: row.collector || false,
+    birthday: row.birthday || null,
+    profession: row.profession || '',
+    referral: row.referral || '',
+    contactPref: row.contact_pref || 'WhatsApp',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 // ===== CUSTOMERS / CRM =====
 
 // GET - Listar todos os clientes
@@ -21,7 +45,7 @@ router.get('/list', authMiddleware, async (req, res) => {
 
     res.json({
       total: result.rows.length,
-      customers: result.rows,
+      customers: result.rows.map(normalizeCustomer),
     });
   } catch (error) {
     console.error('Erro ao listar clientes:', error);
@@ -66,7 +90,7 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     res.status(201).json({
       message: 'Cliente criado com sucesso',
-      customer: result.rows[0],
+      customer: normalizeCustomer(result.rows[0]),
     });
   } catch (error) {
     console.error('Erro ao criar cliente:', error);
@@ -88,7 +112,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: 'Cliente não encontrado' });
     }
 
-    res.json(result.rows[0]);
+    res.json(normalizeCustomer(result.rows[0]));
   } catch (error) {
     console.error('Erro ao buscar cliente:', error);
     res.status(500).json({ error: 'Erro ao buscar cliente' });
@@ -130,7 +154,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     res.json({
       message: 'Cliente atualizado com sucesso',
-      customer: result.rows[0],
+      customer: normalizeCustomer(result.rows[0]),
     });
   } catch (error) {
     console.error('Erro ao atualizar cliente:', error);
