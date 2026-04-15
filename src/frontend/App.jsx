@@ -599,6 +599,8 @@ export default function App() {
   const [invFilter, setInvFilter] = useState("active");
   const [addingV, setAddingV] = useState(false);
   const [addingExp, setAddingExp] = useState(false);
+  const [editingExpId, setEditingExpId] = useState(null);
+  const [editingExpData, setEditingExpData] = useState({});
   const [invView, setInvView] = useState("lista");
   const [finSub, setFinSub] = useState("overview");
   const [balMonth, setBalMonth] = useState("2026-02");
@@ -1910,6 +1912,7 @@ export default function App() {
                 <thead>
                   <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
                     <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Veículo</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Loja</th>
                     <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Estado</th>
                     <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Alíquota</th>
                     <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Valor</th>
@@ -1921,12 +1924,13 @@ export default function App() {
                 <tbody>
                   {(function() {
                     var filteredIpva = dealer === "all" ? ipvaList : ipvaList.filter(i => i.location === dealer);
-                    return filteredIpva.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : filteredIpva.map(function(ipva) {
+                    return filteredIpva.length === 0 ? <tr><td colSpan="8" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : filteredIpva.map(function(ipva) {
                     var daysTo = ipva.due_date ? Math.ceil((new Date(ipva.due_date) - new Date()) / 86400000) : 999;
                     var statusColor = ipva.status === 'paid' ? C.green : daysTo <= 15 ? C.red : C.yellow;
                     var statusLabel = ipva.status === 'paid' ? 'Pago' : daysTo <= 15 ? 'Urgente' : 'Pendente';
                     return <tr key={ipva.id} style={{ borderBottom: "1px solid " + C.border, background: ipva.status === 'paid' ? C.surfaceAlt : "transparent" }}>
-                      <td style={{ padding: "12px" }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
+                      <td style={{ padding: "12px", fontWeight: 600 }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
+                      <td style={{ padding: "12px", color: C.textMid, fontSize: 12 }}>{ipva.location || "-"}</td>
                       <td style={{ padding: "12px" }}>{ipva.state || ""}</td>
                       <td style={{ padding: "12px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
                       <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
@@ -1991,13 +1995,34 @@ export default function App() {
                     <div style={{ fontWeight: 700, fontSize: 16, color: C.red }}>{fmtFull(Number(e.amount))}</div>
                     <Tag color={st.color} bg={st.bg}>{st.label}</Tag>
                   </div>
-                  <button onClick={async function() { if (confirm("Deletar esta despesa?")) { try { await expensesAPI.delete(e.id); setExpenses(function(p) { return p.filter(function(x) { return x.id !== e.id; }); }); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ padding: "4px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Del</button>
+                  {editingExpId !== e.id && <>
+                    <button onClick={function() { setEditingExpId(e.id); setEditingExpData(Object.assign({}, e)); }} style={{ padding: "4px 10px", background: C.accentLight, color: C.accent, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Editar</button>
+                    <button onClick={async function() { if (confirm("Deletar esta despesa?")) { try { await expensesAPI.delete(e.id); setExpenses(function(p) { return p.filter(function(x) { return x.id !== e.id; }); }); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ padding: "4px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Del</button>
+                  </>}
                 </div>
               </Card>;
             }) : <Card style={{ padding: 20, textAlign: "center", color: C.textDim }}>
               Nenhuma despesa registrada
             </Card>}
           </div>
+
+          {editingExpId && <Card style={{ padding: 22, marginTop: 20, background: C.accentLight, borderLeft: "4px solid " + C.accent }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Editar Despesa</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Loja</label><select value={editingExpData.location || "BrossMotors"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { location: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="BrossMotors">BrossMotors</option><option value="BMCars">BMCars</option></select></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Categoria</label><select value={editingExpData.category || "Operacional"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { category: e.target.value, customCategory: "" })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option>Operacional</option><option>Aluguel</option><option>Financiamento</option><option>IPVA</option><option>Seguro</option><option value="__custom__">Personalizado...</option></select></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Descricao</label><input value={editingExpData.description || ""} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { description: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Valor</label><input type="number" value={editingExpData.amount || 0} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { amount: Number(e.target.value) || 0 })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Data</label><input type="date" value={editingExpData.date || ""} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { date: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Status</label><select value={editingExpData.status || "pending"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { status: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="pending">Pendente</option><option value="paid">Pago</option><option value="urgent">Urgente</option></select></div>
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={async function() { if (!editingExpData.category || !editingExpData.amount) return; try { var finalForm = Object.assign({}, editingExpData); var result = await expensesAPI.update(editingExpId, finalForm); if (result && result.expense) { setExpenses(function(p) { return p.map(function(x) { return x.id === editingExpId ? result.expense : x; }); }); setEditingExpId(null); setEditingExpData({}); alert('Despesa atualizada com sucesso!'); } } catch (err) { alert("Erro ao atualizar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Salvar</button>
+              <button onClick={function() { setEditingExpId(null); setEditingExpData({}); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
+            </div>
+          </Card>}
         </div>}
 
         {tab === "crm" && <CrmTab customers={customers} setCustomers={setCustomers} />}
