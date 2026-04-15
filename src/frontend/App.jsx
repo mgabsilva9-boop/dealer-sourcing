@@ -609,6 +609,7 @@ export default function App() {
   const [sourcing, setSourcing] = useState([]);
   const [sourcingFilters, setSourcingFilters] = useState({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" });
   const [sourcingLoading, setSourcingLoading] = useState(false);
+  const [selectedSourceVehicle, setSelectedSourceVehicle] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [changePassForm, setChangePassForm] = useState({ oldPass: "", newPass: "", confirmPass: "" });
   const [changePassMsg, setChangePassMsg] = useState("");
@@ -1634,7 +1635,7 @@ export default function App() {
             </div>
           </Card>
           <div style={{ display: "grid", gap: 12 }}>
-            {sourcing.length === 0 ? <Card style={{ padding: "40px 20px", textAlign: "center" }}><div style={{ color: C.textDim, fontSize: 14 }}>Nenhum veiculo encontrado. Use o filtro acima para buscar.</div></Card> : sourcing.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} style={{ padding: "18px 22px" }}>
+            {sourcing.length === 0 ? <Card style={{ padding: "40px 20px", textAlign: "center" }}><div style={{ color: C.textDim, fontSize: 14 }}>Nenhum veiculo encontrado. Use o filtro acima para buscar.</div></Card> : sourcing.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} onClick={function() { setSelectedSourceVehicle(s); }} style={{ padding: "18px 22px", cursor: "pointer", transition: "all 0.2s", border: "1px solid " + C.border, hover: { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } }}>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", alignItems: "center", gap: 14 }}>
                 <div><div style={{ fontWeight: 600, fontSize: 14 }}>{s.make} {s.model} {s.year}</div><div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{s.platform} | {s.location} | {s.km.toLocaleString()} km</div></div>
                 <div><div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase" }}>Preco</div><div style={{ fontWeight: 700, fontSize: 14, marginTop: 2 }}>R$ {(s.price/1000).toFixed(0)}K</div></div>
@@ -2023,6 +2024,79 @@ export default function App() {
               <button onClick={function() { setEditingExpId(null); setEditingExpData({}); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
             </div>
           </Card>}
+          {/* MODAL DE DETALHES DO VEÍCULO */}
+          {selectedSourceVehicle && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={function() { setSelectedSourceVehicle(null); }}>
+            <Card style={{ padding: 32, maxWidth: 500, maxHeight: "90vh", overflowY: "auto", position: "relative" }} onClick={function(e) { e.stopPropagation(); }}>
+              <button onClick={function() { setSelectedSourceVehicle(null); }} style={{ position: "absolute", top: 16, right: 16, background: C.surfaceAlt, border: "1px solid " + C.border, color: C.textMid, width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>×</button>
+
+              <h2 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700 }}>{selectedSourceVehicle.make} {selectedSourceVehicle.model} {selectedSourceVehicle.year}</h2>
+
+              <div style={{ display: "grid", gap: 14, marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Plataforma</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.platform}</div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Preço</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>R$ {(selectedSourceVehicle.price/1000).toFixed(0)}K</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>FIPE</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.textMid }}>R$ {(selectedSourceVehicle.fipe/1000).toFixed(0)}K</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Desconto vs FIPE</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: selectedSourceVehicle.discount <= -15 ? C.green : C.yellow }}>{selectedSourceVehicle.discount.toFixed(1)}%</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Quilometragem</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.km.toLocaleString()} km</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Condição do Corpo</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.bodyCondition || "-"}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Histórico de Serviço</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.serviceHistory || "-"}</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Proprietários</div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.owners || 0} proprietário(s)</div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Sinistros</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: selectedSourceVehicle.accidents > 0 ? C.red : C.green }}>{selectedSourceVehicle.accidents || 0} sinistro(s)</div>
+                </div>
+
+                {selectedSourceVehicle.phone && <div style={{ background: C.surfaceAlt, padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Telefone do Vendedor</div>
+                  <a href={"tel:" + selectedSourceVehicle.phone} style={{ fontSize: 14, fontWeight: 600, color: C.accent, textDecoration: "none" }}>{selectedSourceVehicle.phone}</a>
+                </div>}
+
+                {selectedSourceVehicle.url && <div style={{ background: C.surfaceAlt, padding: 12, borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Link do Anúncio</div>
+                  <a href={selectedSourceVehicle.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.accent, textDecoration: "none", wordBreak: "break-all" }}>Ver anúncio →</a>
+                </div>}
+
+                <div style={{ background: C.accentLight, padding: 12, borderRadius: 8, textAlign: "center" }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: sColor(selectedSourceVehicle.score) }}>{selectedSourceVehicle.score}</div>
+                  <div style={{ fontSize: 12, color: sColor(selectedSourceVehicle.score), fontWeight: 600 }}>{sLabel(selectedSourceVehicle.score)}</div>
+                </div>
+              </div>
+
+              <button onClick={function() { setSelectedSourceVehicle(null); }} style={{ width: "100%", padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Fechar</button>
+            </Card>
+          </div>}
         </div>}
 
         {tab === "crm" && <CrmTab customers={customers} setCustomers={setCustomers} />}
