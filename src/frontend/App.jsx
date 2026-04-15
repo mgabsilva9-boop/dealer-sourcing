@@ -1321,19 +1321,19 @@ export default function App() {
 
             {/* ROW 3 — ALERTAS AGING + PRÓXIMOS PAGAMENTOS */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {/* AGING ALERTS */}
+              {/* ULTIMAS BUSCAS */}
               <Card style={{ padding: 22 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.red }}>⚠️ Veículos em Estoque &gt; 45 dias</h3>
-                {agingAlerts.length === 0 ? <div style={{ fontSize: 12, color: C.textDim, padding: "20px 0", textAlign: "center" }}>Sem alertas</div> : agingAlerts.map(function(v) {
-                  var severity = v.daysInStock > 60 ? "critical" : v.daysInStock > 45 ? "high" : "medium";
-                  return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: severity === "critical" ? C.redBg : severity === "high" ? C.yellowBg : C.surfaceAlt, borderRadius: 6, borderLeft: "3px solid " + (severity === "critical" ? C.red : severity === "high" ? C.yellow : C.orange || "#f97316"), marginBottom: 8 }}>
+                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.accent }}>🔍 Ultimas Buscas</h3>
+                {sourcing.length === 0 ? <div style={{ fontSize: 12, color: C.textDim, padding: "20px 0", textAlign: "center" }}>Sem resultados. Use a Busca IA para encontrar oportunidades.</div> : sourcing.slice(0, 5).map(function(v) {
+                  var sc = sColor(v.score);
+                  return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: C.surfaceAlt, borderRadius: 6, borderLeft: "3px solid " + C.accent, marginBottom: 8, cursor: "pointer", transition: "all 0.2s" }} onClick={function() { setTab("sourcing"); setSelectedSourceVehicle(v); }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{v.make} {v.model}</div>
-                      <div style={{ fontSize: 11, color: C.textDim }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{v.make} {v.model} {v.year}</div>
+                      <div style={{ fontSize: 11, color: C.textDim }}>{v.platform} | R$ {(v.price/1000).toFixed(0)}K</div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: severity === "critical" ? C.red : C.yellow }}>{v.daysInStock}d</div>
-                      <div style={{ fontSize: 10, color: C.textDim }}>em estoque</div>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: sc }}>{v.score}</div>
+                      <div style={{ fontSize: 9, color: sc, fontWeight: 600 }}>{sLabel(v.score)}</div>
                     </div>
                   </div>;
                 })}
