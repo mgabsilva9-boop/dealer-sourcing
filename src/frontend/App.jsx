@@ -5,16 +5,27 @@ import { StatusPillGroup, statusConfig } from "./components/StatusPills.jsx";
 import { CostsList } from "./components/CostCards.jsx";
 
 const C = {
-  bg: "#f0f4f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
-  border: "#e8eaed", borderLight: "#f0f1f3",
-  accent: "#1d4ed8", accentLight: "#eff6ff",
-  text: "#1a1d23", textMid: "#5f6773", textDim: "#9ca3ae",
-  green: "#16a34a", greenBg: "#f0fdf4",
-  yellow: "#d97706", yellowBg: "#fffbeb",
-  red: "#dc2626", redBg: "#fef2f2",
-  blue: "#2563eb", blueBg: "#eff6ff",
-  purple: "#7c3aed", cyan: "#0891b2",
-  header: "#0f172a", headerBorder: "#1e293b", headerText: "#f1f5f9", headerMuted: "#94a3b8",
+  // Background & Surfaces (Clean, minimal)
+  bg: "#f8f9fa", surface: "#ffffff", surfaceAlt: "#fafbfc",
+  border: "#e5e7eb", borderLight: "#f3f4f6",
+
+  // Primary: Teal-green (aprovado no design system)
+  accent: "#0d7c66", accentLight: "#f0fdfb",
+  accentMuted: "#a8d5d0",
+
+  // Text hierarchy (Professional)
+  text: "#1a1a2e", textMid: "#6b7280", textDim: "#9ca3ae",
+
+  // Semantic colors (Clean, modern)
+  green: "#10b981", greenBg: "#f0fdf4",
+  yellow: "#f59e0b", yellowBg: "#fffbeb",
+  red: "#ef4444", redBg: "#fef2f2",
+  blue: "#3b82f6", blueBg: "#eff6ff",
+  purple: "#8b5cf6", purpleBg: "#faf5ff",
+  cyan: "#06b6d4", cyanBg: "#ecfdf5",
+
+  // Header (Minimal, elegant)
+  header: "#ffffff", headerBorder: "#e5e7eb", headerText: "#1a1a2e", headerMuted: "#6b7280",
 };
 const FONT = "-apple-system, 'SF Pro Display', 'Segoe UI', sans-serif";
 const IMGS = {
@@ -83,10 +94,39 @@ const expStatusMap = { paid: { label: "Pago", color: C.green, bg: C.greenBg }, p
 const catColors = { Financiamento: C.purple, IPVA: C.red, Aluguel: C.blue, Seguro: C.cyan, Operacional: C.textMid };
 
 // ─── ATOMS (no ...rest, no IIFE) ────────────────────────────────────
-function Card({ children, style, onClick }) { return <div onClick={onClick} style={{ background: C.surface, borderRadius: 12, border: "1px solid " + C.border, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", ...style }}>{children}</div>; }
-function Stat({ label, value, sub, accent }) { return <Card style={{ padding: "20px 22px", borderLeft: accent ? "3px solid " + C.accent : undefined }}><div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 500 }}>{label}</div><div style={{ fontSize: 24, fontWeight: 700, color: C.text, lineHeight: 1.1 }}>{value}</div>{sub && <div style={{ fontSize: 12, color: C.textDim, marginTop: 6 }}>{sub}</div>}</Card>; }
-function Tag({ children, color, bg }) { return <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: color, background: bg, letterSpacing: 0.3 }}>{children}</span>; }
-function MiniBar({ label, value }) { var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30; var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red; return <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 11, color: C.textMid, width: 28, textAlign: "right" }}>{value}</span><div style={{ flex: 1, height: 4, background: C.borderLight, borderRadius: 2 }}><div style={{ width: w + "%", height: "100%", background: c, borderRadius: 2 }} /></div></div>; }
+function Card({ children, style, onClick }) {
+  return <div onClick={onClick} style={{
+    background: C.surface, borderRadius: 12, border: "1px solid " + C.border,
+    boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+    ...style
+  }}>{children}</div>;
+}
+
+function Stat({ label, value, sub, accent }) {
+  return <Card style={{ padding: "24px 28px", borderLeft: accent ? "4px solid " + C.accent : undefined }}>
+    <div style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, fontWeight: 600 }}>{label}</div>
+    <div style={{ fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1.2, letterSpacing: -0.5 }}>{value}</div>
+    {sub && <div style={{ fontSize: 13, color: C.textMid, marginTop: 8 }}>{sub}</div>}
+  </Card>;
+}
+
+function Tag({ children, color, bg }) {
+  return <span style={{
+    display: "inline-block", padding: "4px 12px", borderRadius: 8,
+    fontSize: 12, fontWeight: 600, color: color, background: bg,
+    letterSpacing: 0.2
+  }}>{children}</span>;
+}
+function MiniBar({ label, value }) {
+  var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30;
+  var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red;
+  return <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <span style={{ fontSize: 12, color: C.textMid, width: 32, textAlign: "right", fontWeight: 500 }}>{value}</span>
+    <div style={{ flex: 1, height: 6, background: C.borderLight, borderRadius: 3 }}>
+      <div style={{ width: w + "%", height: "100%", background: c, borderRadius: 3 }} />
+    </div>
+  </div>;
+}
 
 function MiniDonut({ segments, size = 80 }) {
   var safeSegments = segments || [];
@@ -104,17 +144,24 @@ function MiniDonut({ segments, size = 80 }) {
   );
 }
 
-function BarChart({ data, height = 120 }) {
+function BarChart({ data, height = 140 }) {
   var safeData = data || [];
   var max = Math.max.apply(null, safeData.map(function(d) { return d.value; }).concat([1]));
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: height }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: height }}>
       {safeData.map(function(d, i) {
         return (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-            <div style={{ fontSize: 9, color: C.textDim }}>{d.label2 || ""}</div>
-            <div style={{ width: "100%", height: (d.value / max) * (height - 24), background: d.color || C.accent, borderRadius: "3px 3px 0 0", minHeight: 4 }} />
-            <div style={{ fontSize: 9, color: C.textDim, textAlign: "center" }}>{d.label}</div>
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+            <div style={{ fontSize: 11, color: C.textDim, fontWeight: 500 }}>{d.label2 || ""}</div>
+            <div style={{
+              width: "100%",
+              height: (d.value / max) * (height - 32),
+              background: d.color || C.accent,
+              borderRadius: "6px 6px 0 0",
+              minHeight: 6,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.08)"
+            }} />
+            <div style={{ fontSize: 11, color: C.textDim, textAlign: "center", fontWeight: 500 }}>{d.label}</div>
           </div>
         );
       })}
@@ -127,8 +174,35 @@ function EditField({ label, value, onChange, type }) {
   const [temp, setTemp] = useState(String(value));
   var save = function() { setEditing(false); onChange(type === "number" ? Number(temp) || value : temp); };
   var displayValue = type === "number" ? (label.toLowerCase().includes("km") ? (Number(value) || 0).toLocaleString("pt-BR") + " km" : fmtFull(value)) : value;
-  if (!editing) { return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{ cursor: "pointer", padding: "7px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{displayValue}</span></div>; }
-  return <div style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid " + C.accent, background: C.accentLight, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><div style={{ display: "flex", gap: 4 }}><input autoFocus value={temp} onChange={function(e) { setTemp(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") save(); }} type={type || "text"} style={{ width: type === "number" ? 100 : 140, padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 13, fontFamily: FONT, outline: "none" }} /><button onClick={save} style={{ padding: "4px 10px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>OK</button><button onClick={function() { setEditing(false); }} style={{ padding: "4px 8px", background: "none", color: C.textDim, border: "1px solid " + C.border, borderRadius: 4, fontSize: 11, cursor: "pointer" }}>X</button></div></div>;
+  if (!editing) {
+    return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{
+      cursor: "pointer", padding: "10px 12px", borderRadius: 8, display: "flex", justifyContent: "space-between",
+      alignItems: "center", hover: { background: C.surfaceAlt }, transition: "background 0.2s"
+    }}>
+      <span style={{ fontSize: 12, color: C.textDim, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{displayValue}</span>
+    </div>;
+  }
+  return <div style={{
+    padding: "8px 12px", borderRadius: 8, border: "1.5px solid " + C.accent, background: C.accentLight,
+    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8
+  }}>
+    <span style={{ fontSize: 12, color: C.textDim, fontWeight: 500 }}>{label}</span>
+    <div style={{ display: "flex", gap: 6 }}>
+      <input autoFocus value={temp} onChange={function(e) { setTemp(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") save(); }} type={type || "text"} style={{
+        width: type === "number" ? 100 : 140, padding: "6px 10px", border: "1px solid " + C.border, borderRadius: 6,
+        fontSize: 13, fontFamily: FONT, outline: "none", background: C.surface
+      }} />
+      <button onClick={save} style={{
+        padding: "6px 12px", background: C.accent, color: "#fff", border: "none", borderRadius: 6,
+        fontSize: 12, cursor: "pointer", fontWeight: 600, transition: "opacity 0.2s"
+      }}>OK</button>
+      <button onClick={function() { setEditing(false); }} style={{
+        padding: "6px 10px", background: "none", color: C.textMid, border: "1px solid " + C.border, borderRadius: 6,
+        fontSize: 12, cursor: "pointer", fontWeight: 500
+      }}>X</button>
+    </div>
+  </div>;
 }
 
 // ─── LOGIN ──────────────────────────────────────────────────────────
@@ -169,21 +243,38 @@ function LoginScreen({ onLogin }) {
   };
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
-      <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}><span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>G</span></div>
-      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>ThreeOn</h1>
-      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 36px" }}>Sistema de gestao inteligente</p>
-      <Card style={{ padding: 32, width: 360 }}>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ fontSize: 12, color: C.textDim, display: "block", marginBottom: 6, fontWeight: 500 }}>Email</label>
-          <input value={emailInput} onChange={function(e) { setEmailInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="Seu email" style={{ width: "100%", padding: "10px 14px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 14, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
-        </div>
+      <div style={{ width: 48, height: 48, borderRadius: 12, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, boxShadow: "0 4px 12px rgba(13, 124, 102, 0.15)" }}>
+        <span style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>G</span>
+      </div>
+      <h1 style={{ color: C.text, fontSize: 28, fontWeight: 700, margin: "0 0 8px", letterSpacing: -0.5 }}>Garagem</h1>
+      <p style={{ color: C.textMid, fontSize: 14, margin: "0 0 40px", fontWeight: 500 }}>Gestão inteligente de concessionárias premium</p>
+      <Card style={{ padding: 40, width: 380, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
         <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, color: C.textDim, display: "block", marginBottom: 6, fontWeight: 500 }}>Senha</label>
-          <input type="password" value={passInput} onChange={function(e) { setPassInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="Sua senha" style={{ width: "100%", padding: "10px 14px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 14, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+          <label style={{ fontSize: 12, color: C.textMid, display: "block", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Email</label>
+          <input value={emailInput} onChange={function(e) { setEmailInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="seu@email.com" style={{
+            width: "100%", padding: "12px 16px", border: "1px solid " + C.border, borderRadius: 10, fontSize: 14,
+            fontFamily: FONT, outline: "none", boxSizing: "border-box", background: C.surface,
+            transition: "border-color 0.2s, box-shadow 0.2s"
+          }} />
         </div>
-        {error && <div style={{ color: C.red, fontSize: 12, marginBottom: 12, fontWeight: 500 }}>{error}</div>}
-        <button onClick={tryLogin} disabled={loading} style={{ width: "100%", padding: "12px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}>{loading ? "Conectando..." : "Entrar"}</button>
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12, color: C.textMid, display: "block", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Senha</label>
+          <input type="password" value={passInput} onChange={function(e) { setPassInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="••••••••" style={{
+            width: "100%", padding: "12px 16px", border: "1px solid " + C.border, borderRadius: 10, fontSize: 14,
+            fontFamily: FONT, outline: "none", boxSizing: "border-box", background: C.surface,
+            transition: "border-color 0.2s, box-shadow 0.2s"
+          }} />
+        </div>
+        {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16, fontWeight: 500, padding: "10px 12px", background: C.redBg, borderRadius: 8 }}>{error}</div>}
+        <button onClick={tryLogin} disabled={loading} style={{
+          width: "100%", padding: "14px 16px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none",
+          borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1,
+          boxShadow: loading ? "none" : "0 2px 8px rgba(13, 124, 102, 0.2)", transition: "all 0.2s"
+        }}>{loading ? "Conectando..." : "Entrar"}</button>
       </Card>
+      <p style={{ color: C.textDim, fontSize: 12, marginTop: 32, textAlign: "center" }}>
+        Demo: admin@threeon.com / threeon2026
+      </p>
     </div>
   );
 }
@@ -1083,22 +1174,49 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
       {/* HEADER */}
-      <div style={{ background: C.header, borderBottom: "1px solid " + C.headerBorder, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {customLogo ? (
-            <img src={customLogo} alt="Logo" style={{ height: 28, width: 'auto', borderRadius: 4 }} />
-          ) : (
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
-          )}
-          <span style={{ fontWeight: 700, fontSize: 16, color: C.headerText }}>ThreeOn</span>
-        </div>
+      <div style={{
+        background: C.header, borderBottom: "1px solid " + C.headerBorder, padding: "0 40px",
+        display: "flex", alignItems: "center", justifyContent: "space-between", height: 72,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+      }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {canSwitch && <div style={{ display: "flex", gap: 2, background: "#1e293b", borderRadius: 8, padding: 3, border: "1px solid " + C.headerBorder }}>
-            {["all", "Loja A", "Loja B"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.headerMuted, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
+          {customLogo ? (
+            <img src={customLogo} alt="Logo" style={{ height: 32, width: 'auto', borderRadius: 6 }} />
+          ) : (
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, background: C.accent,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, fontWeight: 700, color: "#fff", boxShadow: "0 2px 6px rgba(13, 124, 102, 0.15)"
+            }}>G</div>
+          )}
+          <span style={{ fontWeight: 700, fontSize: 18, color: C.headerText, letterSpacing: -0.5 }}>Garagem</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {canSwitch && <div style={{
+            display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 10,
+            padding: 4, border: "1px solid " + C.border
+          }}>
+            {["all", "Loja A", "Loja B"].map(function(d) {
+              return <button key={d} onClick={function() { setDealer(d); }} style={{
+                padding: "6px 16px", borderRadius: 8, border: "none",
+                background: dealer === d ? C.accent : "transparent",
+                color: dealer === d ? "#fff" : C.textMid,
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                transition: "all 0.2s"
+              }}>{d === "all" ? "Todas" : d}</button>;
+            })}
           </div>}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.headerBorder }}>
-            <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
-            <span style={{ fontSize: 12, color: C.headerMuted }}>{user.label}</span>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "6px 14px", borderRadius: 10, border: "1px solid " + C.border,
+            background: C.surfaceAlt
+          }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: 8, background: C.accent,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 700, color: "#fff"
+            }}>{user.icon}</div>
+            <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{user.label}</span>
             <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
             <button onClick={async function() {
               try {
