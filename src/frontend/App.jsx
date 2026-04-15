@@ -1,6 +1,6 @@
 // Version: 1.5.0-RC1 (undefined.map fix deployed)
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI } from "./api.js";
+import { authAPI, vehiclesAPI, searchAPI, healthAPI, APIError, inventoryAPI, crmAPI, expensesAPI, sourcingAPI, ipvaAPI, financialAPI, savedSearchesAPI } from "./api.js";
 import { StatusPillGroup, statusConfig } from "./components/StatusPills.jsx";
 import { CostsList } from "./components/CostCards.jsx";
 
@@ -537,6 +537,12 @@ export default function App() {
   const [finYear, setFinYear] = useState(new Date().getFullYear());
   const [finMonthlyData, setFinMonthlyData] = useState([]);
   const [toasts, setToasts] = useState([]);
+  const [savedSearches, setSavedSearches] = useState([]);
+  const [showSaveSearch, setShowSaveSearch] = useState(false);
+  const [selectedSavedSearch, setSelectedSavedSearch] = useState(null);
+  const [aiSearchInput, setAiSearchInput] = useState("");
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
+  const [aiSearchResult, setAiSearchResult] = useState(null);
 
   // Restaurar sessão ao carregar a página (se houver token no localStorage)
   // BONUS FIX: Implementa cleanup flag para evitar setState after unmount (race condition)
@@ -598,13 +604,12 @@ export default function App() {
     if (!user) return;
     (async function() {
       try {
-        // ✅ FASE 1: Paralelizar todas as 6 requisições simultaneamente
-        const [vehiclesData, customersData, expensesData, sourcingData, ipvaListData, ipvaSummaryData] =
+        // ✅ FASE 1: Paralelizar 5 requisições (sourcing carrega lazy na aba)
+        const [vehiclesData, customersData, expensesData, ipvaListData, ipvaSummaryData] =
           await Promise.all([
             inventoryAPI.list().catch(() => ({})),
             crmAPI.list().catch(() => ({})),
             expensesAPI.list().catch(() => ({})),
-            sourcingAPI.list().catch(() => ({})),
             ipvaAPI.list().catch(() => []),
             ipvaAPI.summary().catch(() => null)
           ]);
@@ -643,11 +648,6 @@ export default function App() {
           setExpenses(INIT_EXPENSES);
         }
 
-        // Sourcing
-        if (sourcingData && sourcingData.results) {
-          setSourcing(sourcingData.results);
-        }
-
         // IPVA
         if (ipvaListData && ipvaListData.length > 0) {
           setIpvaList(ipvaListData);
@@ -664,6 +664,30 @@ export default function App() {
       }
     })();
   }, [user]);
+
+  // Lazy load sourcing + saved searches quando user entra na aba sourcing
+  useEffect(function() {
+    if (tab === 'sourcing') {
+      // Carregar buscas salvas se ainda não carregadas
+      if (savedSearches.length === 0) {
+        (async function() {
+          try {
+            const result = await savedSearchesAPI.list();
+            if (result && result.searches) {
+              setSavedSearches(result.searches);
+            }
+          } catch (err) {
+            console.error('Erro ao carregar buscas salvas:', err);
+          }
+        })();
+      }
+
+      // Carregar sourcing se ainda não carregados
+      if (sourcing.length === 0 && !sourcingLoading) {
+        searchSourcing();
+      }
+    }
+  }, [tab]);
 
   // Toast helper function
   var showToast = function(message, type, duration) {
@@ -696,6 +720,20 @@ export default function App() {
         console.error('Erro ao buscar sourcing:', err);
       }
       setSourcingLoading(false);
+    })();
+  };
+
+  var performAiSearch = function() {
+    setAiSearchLoading(true);
+    (async function() {
+      try {
+        const result = await savedSearchesAPI.aiSearch(aiSearchInput);
+        setAiSearchResult(result);
+      } catch (err) {
+        showToast("Erro: " + (err instanceof APIError ? err.message : err.message), "error");
+        console.error('AI Search error:', err);
+      }
+      setAiSearchLoading(false);
     })();
   };
 
@@ -1341,6 +1379,117 @@ export default function App() {
         {/* SOURCING */}
         {tab === "sourcing" && <div>
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>Busca Inteligente IA</h2>
+
+          {/* BUSCA POR DESCRIÇÃO (AI-POWERED) */}
+          <Card style={{ padding: 20, marginBottom: 20, background: C.accentLight, border: "1px solid " + C.accent }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 600, color: C.accent }}>🤖 Descreva o carro que procura</h3>
+            <p style={{ margin: "0 0 14px", fontSize: 12, color: C.textDim }}>Exemplo: "Civic 2020 automático até 80 mil" ou "BMW M3 branco, pouco km"</p>
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr auto" }}>
+              <input
+                type="text"
+                placeholder="Descreva o veículo em linguagem natural..."
+                value={aiSearchInput}
+                onChange={function(e) { setAiSearchInput(e.target.value); }}
+                onKeyPress={function(e) { if (e.key === "Enter" && !aiSearchLoading && aiSearchInput.trim()) performAiSearch(); }}
+                style={{ padding: "12px 14px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none" }}
+              />
+              <button
+                onClick={function() {
+                  if (!aiSearchInput.trim()) {
+                    showToast("Digite algo para buscar", "error");
+                    return;
+                  }
+                  performAiSearch();
+                }}
+                disabled={aiSearchLoading}
+                style={{ padding: "12px 20px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: aiSearchLoading ? "default" : "pointer", opacity: aiSearchLoading ? 0.6 : 1 }}
+              >
+                {aiSearchLoading ? "Analisando..." : "Buscar"}
+              </button>
+            </div>
+          </Card>
+
+          {/* RESULTADO DA BUSCA IA */}
+          {aiSearchResult && (
+            <Card style={{ padding: 20, marginBottom: 20, background: C.greenBg, borderLeft: "4px solid " + C.green }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: C.green, marginBottom: 10 }}>✅ Resumo da Busca</div>
+              <div style={{ fontSize: 13, color: C.text, marginBottom: 16, lineHeight: 1.5 }}>{aiSearchResult.summary}</div>
+              <div style={{ fontSize: 11, color: C.textDim, marginBottom: 12 }}>Total de {aiSearchResult.totalFound} opções encontradas.</div>
+              <button
+                onClick={function() { setAiSearchResult(null); setSourcing(aiSearchResult.vehicles); }}
+                style={{ padding: "8px 14px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Ver Resultados Completos
+              </button>
+            </Card>
+          )}
+
+          {/* MINHAS BUSCAS SALVAS */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, textTransform: "uppercase", color: C.textDim }}>Minhas Buscas Salvas</h3>
+              <button onClick={function() { setSelectedSavedSearch({ name: "", alertWhatsapp: false, alertEmail: false, whatsappNumber: "", emailAddress: "" }); setShowSaveSearch(true); }} style={{ padding: "6px 12px", background: C.green, color: "#fff", border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                + Nova Busca
+              </button>
+            </div>
+            <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+              {savedSearches.length === 0 ? (
+                <Card style={{ padding: "24px 20px", textAlign: "center", gridColumn: "1 / -1" }}>
+                  <div style={{ color: C.textDim, fontSize: 13 }}>Nenhuma busca salva. Crie uma nova para receber alertas automáticos.</div>
+                </Card>
+              ) : (
+                savedSearches.map(function(ss) {
+                  return <Card key={ss.id} style={{ padding: "14px 16px", position: "relative" }}>
+                    <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", marginBottom: 10 }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: C.text }}>{ss.name}</div>
+                        <div style={{ fontSize: 11, color: C.textDim, marginTop: 3 }}>
+                          {ss.isActive ? "Ativa" : "Pausada"}
+                        </div>
+                      </div>
+                      {ss.pendingAlerts > 0 && <div style={{ background: C.red, color: "#fff", padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{ss.pendingAlerts} novo</div>}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 10 }}>
+                      <button onClick={async function() {
+                        try {
+                          const result = await savedSearchesAPI.runAndNotify(ss.id);
+                          if (result.newCount > 0) {
+                            showToast(`✅ ${result.newCount} novo(s) encontrado(s)!`, "success");
+                            if (result.whatsappMessage) {
+                              showToast(`💬 MSG: "${result.whatsappMessage.substring(0, 50)}..."`, "success");
+                            }
+                          } else {
+                            showToast("Nenhuma novidade por enquanto", "success");
+                          }
+                          // Recarregar buscas salvas
+                          const updated = await savedSearchesAPI.list();
+                          if (updated && updated.searches) setSavedSearches(updated.searches);
+                        } catch (err) {
+                          showToast("Erro ao executar busca", "error");
+                        }
+                      }} style={{ padding: "6px 10px", background: C.accentLight, color: C.accent, border: "1px solid " + C.accent, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                        ⚡ Rodar Agora
+                      </button>
+                      <button onClick={async function() {
+                        try {
+                          await savedSearchesAPI.delete(ss.id);
+                          setSavedSearches(savedSearches.filter(s => s.id !== ss.id));
+                          showToast("Busca removida");
+                        } catch (err) {
+                          showToast("Erro ao remover busca", "error");
+                        }
+                      }} style={{ padding: "6px 10px", background: C.redBg, color: C.red, border: "1px solid " + C.red, borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                        🗑 Deletar
+                      </button>
+                    </div>
+                  </Card>;
+                })
+              )}
+            </div>
+          </div>
+
+          <hr style={{ border: "none", borderTop: "1px solid " + C.border, margin: "24px 0" }} />
+
           <Card style={{ padding: 20, marginBottom: 20 }}>
             <h3 style={{ margin: "0 0 14px", fontSize: 13, fontWeight: 600, textTransform: "uppercase", color: C.textDim }}>Filtros</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
@@ -1351,12 +1500,15 @@ export default function App() {
               <input placeholder="KM max" type="number" value={sourcingFilters.kmMax} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { kmMax: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
               <input placeholder="Desconto min" type="number" value={sourcingFilters.discountMin} onChange={function(e) { setSourcingFilters(Object.assign({}, sourcingFilters, { discountMin: e.target.value })); }} style={{ padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12, fontFamily: FONT, outline: "none" }} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
               <button onClick={searchSourcing} disabled={sourcingLoading} style={{ padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: sourcingLoading ? "default" : "pointer", opacity: sourcingLoading ? 0.6 : 1 }}>
                 {sourcingLoading ? "Buscando..." : "Buscar"}
               </button>
               <button onClick={function() { setSourcingFilters({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" }); setSourcing([]); }} style={{ padding: "10px 16px", background: C.surfaceAlt, color: C.textMid, border: "1px solid " + C.border, borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                 Limpar
+              </button>
+              <button onClick={function() { setSelectedSavedSearch({ name: "", alertWhatsapp: false, alertEmail: false, whatsappNumber: "", emailAddress: "" }); setShowSaveSearch(true); }} style={{ padding: "10px 16px", background: C.green, color: "#fff", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                Salvar Busca
               </button>
             </div>
           </Card>
@@ -1754,6 +1906,118 @@ export default function App() {
           </Card>
         </div>}
       </div>
+
+      {/* MODAL: SALVAR BUSCA */}
+      {showSaveSearch && <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9998 }}>
+        <Card style={{ width: 400, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
+          <h2 style={{ margin: "0 0 18px", fontSize: 16, fontWeight: 700 }}>Salvar Esta Busca</h2>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6, fontWeight: 600 }}>Nome da Busca</label>
+            <input
+              type="text"
+              placeholder="Ex: BMW M3 até 400K"
+              value={selectedSavedSearch?.name || ""}
+              onChange={function(e) { setSelectedSavedSearch({ ...selectedSavedSearch, name: e.target.value }); }}
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }}
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={selectedSavedSearch?.alertWhatsapp || false}
+                onChange={function(e) { setSelectedSavedSearch({ ...selectedSavedSearch, alertWhatsapp: e.target.checked }); }}
+                style={{ width: 18, height: 18, cursor: "pointer" }}
+              />
+              Alerta WhatsApp
+            </label>
+          </div>
+
+          {selectedSavedSearch?.alertWhatsapp && <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6, fontWeight: 600 }}>Número WhatsApp</label>
+            <input
+              type="text"
+              placeholder="11 999999999"
+              value={selectedSavedSearch?.whatsappNumber || ""}
+              onChange={function(e) { setSelectedSavedSearch({ ...selectedSavedSearch, whatsappNumber: e.target.value }); }}
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }}
+            />
+          </div>}
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={selectedSavedSearch?.alertEmail || false}
+                onChange={function(e) { setSelectedSavedSearch({ ...selectedSavedSearch, alertEmail: e.target.checked }); }}
+                style={{ width: 18, height: 18, cursor: "pointer" }}
+              />
+              Alerta por Email
+            </label>
+          </div>
+
+          {selectedSavedSearch?.alertEmail && <div style={{ marginBottom: 14 }}>
+            <label style={{ display: "block", fontSize: 12, color: C.textDim, marginBottom: 6, fontWeight: 600 }}>Email</label>
+            <input
+              type="email"
+              placeholder="seu@email.com"
+              value={selectedSavedSearch?.emailAddress || ""}
+              onChange={function(e) { setSelectedSavedSearch({ ...selectedSavedSearch, emailAddress: e.target.value }); }}
+              style={{ width: "100%", padding: "10px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }}
+            />
+          </div>}
+
+          <div style={{ background: C.surfaceAlt, padding: 12, borderRadius: 8, marginBottom: 18, fontSize: 12, color: C.textDim }}>
+            <div style={{ fontWeight: 600, marginBottom: 6 }}>Critérios da busca:</div>
+            <div>{sourcingFilters.make ? `Marca: ${sourcingFilters.make}` : "Marca: qualquer"}</div>
+            <div>{sourcingFilters.model ? `Modelo: ${sourcingFilters.model}` : "Modelo: qualquer"}</div>
+            <div>{sourcingFilters.priceMin ? `Preço mín: R$ ${sourcingFilters.priceMin}K` : ""}</div>
+            <div>{sourcingFilters.priceMax ? `Preço máx: R$ ${sourcingFilters.priceMax}K` : ""}</div>
+            <div>{sourcingFilters.kmMax ? `KM máximo: ${sourcingFilters.kmMax}` : ""}</div>
+            <div>{sourcingFilters.discountMin ? `Desconto mínimo: ${sourcingFilters.discountMin}%` : ""}</div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <button onClick={function() { setShowSaveSearch(false); setSelectedSavedSearch(null); }} style={{ padding: "12px 16px", background: C.surfaceAlt, color: C.textMid, border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Cancelar
+            </button>
+            <button onClick={async function() {
+              if (!selectedSavedSearch?.name || !selectedSavedSearch.name.trim()) {
+                showToast("Nome da busca é obrigatório", "error");
+                return;
+              }
+              if (selectedSavedSearch.alertWhatsapp && !selectedSavedSearch.whatsappNumber) {
+                showToast("Número WhatsApp é obrigatório", "error");
+                return;
+              }
+              if (selectedSavedSearch.alertEmail && !selectedSavedSearch.emailAddress) {
+                showToast("Email é obrigatório", "error");
+                return;
+              }
+              try {
+                const newSearch = await savedSearchesAPI.create(
+                  selectedSavedSearch.name,
+                  sourcingFilters,
+                  selectedSavedSearch.alertWhatsapp || false,
+                  selectedSavedSearch.alertEmail || false,
+                  selectedSavedSearch.whatsappNumber || null,
+                  selectedSavedSearch.emailAddress || null
+                );
+                setSavedSearches([newSearch, ...savedSearches]);
+                setShowSaveSearch(false);
+                setSelectedSavedSearch(null);
+                showToast("Busca salva com sucesso!");
+              } catch (err) {
+                showToast("Erro ao salvar busca: " + (err instanceof APIError ? err.message : err.message), "error");
+              }
+            }} style={{ padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+              Salvar Busca
+            </button>
+          </div>
+        </Card>
+      </div>}
 
       {/* TOAST CONTAINER */}
       <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, display: "flex", flexDirection: "column", gap: 12 }}>

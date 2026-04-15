@@ -10,14 +10,46 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Criar pool de conexões
-export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+// Parse DATABASE_URL manualmente para evitar problemas com caracteres especiais (!)
+const parseConnectionUrl = () => {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error('DATABASE_URL não definida em .env');
+  }
+
+  // Exemplo: postgresql://user:pass!@host:5432/db
+  try {
+    const urlObj = new URL(url);
+    return {
+      user: decodeURIComponent(urlObj.username),
+      password: decodeURIComponent(urlObj.password),
+      host: urlObj.hostname,
+      port: parseInt(urlObj.port || 5432),
+      database: urlObj.pathname.slice(1), // remove leading /
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    };
+  } catch (err) {
+    console.error('❌ Erro ao parsear DATABASE_URL:', err.message);
+    console.error('URL:', url);
+    throw err;
+  }
+};
+
+const poolConfig = parseConnectionUrl();
+console.log('✅ Pool config parsed:', {
+  user: poolConfig.user,
+  host: poolConfig.host,
+  port: poolConfig.port,
+  database: poolConfig.database,
+  password: `[${poolConfig.password.length} chars]`,
+  passwordHint: poolConfig.password.substring(0, 10) + '...',
 });
+
+// Criar pool de conexões
+export const pool = new Pool(poolConfig);
 
 // ===== CONNECTION POOL METRICS (STORY-502) =====
 export const poolMetrics = {
@@ -64,6 +96,11 @@ pool.on('remove', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Erro inesperado na pool:', err);
+  // Reset de metricsQuando há erro de autenticação
+  if (err.message && err.message.includes('authentication')) {
+    poolMetrics.activeConnections = 0;
+    console.warn('⚠️ Reset de métricas após erro de autenticação');
+  }
 });
 
 // Função auxiliar para queries

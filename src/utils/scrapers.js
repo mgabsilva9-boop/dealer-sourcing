@@ -7,33 +7,135 @@
  */
 
 /**
- * Busca veículos reais do OLX
- * Fallback: retorna mock data se scraping falhar
+ * Busca veículos reais do OLX via Apify
+ * Fallback: retorna mock data se Apify não estiver disponível
  */
 export const scrapeOLX = async (query) => {
-  try {
-    // OLX não tem API pública, mas podemos buscar via endpoint específico
-    // Para produção, usar Puppeteer ou serviço de scraping
+  const APIFY_TOKEN = process.env.APIFY_TOKEN;
 
-    // Mock implementation com dados reais de exemplo
-    const mockVehicles = generateRealisticVehicles(query, 'olx');
-    return mockVehicles;
+  // Se não tiver token, retornar mock
+  if (!APIFY_TOKEN) {
+    console.log('[scrapers] APIFY_TOKEN não configurado, usando mock para OLX');
+    return generateRealisticVehicles(query, 'olx');
+  }
+
+  try {
+    const actorId = 'lukaskrivka/olx-scraper';
+    const input = {
+      searchString: query || 'carro',
+      maxItems: 20,
+      startPage: 1,
+      endPage: 1,
+    };
+
+    const response = await fetch(
+      `https://api.apify.com/v2/actors/${actorId}/call-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Apify OLX request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const items = Array.isArray(data) ? data : data.items || [];
+
+    // Mapear resultado Apify para nosso formato
+    return items.map((item) => ({
+      id: item.id || `olx-${Math.random()}`,
+      platform: 'olx',
+      make: item.make || 'N/A',
+      model: item.model || 'N/A',
+      year: item.year || new Date().getFullYear(),
+      price: item.price || 0,
+      fipe: item.fipePrice || item.price || 0,
+      discount: item.discount || 0,
+      km: item.km || 0,
+      location: item.location || 'SP',
+      score: item.score || calculateScore(item.discount || 0, item.km || 0, item.year || 2020),
+      time: item.time || '24h atrás',
+      phone: item.phone || generatePhone(),
+      url: item.url || '#',
+      kmRating: getKmRating(item.km || 0),
+      owners: item.owners || 1,
+      accidents: item.accidents || 0,
+      serviceHistory: item.serviceHistory || 'Sem registros',
+      bodyCondition: item.bodyCondition || 'Regular',
+    }));
   } catch (error) {
-    console.error('OLX scrape error:', error.message);
+    console.error('[scrapers] OLX Apify error:', error.message);
+    // Fallback para mock
     return generateRealisticVehicles(query, 'olx');
   }
 };
 
 /**
- * Busca veículos reais do WebMotors
+ * Busca veículos reais do WebMotors via Apify
+ * Fallback: retorna mock data se Apify não estiver disponível
  */
 export const scrapeWebMotors = async (query) => {
+  const APIFY_TOKEN = process.env.APIFY_TOKEN;
+
+  // Se não tiver token, retornar mock
+  if (!APIFY_TOKEN) {
+    console.log('[scrapers] APIFY_TOKEN não configurado, usando mock para WebMotors');
+    return generateRealisticVehicles(query, 'webmotors');
+  }
+
   try {
-    // WebMotors sem API pública - fallback para mock com dados realistas
-    const mockVehicles = generateRealisticVehicles(query, 'webmotors');
-    return mockVehicles;
+    const actorId = 'lukaskrivka/webmotors-scraper';
+    const input = {
+      searchQuery: query || 'carro',
+      maxItems: 20,
+      startPage: 1,
+      endPage: 1,
+    };
+
+    const response = await fetch(
+      `https://api.apify.com/v2/actors/${actorId}/call-sync-get-dataset-items?token=${APIFY_TOKEN}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Apify WebMotors request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const items = Array.isArray(data) ? data : data.items || [];
+
+    // Mapear resultado Apify para nosso formato
+    return items.map((item) => ({
+      id: item.id || `webmotors-${Math.random()}`,
+      platform: 'webmotors',
+      make: item.make || 'N/A',
+      model: item.model || 'N/A',
+      year: item.year || new Date().getFullYear(),
+      price: item.price || 0,
+      fipe: item.fipePrice || item.price || 0,
+      discount: item.discount || 0,
+      km: item.km || 0,
+      location: item.location || 'SP',
+      score: item.score || calculateScore(item.discount || 0, item.km || 0, item.year || 2020),
+      time: item.time || '24h atrás',
+      phone: item.phone || generatePhone(),
+      url: item.url || '#',
+      kmRating: getKmRating(item.km || 0),
+      owners: item.owners || 1,
+      accidents: item.accidents || 0,
+      serviceHistory: item.serviceHistory || 'Sem registros',
+      bodyCondition: item.bodyCondition || 'Regular',
+    }));
   } catch (error) {
-    console.error('WebMotors scrape error:', error.message);
+    console.error('[scrapers] WebMotors Apify error:', error.message);
+    // Fallback para mock
     return generateRealisticVehicles(query, 'webmotors');
   }
 };

@@ -272,6 +272,74 @@ export const sourcingAPI = {
   },
 };
 
+// ─── SAVED SEARCHES API (Watchlist com alertas)
+export const savedSearchesAPI = {
+  async list() {
+    return fetchAPI('/sourcing/saved-searches');
+  },
+
+  async create(name, criteria, alertWhatsapp, alertEmail, whatsappNumber, emailAddress) {
+    return fetchAPI('/sourcing/saved-searches', {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        criteria,
+        alertWhatsapp,
+        alertEmail,
+        whatsappNumber,
+        emailAddress,
+      }),
+    });
+  },
+
+  async get(id) {
+    return fetchAPI(`/sourcing/saved-searches/${id}`);
+  },
+
+  async update(id, data) {
+    return fetchAPI(`/sourcing/saved-searches/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async delete(id) {
+    return fetchAPI(`/sourcing/saved-searches/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async run(id) {
+    return fetchAPI(`/sourcing/saved-searches/${id}/run`, {
+      method: 'POST',
+    });
+  },
+
+  async results(id) {
+    return fetchAPI(`/sourcing/saved-searches/${id}/results`);
+  },
+
+  async aiSearch(query) {
+    return fetchAPI('/sourcing/ai-search', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    });
+  },
+
+  async runAndNotify(id) {
+    return fetchAPI(`/sourcing/saved-searches/${id}/run-and-notify`, {
+      method: 'POST',
+    });
+  },
+};
+
+// ─── CRON API (N8N — sem auth)
+export const cronAPI = {
+  async getActiveSearches() {
+    return fetchAPI('/sourcing/cron/active');
+  },
+};
+
 // ─── HISTORY API
 export const historyAPI = {
   async get() {
