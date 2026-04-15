@@ -85,7 +85,7 @@ router.get('/vehicle/:id', async (req, res) => {
 });
 
 // ============================================
-// GET /financial/comparison — Loja A vs B
+// GET /financial/comparison — BrossMotors vs B
 // ============================================
 
 router.get('/comparison', async (req, res) => {

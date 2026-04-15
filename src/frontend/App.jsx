@@ -39,17 +39,17 @@ const IMGS = {
 
 const USERS = [
   { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
-  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
-  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
+  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso BrossMotors e B", icon: "B", role: "DONO", dealership: "all" },
+  { id: "loja_b", label: "BMCars - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas BMCars", icon: "L", role: "GERENTE", dealership: "BMCars" },
 ];
 
 // ─── REAL DATA FROM SPREADSHEET ─────────────────────────────────────
 const INIT_VEHICLES = [
-  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "Loja A", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
-  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "Loja A", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
-  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "Loja A", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
-  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "Loja A", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
-  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "Loja A", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
+  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "BrossMotors", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
+  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "BrossMotors", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
+  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "BrossMotors", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
+  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "BrossMotors", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
+  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "BrossMotors", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
 ];
 
 const INIT_CRM = [
@@ -282,7 +282,7 @@ function LoginScreen({ onLogin }) {
 // ─── VEHICLE FORM ───────────────────────────────────────────────────
 function VehicleForm({ onAdd, onCancel }) {
   const [f, setF] = useState(function() {
-    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
+    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "BrossMotors", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
     var saved = localStorage.getItem("vehicleFormDraft");
     if (!saved) return defaults;
     try {
@@ -414,7 +414,7 @@ function VehicleForm({ onAdd, onCancel }) {
       <div><label style={lbl}>Marca</label><input value={f.make} onChange={function(e) { set("make", e.target.value); }} style={Object.assign({}, inp, validationErrors.make ? { borderColor: C.red } : {})} placeholder="Ford, BMW, Ram..." />{validationErrors.make && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.make}</div>}</div>
       <div><label style={lbl}>Modelo</label><input value={f.model} onChange={function(e) { set("model", e.target.value); }} style={Object.assign({}, inp, validationErrors.model ? { borderColor: C.red } : {})} placeholder="Ka, M3, 1500..." />{validationErrors.model && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.model}</div>}</div>
       <div><label style={lbl}>Ano</label><input type="number" value={f.year} onChange={function(e) { set("year", e.target.value); }} style={Object.assign({}, inp, validationErrors.year ? { borderColor: C.red } : {})} />{validationErrors.year && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.year}</div>}</div>
-      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>Loja A</option><option>Loja B</option></select></div>
+      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>BrossMotors</option><option>BMCars</option></select></div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
       <div><label style={lbl}>Compra do veiculo</label><input type="number" value={f.compra} onChange={function(e) { set("compra", e.target.value); }} style={Object.assign({}, inp, validationErrors.compra ? { borderColor: C.red } : {})} />{validationErrors.compra && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.compra}</div>}</div>
@@ -602,7 +602,7 @@ export default function App() {
   const [invView, setInvView] = useState("lista");
   const [finSub, setFinSub] = useState("overview");
   const [balMonth, setBalMonth] = useState("2026-02");
-  const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "" });
+  const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "", location: "BrossMotors" });
   const [loaded, setLoaded] = useState(false);
   const [sourcing, setSourcing] = useState([]);
   const [sourcingFilters, setSourcingFilters] = useState({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" });
@@ -623,6 +623,7 @@ export default function App() {
   const [ipvaFormVehicleId, setIpvaFormVehicleId] = useState('');
   const [ipvaFormState, setIpvaFormState] = useState('SP');
   const [ipvaFormYear, setIpvaFormYear] = useState(new Date().getFullYear());
+  const [ipvaFormLocation, setIpvaFormLocation] = useState('BrossMotors');
   const [finData, setFinData] = useState(null);
   const [finMonth, setFinMonth] = useState(new Date().getMonth() + 1);
   const [finYear, setFinYear] = useState(new Date().getFullYear());
@@ -1196,7 +1197,7 @@ export default function App() {
             display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 10,
             padding: 4, border: "1px solid " + C.border
           }}>
-            {["all", "Loja A", "Loja B"].map(function(d) {
+            {["all", "BrossMotors", "BMCars"].map(function(d) {
               return <button key={d} onClick={function() { setDealer(d); }} style={{
                 padding: "6px 16px", borderRadius: 8, border: "none",
                 background: dealer === d ? C.accent : "transparent",
@@ -1752,8 +1753,8 @@ export default function App() {
           {finSub === 'byloja' && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {(function() {
               var lojas = [
-                { label: "Loja A", location: "Loja A" },
-                { label: "Loja B", location: "Loja B" }
+                { label: "BrossMotors", location: "BrossMotors" },
+                { label: "BMCars", location: "BMCars" }
               ];
               return lojas.map(function(loja) {
                 var lojaVehicles = (vehicles || []).filter(function(v) { return v.location === loja.location; });
@@ -1832,21 +1833,32 @@ export default function App() {
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>IPVA</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
-            <Card style={{ padding: 20 }}>
-              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Total Pendente</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: C.yellow }}>{ipvaSummary?.pending || 0}</div>
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.pending_amount || 0))}</div>
-            </Card>
-            <Card style={{ padding: 20 }}>
-              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Urgente (&lt; 15d)</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: C.red }}>{ipvaSummary?.urgent || 0}</div>
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.urgent_amount || 0))}</div>
-            </Card>
-            <Card style={{ padding: 20 }}>
-              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Pagos</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: C.green }}>{ipvaSummary?.paid || 0}</div>
-              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.paid_amount || 0))}</div>
-            </Card>
+            {(function() {
+              var filteredIpva = dealer === "all" ? ipvaList : ipvaList.filter(i => i.location === dealer);
+              var pending = filteredIpva.filter(i => i.status !== 'paid').length;
+              var urgent = filteredIpva.filter(i => i.status !== 'paid' && i.due_date && Math.ceil((new Date(i.due_date) - new Date()) / 86400000) <= 15).length;
+              var paid = filteredIpva.filter(i => i.status === 'paid').length;
+              var pendingAmount = filteredIpva.filter(i => i.status !== 'paid').reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
+              var urgentAmount = filteredIpva.filter(i => i.status !== 'paid' && i.due_date && Math.ceil((new Date(i.due_date) - new Date()) / 86400000) <= 15).reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
+              var paidAmount = filteredIpva.filter(i => i.status === 'paid').reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
+              return [
+                <Card style={{ padding: 20 }}>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Total Pendente</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: C.yellow }}>{pending}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(pendingAmount)}</div>
+                </Card>,
+                <Card style={{ padding: 20 }}>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Urgente (&lt; 15d)</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: C.red }}>{urgent}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(urgentAmount)}</div>
+                </Card>,
+                <Card style={{ padding: 20 }}>
+                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Pagos</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: C.green }}>{paid}</div>
+                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(paidAmount)}</div>
+                </Card>
+              ];
+            })()}
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -1855,7 +1867,14 @@ export default function App() {
             </button>
 
             {showIpvaForm && <Card style={{ padding: 16, marginTop: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Loja</label>
+                  <select value={ipvaFormLocation || "BrossMotors"} onChange={function(e) { setIpvaFormLocation(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
+                    <option value="BrossMotors">BrossMotors</option>
+                    <option value="BMCars">BMCars</option>
+                  </select>
+                </div>
                 <div>
                   <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Veiculo</label>
                   <select value={ipvaFormVehicleId} onChange={function(e) { setIpvaFormVehicleId(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
@@ -1881,7 +1900,7 @@ export default function App() {
                   <input type="number" value={ipvaFormYear} onChange={function(e) { setIpvaFormYear(Number(e.target.value)); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
                 </div>
               </div>
-              <button onClick={async function() { if (!ipvaFormVehicleId || !ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormVehicleId, { state: ipvaFormState, year: ipvaFormYear }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormVehicleId(''); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
+              <button onClick={async function() { if (!ipvaFormVehicleId || !ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormVehicleId, { state: ipvaFormState, year: ipvaFormYear, location: ipvaFormLocation }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormVehicleId(''); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); setIpvaFormLocation('BrossMotors'); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
             </Card>}
           </div>
 
@@ -1900,7 +1919,9 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ipvaList.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : ipvaList.map(function(ipva) {
+                  {(function() {
+                    var filteredIpva = dealer === "all" ? ipvaList : ipvaList.filter(i => i.location === dealer);
+                    return filteredIpva.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : filteredIpva.map(function(ipva) {
                     var daysTo = ipva.due_date ? Math.ceil((new Date(ipva.due_date) - new Date()) / 86400000) : 999;
                     var statusColor = ipva.status === 'paid' ? C.green : daysTo <= 15 ? C.red : C.yellow;
                     var statusLabel = ipva.status === 'paid' ? 'Pago' : daysTo <= 15 ? 'Urgente' : 'Pendente';
@@ -1916,7 +1937,8 @@ export default function App() {
                         <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "4px 8px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Deletar</button>
                       </td>
                     </tr>;
-                  })}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1930,12 +1952,18 @@ export default function App() {
             <button onClick={function() { setAddingExp(!addingExp); }} style={{ padding: "8px 18px", background: addingExp ? C.redBg : C.accent, color: addingExp ? C.red : "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{addingExp ? "Cancelar" : "+ Nova Despesa"}</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14, marginBottom: 20 }}>
-            <Stat label="Total Despesas" value={fmtFull(expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0))} accent />
-            <Stat label="Pendente" value={fmtFull(expenses.filter(e => e.status !== "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
-            <Stat label="Pago" value={fmtFull(expenses.filter(e => e.status === "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
+            {(function() {
+              var filteredExp = dealer === "all" ? expenses : expenses.filter(e => e.location === dealer);
+              return [
+                <Stat label="Total Despesas" value={fmtFull(filteredExp.reduce((a, e) => a + (Number(e.amount) || 0), 0))} accent />,
+                <Stat label="Pendente" value={fmtFull(filteredExp.filter(e => e.status !== "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />,
+                <Stat label="Pago" value={fmtFull(filteredExp.filter(e => e.status === "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
+              ];
+            })()}
           </div>
           {addingExp && <Card style={{ padding: 22, marginBottom: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Loja</label><select value={expForm.location || "BrossMotors"} onChange={function(e) { setExpForm(Object.assign({}, expForm, { location: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="BrossMotors">BrossMotors</option><option value="BMCars">BMCars</option></select></div>
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Categoria</label><select value={expForm.category || "Operacional"} onChange={function(e) { setExpForm(Object.assign({}, expForm, { category: e.target.value, customCategory: "" })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option>Operacional</option><option>Aluguel</option><option>Financiamento</option><option>IPVA</option><option>Seguro</option><option value="__custom__">Personalizado...</option></select></div>
               {expForm.category === "__custom__" && <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Nome da Categoria</label><input type="text" value={expForm.customCategory || ""} onChange={function(e) { setExpForm(Object.assign({}, expForm, { customCategory: e.target.value })); }} placeholder="Ex: Manutenção, Publicidade..." style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>}
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Descricao</label><input value={expForm.description} onChange={function(e) { setExpForm(Object.assign({}, expForm, { description: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
@@ -1946,12 +1974,12 @@ export default function App() {
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Status</label><select value={expForm.status} onChange={function(e) { setExpForm(Object.assign({}, expForm, { status: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="pending">Pendente</option><option value="paid">Pago</option><option value="urgent">Urgente</option></select></div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={async function() { if (!expForm.category || !expForm.amount) return; if (expForm.category === "__custom__" && !expForm.customCategory) { alert("Por favor, digite o nome da categoria personalizada"); return; } try { var finalForm = Object.assign({}, expForm); if (expForm.category === "__custom__") { finalForm.category = expForm.customCategory; delete finalForm.customCategory; } var result = await expensesAPI.create(finalForm); if (result && result.expense) { setExpenses(function(p) { return p.concat([result.expense]); }); setExpForm({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "" }); setAddingExp(false); } } catch (err) { alert("Erro ao adicionar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar Despesa</button>
+              <button onClick={async function() { if (!expForm.category || !expForm.amount) return; if (expForm.category === "__custom__" && !expForm.customCategory) { alert("Por favor, digite o nome da categoria personalizada"); return; } try { var finalForm = Object.assign({}, expForm); if (expForm.category === "__custom__") { finalForm.category = expForm.customCategory; delete finalForm.customCategory; } var result = await expensesAPI.create(finalForm); if (result && result.expense) { setExpenses(function(p) { return p.concat([result.expense]); }); setExpForm({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "", location: "BrossMotors" }); setAddingExp(false); } } catch (err) { alert("Erro ao adicionar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar Despesa</button>
               <button onClick={function() { setAddingExp(false); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
             </div>
           </Card>}
           <div style={{ display: "grid", gap: 12 }}>
-            {expenses.length > 0 ? expenses.map(function(e) {
+            {expenses.length > 0 ? (dealer === "all" ? expenses : expenses.filter(e => e.location === dealer)).map(function(e) {
               var st = expStatusMap[e.status] || { label: e.status, color: C.textDim, bg: C.surfaceAlt };
               return <Card key={e.id} style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>

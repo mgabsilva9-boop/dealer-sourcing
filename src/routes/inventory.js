@@ -184,11 +184,11 @@ async function initDefaultVehicles() {
 
     // Veículos padrão
     const defaultVehicles = [
-      { make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, mileage: 72000, location: "Loja A", motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 } },
-      { make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, mileage: 56000, location: "Loja A", motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 } },
-      { make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, mileage: 42000, location: "Loja A", motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 } },
-      { make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, mileage: 37000, location: "Loja A", motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 } },
-      { make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, mileage: 52000, location: "Loja A", motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 } }
+      { make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, mileage: 72000, location: "BrossMotors", motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 } },
+      { make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, mileage: 56000, location: "BrossMotors", motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 } },
+      { make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, mileage: 42000, location: "BrossMotors", motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 } },
+      { make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, mileage: 37000, location: "BrossMotors", motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 } },
+      { make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, mileage: 52000, location: "BrossMotors", motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 } }
     ];
 
     for (const v of defaultVehicles) {
@@ -389,7 +389,7 @@ router.post('/', authMiddleware, async (req, res) => {
        (user_id, dealership_id, make, model, year, purchase_price, sale_price, fipe_price, mileage, location, status, motor, potencia, features)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
-      [userId, dealershipId, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'Loja A', status || 'available', motor || '', potencia || '', features || ''],
+      [userId, dealershipId, make, model, year || null, purchasePrice || 0, salePrice || 0, fipePrice || 0, mileage || 0, location || 'BrossMotors', status || 'available', motor || '', potencia || '', features || ''],
     );
 
     const vehicleId = vehicleResult.rows[0].id;

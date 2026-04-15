@@ -66,13 +66,13 @@ async function initDefaultUsers() {
 
     await query(`
       INSERT INTO dealerships (id, name, created_at, updated_at)
-      VALUES ($1, 'BrossMotors - Loja A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ($1, 'BrossMotors - BrossMotors', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO NOTHING;
     `, [dealershipLojaA]);
 
     await query(`
       INSERT INTO dealerships (id, name, created_at, updated_at)
-      VALUES ($1, 'BrossMotors - Loja B', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      VALUES ($1, 'BrossMotors - BMCars', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
       ON CONFLICT (id) DO NOTHING;
     `, [dealershipLojaB]);
 
@@ -80,7 +80,7 @@ async function initDefaultUsers() {
     const defaultUsers = [
       { email: 'admin@threeon.com', password: 'threeon2026', name: 'ThreeON Admin', dealershipId: dealershipLojaA },
       { email: 'dono@brossmotors.com', password: 'bross2026', name: 'BrossMotors Dono', dealershipId: dealershipLojaA },
-      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'Loja B Gerente', dealershipId: dealershipLojaB },
+      { email: 'lojab@brossmotors.com', password: 'lojab2026', name: 'BMCars Gerente', dealershipId: dealershipLojaB },
     ];
 
     for (const u of defaultUsers) {
@@ -188,7 +188,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // IMPORTANTE: Novo usuário precisa de dealership_id
-    // Por padrão, atribuir à primeira dealership (Loja A)
+    // Por padrão, atribuir à primeira dealership (BrossMotors)
     const dealershipResult = await query(
       'SELECT id FROM dealerships ORDER BY created_at LIMIT 1'
     );
@@ -360,7 +360,7 @@ router.post('/seed-default-users', async (req, res) => {
     const defaultUsers = [
       { email: 'admin@threeon.com', password: process.env.DEFAULT_ADMIN_PASS || 'ADMIN_PASS_NOT_SET', name: 'ThreeON Admin' },
       { email: 'dono@brossmotors.com', password: process.env.DEFAULT_DONO_PASS || 'DONO_PASS_NOT_SET', name: 'BrossMotors Dono' },
-      { email: 'lojab@brossmotors.com', password: process.env.DEFAULT_LOJAB_PASS || 'LOJAB_PASS_NOT_SET', name: 'Loja B Gerente' },
+      { email: 'lojab@brossmotors.com', password: process.env.DEFAULT_LOJAB_PASS || 'LOJAB_PASS_NOT_SET', name: 'BMCars Gerente' },
     ];
 
     const created = [];
