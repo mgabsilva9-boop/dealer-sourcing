@@ -28,17 +28,17 @@ const IMGS = {
 
 const USERS = [
   { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
-  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
-  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
+  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso BrossMotors e BMCars", icon: "B", role: "DONO", dealership: "all" },
+  { id: "loja_b", label: "BMCars - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas BMCars", icon: "L", role: "GERENTE", dealership: "BMCars" },
 ];
 
 // ─── REAL DATA FROM SPREADSHEET ─────────────────────────────────────
 const INIT_VEHICLES = [
-  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "Loja A", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
-  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "Loja A", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
-  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "Loja A", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
-  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "Loja A", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
-  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "Loja A", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
+  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "BrossMotors", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
+  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "BrossMotors", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
+  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "BrossMotors", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
+  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "BrossMotors", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
+  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "BrossMotors", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
 ];
 
 const INIT_CRM = [
@@ -191,7 +191,7 @@ function LoginScreen({ onLogin }) {
 // ─── VEHICLE FORM ───────────────────────────────────────────────────
 function VehicleForm({ onAdd, onCancel }) {
   const [f, setF] = useState(function() {
-    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
+    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "BrossMotors", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
     var saved = localStorage.getItem("vehicleFormDraft");
     if (!saved) return defaults;
     try {
@@ -323,7 +323,7 @@ function VehicleForm({ onAdd, onCancel }) {
       <div><label style={lbl}>Marca</label><input value={f.make} onChange={function(e) { set("make", e.target.value); }} style={Object.assign({}, inp, validationErrors.make ? { borderColor: C.red } : {})} placeholder="Ford, BMW, Ram..." />{validationErrors.make && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.make}</div>}</div>
       <div><label style={lbl}>Modelo</label><input value={f.model} onChange={function(e) { set("model", e.target.value); }} style={Object.assign({}, inp, validationErrors.model ? { borderColor: C.red } : {})} placeholder="Ka, M3, 1500..." />{validationErrors.model && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.model}</div>}</div>
       <div><label style={lbl}>Ano</label><input type="number" value={f.year} onChange={function(e) { set("year", e.target.value); }} style={Object.assign({}, inp, validationErrors.year ? { borderColor: C.red } : {})} />{validationErrors.year && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.year}</div>}</div>
-      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>Loja A</option><option>Loja B</option></select></div>
+      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>BrossMotors</option><option>BMCars</option></select></div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
       <div><label style={lbl}>Compra do veiculo</label><input type="number" value={f.compra} onChange={function(e) { set("compra", e.target.value); }} style={Object.assign({}, inp, validationErrors.compra ? { borderColor: C.red } : {})} />{validationErrors.compra && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.compra}</div>}</div>
@@ -1094,7 +1094,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {canSwitch && <div style={{ display: "flex", gap: 2, background: "#1e293b", borderRadius: 8, padding: 3, border: "1px solid " + C.headerBorder }}>
-            {["all", "Loja A", "Loja B"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.headerMuted, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
+            {["all", "BrossMotors", "BMCars"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.headerMuted, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
           </div>}
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.headerBorder }}>
             <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
@@ -1636,8 +1636,8 @@ export default function App() {
           {finSub === 'byloja' && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {(function() {
               var lojas = [
-                { label: "Loja A", location: "Loja A" },
-                { label: "Loja B", location: "Loja B" }
+                { label: "BrossMotors", location: "BrossMotors" },
+                { label: "BMCars", location: "BMCars" }
               ];
               return lojas.map(function(loja) {
                 var lojaVehicles = (vehicles || []).filter(function(v) { return v.location === loja.location; });

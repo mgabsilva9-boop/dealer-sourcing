@@ -1,5 +1,5 @@
 /**
- * DealershipComparison - Compara Loja A vs B
+ * DealershipComparison - Compara BrossMotors vs BMCars
  */
 
 export function DealershipComparison({ dealerships }) {
