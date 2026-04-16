@@ -1606,24 +1606,24 @@ export default function App() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Veículo</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Compra</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Custos</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Venda</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Lucro</th>
-                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim }}>Margem</th>
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Veículo</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Compra</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Custos</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Venda</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Lucro</th>
+                    <th style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: "#fff" }}>Margem</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(soldV || []).map(function(v) {
-                    return <tr key={v.id} style={{ borderBottom: "1px solid " + C.border }}>
-                      <td style={{ padding: "12px" }}>{v.make} {v.model} {v.year}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(v.purchasePrice || 0)}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(totalCosts(v))}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(v.soldPrice || v.salePrice || 0)}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 700, color: vProfit(v) > 0 ? C.green : C.red }}>{fmtFull(vProfit(v))}</td>
-                      <td style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</td>
+                  {(soldV || []).map(function(v, i) {
+                    return <tr key={v.id} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "14px" }}>{v.make} {v.model} {v.year}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{fmtFull(v.purchasePrice || 0)}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{fmtFull(totalCosts(v))}</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 600 }}>{fmtFull(v.soldPrice || v.salePrice || 0)}</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 700, color: vProfit(v) > 0 ? C.green : C.red }}>{fmtFull(vProfit(v))}</td>
+                      <td style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</td>
                     </tr>;
                   })}
                 </tbody>
@@ -1689,18 +1689,18 @@ export default function App() {
             {finMonthlyData && finMonthlyData.length > 0 ? <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Descrição</th>
-                    <th style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Valor</th>
-                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Tipo</th>
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Descrição</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Valor</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Tipo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {finMonthlyData.map(function(t, i) {
-                    return <tr key={i} style={{ borderBottom: "1px solid " + C.border }}>
-                      <td style={{ padding: "10px" }}>{t.description || "-"}</td>
-                      <td style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: t.type === 'income' ? C.green : C.red }}>{fmtFull(t.amount || 0)}</td>
-                      <td style={{ padding: "10px" }}>{t.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                    return <tr key={i} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "12px" }}>{t.description || "-"}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: t.type === 'income' ? C.green : C.red }}>{fmtFull(t.amount || 0)}</td>
+                      <td style={{ padding: "12px" }}>{t.type === 'income' ? 'Receita' : 'Despesa'}</td>
                     </tr>;
                   })}
                 </tbody>
@@ -1771,31 +1771,31 @@ export default function App() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Veículo</th>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Estado</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Alíquota</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Valor</th>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Vencimento</th>
-                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Status</th>
-                    <th style={{ padding: "12px", textAlign: "center" }} />
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Veículo</th>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Estado</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Alíquota</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Valor</th>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Vencimento</th>
+                    <th style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Status</th>
+                    <th style={{ padding: "14px", textAlign: "center" }} />
                   </tr>
                 </thead>
                 <tbody>
-                  {ipvaList.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : ipvaList.map(function(ipva) {
+                  {ipvaList.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : ipvaList.map(function(ipva, i) {
                     var daysTo = ipva.due_date ? Math.ceil((new Date(ipva.due_date) - new Date()) / 86400000) : 999;
                     var statusColor = ipva.status === 'paid' ? C.green : daysTo <= 15 ? C.red : C.yellow;
                     var statusLabel = ipva.status === 'paid' ? 'Pago' : daysTo <= 15 ? 'Urgente' : 'Pendente';
-                    return <tr key={ipva.id} style={{ borderBottom: "1px solid " + C.border, background: ipva.status === 'paid' ? C.surfaceAlt : "transparent" }}>
-                      <td style={{ padding: "12px" }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
-                      <td style={{ padding: "12px" }}>{ipva.state || ""}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
-                      <td style={{ padding: "12px" }}>{ipva.due_date ? new Date(ipva.due_date).toLocaleDateString("pt-BR") : "-"}</td>
-                      <td style={{ padding: "12px", textAlign: "center" }}><span style={{ background: statusColor + "22", color: statusColor, padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{statusLabel}</span></td>
-                      <td style={{ padding: "12px", textAlign: "center" }}>
-                        {ipva.status !== 'paid' && <button onClick={async function() { try { await ipvaAPI.markPaid(ipva.id); setIpvaList(ipvaList.map(function(i) { return i.id === ipva.id ? Object.assign({}, i, { status: 'paid' }) : i; })); } catch (err) { alert('Erro: ' + err.message); } }} style={{ padding: "4px 8px", background: C.greenBg, color: C.green, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600, marginRight: 4 }}>Pagar</button>}
-                        <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "4px 8px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Deletar</button>
+                    return <tr key={ipva.id} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "14px" }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
+                      <td style={{ padding: "14px" }}>{ipva.state || ""}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
+                      <td style={{ padding: "14px" }}>{ipva.due_date ? new Date(ipva.due_date).toLocaleDateString("pt-BR") : "-"}</td>
+                      <td style={{ padding: "14px", textAlign: "center" }}><span style={{ background: statusColor + "22", color: statusColor, padding: "6px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>{statusLabel}</span></td>
+                      <td style={{ padding: "14px", textAlign: "center" }}>
+                        {ipva.status !== 'paid' && <button onClick={async function() { try { await ipvaAPI.markPaid(ipva.id); setIpvaList(ipvaList.map(function(i) { return i.id === ipva.id ? Object.assign({}, i, { status: 'paid' }) : i; })); } catch (err) { alert('Erro: ' + err.message); } }} style={{ padding: "6px 10px", background: C.greenBg, color: C.green, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 10, fontWeight: 600, marginRight: 4, transition: "opacity 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.opacity = "0.8"; }} onMouseLeave={function(e) { e.currentTarget.style.opacity = "1"; }}>Pagar</button>}
+                        <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "6px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 10, fontWeight: 600, transition: "opacity 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.opacity = "0.8"; }} onMouseLeave={function(e) { e.currentTarget.style.opacity = "1"; }}>Deletar</button>
                       </td>
                     </tr>;
                   })}
