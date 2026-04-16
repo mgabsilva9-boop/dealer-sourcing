@@ -1301,7 +1301,13 @@ export default function App() {
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 12, fontWeight: 600 }}>Dados</div>
                   <EditField label="Preco de Venda" value={sv.salePrice || 0} onChange={function(val) { upd(sv.id, "salePrice", val); }} type="number" />
                   <EditField label="Km" value={sv.mileage || 0} onChange={function(val) { upd(sv.id, "mileage", val); }} type="number" />
-                  <EditField label="Localizacao" value={sv.location} onChange={function(val) { upd(sv.id, "location", val); }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 10px", borderRadius: 6, cursor: "pointer" }}>
+                    <span style={{ fontSize: 12, color: C.textDim }}>Localizacao</span>
+                    <select value={sv.location || "BrossMotors"} onChange={function(e) { upd(sv.id, "location", e.target.value); }} style={{ padding: "6px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 13, fontFamily: FONT, cursor: "pointer", outline: "none", background: "#fff" }}>
+                      <option value="BrossMotors">BrossMotors</option>
+                      <option value="BMCars">BMCars</option>
+                    </select>
+                  </div>
 
                   {/* CUSTOS DINÂMICOS - CARDS FLUTUANTES */}
                   <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid " + C.border }}>
