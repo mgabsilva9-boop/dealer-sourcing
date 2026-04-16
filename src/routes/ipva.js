@@ -215,7 +215,7 @@ router.get('/list', async (req, res) => {
     let query = `
       SELECT
         i.*,
-        inv.make, inv.model, inv.year
+        inv.make as vehicle_make, inv.model as vehicle_model, inv.year, inv.location
       FROM ipva_tracking i
       LEFT JOIN inventory inv ON i.vehicle_id = inv.id
       WHERE i.dealership_id = $1

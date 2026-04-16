@@ -169,9 +169,9 @@ function LoginScreen({ onLogin }) {
   };
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
-      <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}><span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>G</span></div>
-      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>ThreeOn</h1>
-      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 36px" }}>Sistema de gestao inteligente</p>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}><span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>B</span></div>
+      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>BrossMotors</h1>
+      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 36px" }}>Dealer Sourcing Bot</p>
       <Card style={{ padding: 32, width: 360 }}>
         <div style={{ marginBottom: 16 }}>
           <label style={{ fontSize: 12, color: C.textDim, display: "block", marginBottom: 6, fontWeight: 500 }}>Email</label>
@@ -1090,7 +1090,7 @@ export default function App() {
           ) : (
             <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
           )}
-          <span style={{ fontWeight: 700, fontSize: 16, color: C.headerText }}>ThreeOn</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: C.headerText }}>BrossMotors</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {canSwitch && <div style={{ display: "flex", gap: 2, background: "#1e293b", borderRadius: 8, padding: 3, border: "1px solid " + C.headerBorder }}>
@@ -1531,7 +1531,7 @@ export default function App() {
         {/* WHATSAPP */}
         {tab === "whatsapp" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <Card style={{ overflow: "hidden" }}>
-            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>T</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>ThreeOn Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
+            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>T</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>BrossMotors Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
             <div style={{ padding: 14, maxHeight: 480, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "#e5ddd5" }}>
               {WA_MSGS.map(function(m, i) { return <div key={i} style={{ alignSelf: m.from === "vendedor" ? "flex-end" : "flex-start", maxWidth: "82%" }}><div style={{ background: m.from === "vendedor" ? "#dcf8c6" : "#fff", borderRadius: 8, padding: "8px 12px", boxShadow: "0 1px 1px rgba(0,0,0,0.08)" }}><div style={{ fontSize: 12, color: "#303030", whiteSpace: "pre-line", lineHeight: 1.55 }}>{m.text}</div><div style={{ fontSize: 10, color: "#999", textAlign: "right", marginTop: 3 }}>{m.time}</div></div></div>; })}
             </div>
