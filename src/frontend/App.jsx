@@ -5,27 +5,16 @@ import { StatusPillGroup, statusConfig } from "./components/StatusPills.jsx";
 import { CostsList } from "./components/CostCards.jsx";
 
 const C = {
-  // Background & Surfaces (Clean, minimal)
-  bg: "#f8f9fa", surface: "#ffffff", surfaceAlt: "#fafbfc",
-  border: "#e5e7eb", borderLight: "#f3f4f6",
-
-  // Primary: Teal-green (aprovado no design system)
-  accent: "#0d7c66", accentLight: "#f0fdfb",
-  accentMuted: "#a8d5d0",
-
-  // Text hierarchy (Professional)
-  text: "#1a1a2e", textMid: "#6b7280", textDim: "#9ca3ae",
-
-  // Semantic colors (Clean, modern)
-  green: "#10b981", greenBg: "#f0fdf4",
-  yellow: "#f59e0b", yellowBg: "#fffbeb",
-  red: "#ef4444", redBg: "#fef2f2",
-  blue: "#3b82f6", blueBg: "#eff6ff",
-  purple: "#8b5cf6", purpleBg: "#faf5ff",
-  cyan: "#06b6d4", cyanBg: "#ecfdf5",
-
-  // Header (Minimal, elegant)
-  header: "#ffffff", headerBorder: "#e5e7eb", headerText: "#1a1a2e", headerMuted: "#6b7280",
+  bg: "#f0f4f8", surface: "#ffffff", surfaceAlt: "#f9fafb",
+  border: "#e8eaed", borderLight: "#f0f1f3",
+  accent: "#1d4ed8", accentLight: "#eff6ff",
+  text: "#1a1d23", textMid: "#5f6773", textDim: "#9ca3ae",
+  green: "#16a34a", greenBg: "#f0fdf4",
+  yellow: "#d97706", yellowBg: "#fffbeb",
+  red: "#dc2626", redBg: "#fef2f2",
+  blue: "#2563eb", blueBg: "#eff6ff",
+  purple: "#7c3aed", cyan: "#0891b2",
+  header: "#0f172a", headerBorder: "#1e293b", headerText: "#f1f5f9", headerMuted: "#94a3b8",
 };
 const FONT = "-apple-system, 'SF Pro Display', 'Segoe UI', sans-serif";
 const IMGS = {
@@ -39,17 +28,17 @@ const IMGS = {
 
 const USERS = [
   { id: "admin", label: "ThreeON Admin", user: "admin@threeon.com", pass: "", desc: "Acesso total (dados + códigos)", icon: "T", role: "ADMIN", dealership: "all" },
-  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso BrossMotors e B", icon: "B", role: "DONO", dealership: "all" },
-  { id: "loja_b", label: "BMCars - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas BMCars", icon: "L", role: "GERENTE", dealership: "BMCars" },
+  { id: "dono", label: "BrossMotors - Dono", user: "dono@brossmotors.com", pass: "", desc: "Acesso Loja A e B", icon: "B", role: "DONO", dealership: "all" },
+  { id: "loja_b", label: "Loja B - Gerente", user: "lojab@brossmotors.com", pass: "", desc: "Acesso apenas Loja B", icon: "L", role: "GERENTE", dealership: "Loja B" },
 ];
 
 // ─── REAL DATA FROM SPREADSHEET ─────────────────────────────────────
 const INIT_VEHICLES = [
-  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "BrossMotors", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
-  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "BrossMotors", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
-  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "BrossMotors", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
-  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "BrossMotors", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
-  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "BrossMotors", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
+  { id: 1, make: "Ford", model: "Ka", year: 2020, purchasePrice: 52948, salePrice: 68000, fipePrice: 62000, status: "available", mileage: 72000, daysInStock: 35, location: "Loja A", costs: { "Compra do veiculo": 52948, "Funilaria": 600, "Mercado": 270, "Documentacao": 764, "Combustivel": 47, "Comissao": 400 }, motor: "1.0L 3-cil", potencia: "75 cv", features: "Ar condicionado, vidros elétricos" },
+  { id: 2, make: "VW", model: "Gol 1.0", year: 2022, purchasePrice: 53000, salePrice: 71000, fipePrice: 68000, status: "available", mileage: 56000, daysInStock: 28, location: "Loja A", costs: { "Compra do veiculo": 53000, "Funilaria": 200, "Cartorio": 67, "Documentacao": 400, "Combustivel": 235, "Comissao": 300 }, motor: "1.0L 3-cil", potencia: "82 cv", features: "Direção hidráulica, airbag" },
+  { id: 3, make: "Ram", model: "1500 Classic", year: 2023, purchasePrice: 260000, salePrice: 315000, fipePrice: 310000, status: "available", mileage: 42000, daysInStock: 52, location: "Loja A", costs: { "Compra do veiculo": 260000, "Combustivel": 220, "Lavagem": 800 }, motor: "5.7L V8", potencia: "395 cv", features: "Cabine dupla, 4x4, ar digital" },
+  { id: 4, make: "BMW", model: "M3", year: 2021, purchasePrice: 325000, salePrice: 420000, fipePrice: 400000, status: "available", mileage: 37000, daysInStock: 18, location: "Loja A", costs: { "Compra do veiculo": 325000, "Viagem": 3229, "Peca": 2500, "Vistoria": 80, "Lavagem": 1000, "Martelinho": 100, "Combustivel": 200, "Pecas ambar": 1840, "Webmotors": 220 }, motor: "3.0L Twin-turbo", potencia: "503 cv", features: "Teto panorâmico, bose sound, interior premium" },
+  { id: 5, make: "Ram", model: "2500 Laramie", year: 2021, purchasePrice: 290000, salePrice: 375000, fipePrice: 360000, status: "available", mileage: 52000, daysInStock: 41, location: "Loja A", costs: { "Compra do veiculo": 290000, "Viagem": 418, "Combustivel": 807, "Veloci": 800, "Vistoria": 80, "Comida": 113, "Lavagem": 1000, "Cautelar": 600 }, motor: "6.7L Diesel", potencia: "385 cv", features: "Cabine dupla, 4x4, suspensão a ar" },
 ];
 
 const INIT_CRM = [
@@ -94,39 +83,10 @@ const expStatusMap = { paid: { label: "Pago", color: C.green, bg: C.greenBg }, p
 const catColors = { Financiamento: C.purple, IPVA: C.red, Aluguel: C.blue, Seguro: C.cyan, Operacional: C.textMid };
 
 // ─── ATOMS (no ...rest, no IIFE) ────────────────────────────────────
-function Card({ children, style, onClick }) {
-  return <div onClick={onClick} style={{
-    background: C.surface, borderRadius: 12, border: "1px solid " + C.border,
-    boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
-    ...style
-  }}>{children}</div>;
-}
-
-function Stat({ label, value, sub, accent }) {
-  return <Card style={{ padding: "24px 28px", borderLeft: accent ? "4px solid " + C.accent : undefined }}>
-    <div style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, fontWeight: 600 }}>{label}</div>
-    <div style={{ fontSize: 28, fontWeight: 700, color: C.text, lineHeight: 1.2, letterSpacing: -0.5 }}>{value}</div>
-    {sub && <div style={{ fontSize: 13, color: C.textMid, marginTop: 8 }}>{sub}</div>}
-  </Card>;
-}
-
-function Tag({ children, color, bg }) {
-  return <span style={{
-    display: "inline-block", padding: "4px 12px", borderRadius: 8,
-    fontSize: 12, fontWeight: 600, color: color, background: bg,
-    letterSpacing: 0.2
-  }}>{children}</span>;
-}
-function MiniBar({ label, value }) {
-  var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30;
-  var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red;
-  return <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <span style={{ fontSize: 12, color: C.textMid, width: 32, textAlign: "right", fontWeight: 500 }}>{value}</span>
-    <div style={{ flex: 1, height: 6, background: C.borderLight, borderRadius: 3 }}>
-      <div style={{ width: w + "%", height: "100%", background: c, borderRadius: 3 }} />
-    </div>
-  </div>;
-}
+function Card({ children, style, onClick }) { return <div onClick={onClick} style={{ background: C.surface, borderRadius: 12, border: "1px solid " + C.border, boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.06)", transition: "box-shadow 0.2s, border-color 0.2s", cursor: onClick ? "pointer" : "default", ...style }} onMouseEnter={onClick ? function(e) { e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.08)"; } : undefined} onMouseLeave={onClick ? function(e) { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.06)"; } : undefined}>{children}</div>; }
+function Stat({ label, value, sub, accent }) { return <Card style={{ padding: "24px 26px", borderLeft: accent ? "4px solid " + C.accent : "4px solid transparent", background: accent ? C.accentLight : "#ffffff", transition: "all 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 20px rgba(29,78,216,0.12)"; }} onMouseLeave={function(e) { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.06)"; }}><div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10, fontWeight: 600 }}>{label}</div><div style={{ fontSize: 28, fontWeight: 700, color: accent ? C.accent : C.text, lineHeight: 1.1 }}>{value}</div>{sub && <div style={{ fontSize: 12, color: C.textDim, marginTop: 8 }}>{sub}</div>}</Card>; }
+function Tag({ children, color, bg }) { return <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: color, background: bg, letterSpacing: 0.3 }}>{children}</span>; }
+function MiniBar({ label, value }) { var w = label === "Muito baixa" ? 95 : label === "Baixa" ? 80 : label === "Media" ? 55 : 30; var c = label === "Muito baixa" || label === "Baixa" ? C.green : label === "Media" ? C.yellow : C.red; return <div style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ fontSize: 11, color: C.textMid, width: 28, textAlign: "right" }}>{value}</span><div style={{ flex: 1, height: 4, background: C.borderLight, borderRadius: 2 }}><div style={{ width: w + "%", height: "100%", background: c, borderRadius: 2 }} /></div></div>; }
 
 function MiniDonut({ segments, size = 80 }) {
   var safeSegments = segments || [];
@@ -144,24 +104,17 @@ function MiniDonut({ segments, size = 80 }) {
   );
 }
 
-function BarChart({ data, height = 140 }) {
+function BarChart({ data, height = 120 }) {
   var safeData = data || [];
   var max = Math.max.apply(null, safeData.map(function(d) { return d.value; }).concat([1]));
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: height }}>
+    <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: height }}>
       {safeData.map(function(d, i) {
         return (
-          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 11, color: C.textDim, fontWeight: 500 }}>{d.label2 || ""}</div>
-            <div style={{
-              width: "100%",
-              height: (d.value / max) * (height - 32),
-              background: d.color || C.accent,
-              borderRadius: "6px 6px 0 0",
-              minHeight: 6,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.08)"
-            }} />
-            <div style={{ fontSize: 11, color: C.textDim, textAlign: "center", fontWeight: 500 }}>{d.label}</div>
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{ fontSize: 9, color: C.textDim }}>{d.label2 || ""}</div>
+            <div style={{ width: "100%", height: (d.value / max) * (height - 24), background: d.color || C.accent, borderRadius: "3px 3px 0 0", minHeight: 4 }} />
+            <div style={{ fontSize: 9, color: C.textDim, textAlign: "center" }}>{d.label}</div>
           </div>
         );
       })}
@@ -174,35 +127,8 @@ function EditField({ label, value, onChange, type }) {
   const [temp, setTemp] = useState(String(value));
   var save = function() { setEditing(false); onChange(type === "number" ? Number(temp) || value : temp); };
   var displayValue = type === "number" ? (label.toLowerCase().includes("km") ? (Number(value) || 0).toLocaleString("pt-BR") + " km" : fmtFull(value)) : value;
-  if (!editing) {
-    return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{
-      cursor: "pointer", padding: "10px 12px", borderRadius: 8, display: "flex", justifyContent: "space-between",
-      alignItems: "center", hover: { background: C.surfaceAlt }, transition: "background 0.2s"
-    }}>
-      <span style={{ fontSize: 12, color: C.textDim, fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{displayValue}</span>
-    </div>;
-  }
-  return <div style={{
-    padding: "8px 12px", borderRadius: 8, border: "1.5px solid " + C.accent, background: C.accentLight,
-    display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8
-  }}>
-    <span style={{ fontSize: 12, color: C.textDim, fontWeight: 500 }}>{label}</span>
-    <div style={{ display: "flex", gap: 6 }}>
-      <input autoFocus value={temp} onChange={function(e) { setTemp(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") save(); }} type={type || "text"} style={{
-        width: type === "number" ? 100 : 140, padding: "6px 10px", border: "1px solid " + C.border, borderRadius: 6,
-        fontSize: 13, fontFamily: FONT, outline: "none", background: C.surface
-      }} />
-      <button onClick={save} style={{
-        padding: "6px 12px", background: C.accent, color: "#fff", border: "none", borderRadius: 6,
-        fontSize: 12, cursor: "pointer", fontWeight: 600, transition: "opacity 0.2s"
-      }}>OK</button>
-      <button onClick={function() { setEditing(false); }} style={{
-        padding: "6px 10px", background: "none", color: C.textMid, border: "1px solid " + C.border, borderRadius: 6,
-        fontSize: 12, cursor: "pointer", fontWeight: 500
-      }}>X</button>
-    </div>
-  </div>;
+  if (!editing) { return <div onClick={function() { setTemp(String(value)); setEditing(true); }} style={{ cursor: "pointer", padding: "7px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between" }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><span style={{ fontSize: 13, fontWeight: 600 }}>{displayValue}</span></div>; }
+  return <div style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid " + C.accent, background: C.accentLight, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}><span style={{ fontSize: 12, color: C.textDim }}>{label}</span><div style={{ display: "flex", gap: 4 }}><input autoFocus value={temp} onChange={function(e) { setTemp(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") save(); }} type={type || "text"} style={{ width: type === "number" ? 100 : 140, padding: "4px 8px", border: "1px solid " + C.border, borderRadius: 4, fontSize: 13, fontFamily: FONT, outline: "none" }} /><button onClick={save} style={{ padding: "4px 10px", background: C.accent, color: "#fff", border: "none", borderRadius: 4, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>OK</button><button onClick={function() { setEditing(false); }} style={{ padding: "4px 8px", background: "none", color: C.textDim, border: "1px solid " + C.border, borderRadius: 4, fontSize: 11, cursor: "pointer" }}>X</button></div></div>;
 }
 
 // ─── LOGIN ──────────────────────────────────────────────────────────
@@ -243,38 +169,21 @@ function LoginScreen({ onLogin }) {
   };
   return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: FONT }}>
-      <div style={{ width: 48, height: 48, borderRadius: 12, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 24, boxShadow: "0 4px 12px rgba(13, 124, 102, 0.15)" }}>
-        <span style={{ fontSize: 20, fontWeight: 700, color: "#fff" }}>G</span>
-      </div>
-      <h1 style={{ color: C.text, fontSize: 28, fontWeight: 700, margin: "0 0 8px", letterSpacing: -0.5 }}>Garagem</h1>
-      <p style={{ color: C.textMid, fontSize: 14, margin: "0 0 40px", fontWeight: 500 }}>Gestão inteligente de concessionárias premium</p>
-      <Card style={{ padding: 40, width: 380, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+      <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18 }}><span style={{ fontSize: 18, fontWeight: 700, color: "#fff" }}>B</span></div>
+      <h1 style={{ color: C.text, fontSize: 24, fontWeight: 700, margin: "0 0 4px" }}>BrossMotors</h1>
+      <p style={{ color: C.textDim, fontSize: 13, margin: "0 0 36px" }}>Dealer Sourcing Bot</p>
+      <Card style={{ padding: 32, width: 360 }}>
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: 12, color: C.textDim, display: "block", marginBottom: 6, fontWeight: 500 }}>Email</label>
+          <input value={emailInput} onChange={function(e) { setEmailInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="Seu email" style={{ width: "100%", padding: "10px 14px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 14, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
+        </div>
         <div style={{ marginBottom: 20 }}>
-          <label style={{ fontSize: 12, color: C.textMid, display: "block", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Email</label>
-          <input value={emailInput} onChange={function(e) { setEmailInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="seu@email.com" style={{
-            width: "100%", padding: "12px 16px", border: "1px solid " + C.border, borderRadius: 10, fontSize: 14,
-            fontFamily: FONT, outline: "none", boxSizing: "border-box", background: C.surface,
-            transition: "border-color 0.2s, box-shadow 0.2s"
-          }} />
+          <label style={{ fontSize: 12, color: C.textDim, display: "block", marginBottom: 6, fontWeight: 500 }}>Senha</label>
+          <input type="password" value={passInput} onChange={function(e) { setPassInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="Sua senha" style={{ width: "100%", padding: "10px 14px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 14, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} />
         </div>
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12, color: C.textMid, display: "block", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Senha</label>
-          <input type="password" value={passInput} onChange={function(e) { setPassInput(e.target.value); }} onKeyDown={function(e) { if (e.key === "Enter") tryLogin(); }} placeholder="••••••••" style={{
-            width: "100%", padding: "12px 16px", border: "1px solid " + C.border, borderRadius: 10, fontSize: 14,
-            fontFamily: FONT, outline: "none", boxSizing: "border-box", background: C.surface,
-            transition: "border-color 0.2s, box-shadow 0.2s"
-          }} />
-        </div>
-        {error && <div style={{ color: C.red, fontSize: 13, marginBottom: 16, fontWeight: 500, padding: "10px 12px", background: C.redBg, borderRadius: 8 }}>{error}</div>}
-        <button onClick={tryLogin} disabled={loading} style={{
-          width: "100%", padding: "14px 16px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none",
-          borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1,
-          boxShadow: loading ? "none" : "0 2px 8px rgba(13, 124, 102, 0.2)", transition: "all 0.2s"
-        }}>{loading ? "Conectando..." : "Entrar"}</button>
+        {error && <div style={{ color: C.red, fontSize: 12, marginBottom: 12, fontWeight: 500 }}>{error}</div>}
+        <button onClick={tryLogin} disabled={loading} style={{ width: "100%", padding: "12px", background: loading ? C.textDim : C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: loading ? "default" : "pointer", opacity: loading ? 0.7 : 1 }}>{loading ? "Conectando..." : "Entrar"}</button>
       </Card>
-      <p style={{ color: C.textDim, fontSize: 12, marginTop: 32, textAlign: "center" }}>
-        Demo: admin@threeon.com / threeon2026
-      </p>
     </div>
   );
 }
@@ -282,7 +191,7 @@ function LoginScreen({ onLogin }) {
 // ─── VEHICLE FORM ───────────────────────────────────────────────────
 function VehicleForm({ onAdd, onCancel }) {
   const [f, setF] = useState(function() {
-    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "BrossMotors", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
+    var defaults = { make: "", model: "", year: 2024, salePrice: 0, mileage: 0, location: "Loja A", motor: "", potencia: "", features: "", compra: 0, viagem: 0, combustivel: 0, documentacao: 0, funilaria: 0, lavagem: 0, vistoria: 0, comissao: 0 };
     var saved = localStorage.getItem("vehicleFormDraft");
     if (!saved) return defaults;
     try {
@@ -414,7 +323,7 @@ function VehicleForm({ onAdd, onCancel }) {
       <div><label style={lbl}>Marca</label><input value={f.make} onChange={function(e) { set("make", e.target.value); }} style={Object.assign({}, inp, validationErrors.make ? { borderColor: C.red } : {})} placeholder="Ford, BMW, Ram..." />{validationErrors.make && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.make}</div>}</div>
       <div><label style={lbl}>Modelo</label><input value={f.model} onChange={function(e) { set("model", e.target.value); }} style={Object.assign({}, inp, validationErrors.model ? { borderColor: C.red } : {})} placeholder="Ka, M3, 1500..." />{validationErrors.model && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.model}</div>}</div>
       <div><label style={lbl}>Ano</label><input type="number" value={f.year} onChange={function(e) { set("year", e.target.value); }} style={Object.assign({}, inp, validationErrors.year ? { borderColor: C.red } : {})} />{validationErrors.year && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.year}</div>}</div>
-      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>BrossMotors</option><option>BMCars</option></select></div>
+      <div><label style={lbl}>Loja</label><select value={f.location} onChange={function(e) { set("location", e.target.value); }} style={Object.assign({}, inp, { cursor: "pointer" })}><option>Loja A</option><option>Loja B</option></select></div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
       <div><label style={lbl}>Compra do veiculo</label><input type="number" value={f.compra} onChange={function(e) { set("compra", e.target.value); }} style={Object.assign({}, inp, validationErrors.compra ? { borderColor: C.red } : {})} />{validationErrors.compra && <div style={{ fontSize: 10, color: C.red, marginTop: 2 }}>{validationErrors.compra}</div>}</div>
@@ -568,7 +477,7 @@ function CrmTab({ customers, setCustomers }) {
         <div><label style={lbl}>Data</label><input type="date" value={form.purchaseDate} onChange={function(e) { setForm(Object.assign({}, form, { purchaseDate: e.target.value })); }} style={inp} /></div>
         <div><label style={lbl}>Valor</label><input type="number" value={form.purchaseValue} onChange={function(e) { setForm(Object.assign({}, form, { purchaseValue: e.target.value })); }} style={inp} /></div>
       </div>
-      <button onClick={addC} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Salvar</button>
+      <button onClick={addC} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s ease", boxShadow: "0 2px 8px rgba(29,78,216,0.3)" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#1e40af"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,78,216,0.4)"; e.currentTarget.style.transform = "translateY(-2px)"; }} onMouseLeave={function(e) { e.currentTarget.style.background = C.accent; e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,78,216,0.3)"; e.currentTarget.style.transform = "translateY(0)"; }}>Salvar</button>
     </Card>}
     <div style={{ display: "grid", gap: 8 }}>
       {customers.map(function(c) { return <Card key={c.id} onClick={function() { setSelC(c.id); }} style={{ padding: "16px 20px", cursor: "pointer", display: "grid", gridTemplateColumns: "2fr 1fr 1.2fr 1fr 0.8fr", alignItems: "center", gap: 12 }}>
@@ -599,17 +508,14 @@ export default function App() {
   const [invFilter, setInvFilter] = useState("active");
   const [addingV, setAddingV] = useState(false);
   const [addingExp, setAddingExp] = useState(false);
-  const [editingExpId, setEditingExpId] = useState(null);
-  const [editingExpData, setEditingExpData] = useState({});
   const [invView, setInvView] = useState("lista");
   const [finSub, setFinSub] = useState("overview");
   const [balMonth, setBalMonth] = useState("2026-02");
-  const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "", location: "BrossMotors" });
+  const [expForm, setExpForm] = useState({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "" });
   const [loaded, setLoaded] = useState(false);
   const [sourcing, setSourcing] = useState([]);
   const [sourcingFilters, setSourcingFilters] = useState({ make: "", model: "", priceMin: "", priceMax: "", kmMax: "", discountMin: "" });
   const [sourcingLoading, setSourcingLoading] = useState(false);
-  const [selectedSourceVehicle, setSelectedSourceVehicle] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [changePassForm, setChangePassForm] = useState({ oldPass: "", newPass: "", confirmPass: "" });
   const [changePassMsg, setChangePassMsg] = useState("");
@@ -626,7 +532,6 @@ export default function App() {
   const [ipvaFormVehicleId, setIpvaFormVehicleId] = useState('');
   const [ipvaFormState, setIpvaFormState] = useState('SP');
   const [ipvaFormYear, setIpvaFormYear] = useState(new Date().getFullYear());
-  const [ipvaFormLocation, setIpvaFormLocation] = useState('BrossMotors');
   const [finData, setFinData] = useState(null);
   const [finMonth, setFinMonth] = useState(new Date().getMonth() + 1);
   const [finYear, setFinYear] = useState(new Date().getFullYear());
@@ -1178,49 +1083,22 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: FONT }}>
       {/* HEADER */}
-      <div style={{
-        background: C.header, borderBottom: "1px solid " + C.headerBorder, padding: "0 40px",
-        display: "flex", alignItems: "center", justifyContent: "space-between", height: 72,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ background: C.header, borderBottom: "1px solid " + C.headerBorder, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {customLogo ? (
-            <img src={customLogo} alt="Logo" style={{ height: 32, width: 'auto', borderRadius: 6 }} />
+            <img src={customLogo} alt="Logo" style={{ height: 28, width: 'auto', borderRadius: 4 }} />
           ) : (
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, background: C.accent,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 16, fontWeight: 700, color: "#fff", boxShadow: "0 2px 6px rgba(13, 124, 102, 0.15)"
-            }}>G</div>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>T</div>
           )}
-          <span style={{ fontWeight: 700, fontSize: 18, color: C.headerText, letterSpacing: -0.5 }}>Garagem</span>
+          <span style={{ fontWeight: 700, fontSize: 16, color: C.headerText }}>BrossMotors</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {canSwitch && <div style={{
-            display: "flex", gap: 2, background: C.surfaceAlt, borderRadius: 10,
-            padding: 4, border: "1px solid " + C.border
-          }}>
-            {["all", "BrossMotors", "BMCars"].map(function(d) {
-              return <button key={d} onClick={function() { setDealer(d); }} style={{
-                padding: "6px 16px", borderRadius: 8, border: "none",
-                background: dealer === d ? C.accent : "transparent",
-                color: dealer === d ? "#fff" : C.textMid,
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                transition: "all 0.2s"
-              }}>{d === "all" ? "Todas" : d}</button>;
-            })}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {canSwitch && <div style={{ display: "flex", gap: 2, background: "#1e293b", borderRadius: 8, padding: 3, border: "1px solid " + C.headerBorder }}>
+            {["all", "Loja A", "Loja B"].map(function(d) { return <button key={d} onClick={function() { setDealer(d); }} style={{ padding: "5px 14px", borderRadius: 6, border: "none", background: dealer === d ? C.accent : "transparent", color: dealer === d ? "#fff" : C.headerMuted, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>{d === "all" ? "Todas" : d}</button>; })}
           </div>}
-          <div style={{
-            display: "flex", alignItems: "center", gap: 10,
-            padding: "6px 14px", borderRadius: 10, border: "1px solid " + C.border,
-            background: C.surfaceAlt
-          }}>
-            <div style={{
-              width: 24, height: 24, borderRadius: 8, background: C.accent,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 700, color: "#fff"
-            }}>{user.icon}</div>
-            <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{user.label}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", borderRadius: 8, border: "1px solid " + C.headerBorder }}>
+            <div style={{ width: 22, height: 22, borderRadius: 6, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" }}>{user.icon}</div>
+            <span style={{ fontSize: 12, color: C.headerMuted }}>{user.label}</span>
             <button onClick={function() { setShowSettings(true); setTab(""); }} style={{ background: "none", border: "none", color: C.headerMuted, cursor: "pointer", fontSize: 11, marginRight: 4 }}>Config</button>
             <button onClick={async function() {
               try {
@@ -1243,10 +1121,10 @@ export default function App() {
 
       {/* TABS */}
       <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 40px", display: "flex", gap: 0, overflowX: "auto" }}>
-        {tabList.map(function(t) { return <button key={t[0]} onClick={function() { setTab(t[0]); setSelV(null); setShowCosts(false); setAddingV(false); }} style={{ padding: "12px 16px", border: "none", borderBottom: tab === t[0] ? "2px solid " + C.accent : "2px solid transparent", background: "transparent", color: tab === t[0] ? C.accent : C.textDim, fontSize: 12, fontWeight: tab === t[0] ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t[1]}</button>; })}
+        {tabList.map(function(t) { return <button key={t[0]} onClick={function() { setTab(t[0]); setSelV(null); setShowCosts(false); setAddingV(false); }} style={{ padding: "14px 18px", border: "none", borderBottom: tab === t[0] ? "3px solid " + C.accent : "3px solid transparent", background: tab === t[0] ? C.accentLight : "transparent", color: tab === t[0] ? C.accent : C.textDim, fontSize: 12, fontWeight: tab === t[0] ? 600 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s ease" }} onMouseEnter={tab !== t[0] ? function(e) { e.currentTarget.style.color = C.text; e.currentTarget.style.background = C.surfaceAlt; } : undefined} onMouseLeave={tab !== t[0] ? function(e) { e.currentTarget.style.color = C.textDim; e.currentTarget.style.background = "transparent"; } : undefined}>{t[1]}</button>; })}
       </div>
 
-      <div style={{ padding: "32px 40px", maxWidth: 1280, margin: "0 auto" }}>
+      <div style={{ padding: "40px 48px", maxWidth: 1380, margin: "0 auto" }}>
 
         {/* DASHBOARD */}
         {tab === "dashboard" && (function() {
@@ -1321,19 +1199,19 @@ export default function App() {
 
             {/* ROW 3 — ALERTAS AGING + PRÓXIMOS PAGAMENTOS */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              {/* ULTIMAS BUSCAS */}
+              {/* AGING ALERTS */}
               <Card style={{ padding: 22 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.accent }}>🔍 Ultimas Buscas</h3>
-                {sourcing.length === 0 ? <div style={{ fontSize: 12, color: C.textDim, padding: "20px 0", textAlign: "center" }}>Sem resultados. Use a Busca IA para encontrar oportunidades.</div> : sourcing.slice(0, 5).map(function(v) {
-                  var sc = sColor(v.score);
-                  return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: C.surfaceAlt, borderRadius: 6, borderLeft: "3px solid " + C.accent, marginBottom: 8, cursor: "pointer", transition: "all 0.2s" }} onClick={function() { setTab("sourcing"); setSelectedSourceVehicle(v); }}>
+                <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: C.red }}>⚠️ Veículos em Estoque &gt; 45 dias</h3>
+                {agingAlerts.length === 0 ? <div style={{ fontSize: 12, color: C.textDim, padding: "20px 0", textAlign: "center" }}>Sem alertas</div> : agingAlerts.map(function(v) {
+                  var severity = v.daysInStock > 60 ? "critical" : v.daysInStock > 45 ? "high" : "medium";
+                  return <div key={v.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: severity === "critical" ? C.redBg : severity === "high" ? C.yellowBg : C.surfaceAlt, borderRadius: 6, borderLeft: "3px solid " + (severity === "critical" ? C.red : severity === "high" ? C.yellow : C.orange || "#f97316"), marginBottom: 8 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600 }}>{v.make} {v.model} {v.year}</div>
-                      <div style={{ fontSize: 11, color: C.textDim }}>{v.platform} | R$ {(v.price/1000).toFixed(0)}K</div>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{v.make} {v.model}</div>
+                      <div style={{ fontSize: 11, color: C.textDim }}>{v.year} | {(v.mileage || 0).toLocaleString()} km</div>
                     </div>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: sc }}>{v.score}</div>
-                      <div style={{ fontSize: 9, color: sc, fontWeight: 600 }}>{sLabel(v.score)}</div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: severity === "critical" ? C.red : C.yellow }}>{v.daysInStock}d</div>
+                      <div style={{ fontSize: 10, color: C.textDim }}>em estoque</div>
                     </div>
                   </div>;
                 })}
@@ -1524,7 +1402,9 @@ export default function App() {
                   performAiSearch();
                 }}
                 disabled={aiSearchLoading}
-                style={{ padding: "12px 20px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: aiSearchLoading ? "default" : "pointer", opacity: aiSearchLoading ? 0.6 : 1 }}
+                style={{ padding: "12px 20px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: aiSearchLoading ? "default" : "pointer", opacity: aiSearchLoading ? 0.6 : 1, transition: "all 0.2s ease", boxShadow: "0 2px 8px rgba(29,78,216,0.3)" }}
+                onMouseEnter={aiSearchLoading ? undefined : function(e) { e.currentTarget.style.background = "#1e40af"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(29,78,216,0.4)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={aiSearchLoading ? undefined : function(e) { e.currentTarget.style.background = C.accent; e.currentTarget.style.boxShadow = "0 2px 8px rgba(29,78,216,0.3)"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
                 {aiSearchLoading ? "Analisando..." : "Buscar"}
               </button>
@@ -1635,7 +1515,7 @@ export default function App() {
             </div>
           </Card>
           <div style={{ display: "grid", gap: 12 }}>
-            {sourcing.length === 0 ? <Card style={{ padding: "40px 20px", textAlign: "center" }}><div style={{ color: C.textDim, fontSize: 14 }}>Nenhum veiculo encontrado. Use o filtro acima para buscar.</div></Card> : sourcing.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} onClick={function() { setSelectedSourceVehicle(s); }} style={{ padding: "18px 22px", cursor: "pointer", transition: "all 0.2s", border: "1px solid " + C.border, hover: { boxShadow: "0 4px 12px rgba(0,0,0,0.1)" } }}>
+            {sourcing.length === 0 ? <Card style={{ padding: "40px 20px", textAlign: "center" }}><div style={{ color: C.textDim, fontSize: 14 }}>Nenhum veiculo encontrado. Use o filtro acima para buscar.</div></Card> : sourcing.map(function(s) { var sc = sColor(s.score); return <Card key={s.id} style={{ padding: "18px 22px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr auto", alignItems: "center", gap: 14 }}>
                 <div><div style={{ fontWeight: 600, fontSize: 14 }}>{s.make} {s.model} {s.year}</div><div style={{ fontSize: 12, color: C.textDim, marginTop: 2 }}>{s.platform} | {s.location} | {s.km.toLocaleString()} km</div></div>
                 <div><div style={{ fontSize: 10, color: C.textDim, textTransform: "uppercase" }}>Preco</div><div style={{ fontWeight: 700, fontSize: 14, marginTop: 2 }}>R$ {(s.price/1000).toFixed(0)}K</div></div>
@@ -1653,7 +1533,7 @@ export default function App() {
         {/* WHATSAPP */}
         {tab === "whatsapp" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
           <Card style={{ overflow: "hidden" }}>
-            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>T</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>ThreeOn Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
+            <div style={{ background: "#075e54", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}><div style={{ width: 32, height: 32, borderRadius: 8, background: "#25D366", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>T</div><div><div style={{ color: "#fff", fontWeight: 600, fontSize: 13 }}>BrossMotors Bot</div><div style={{ color: "#8bc99a", fontSize: 11 }}>online</div></div></div>
             <div style={{ padding: 14, maxHeight: 480, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "#e5ddd5" }}>
               {WA_MSGS.map(function(m, i) { return <div key={i} style={{ alignSelf: m.from === "vendedor" ? "flex-end" : "flex-start", maxWidth: "82%" }}><div style={{ background: m.from === "vendedor" ? "#dcf8c6" : "#fff", borderRadius: 8, padding: "8px 12px", boxShadow: "0 1px 1px rgba(0,0,0,0.08)" }}><div style={{ fontSize: 12, color: "#303030", whiteSpace: "pre-line", lineHeight: 1.55 }}>{m.text}</div><div style={{ fontSize: 10, color: "#999", textAlign: "right", marginTop: 3 }}>{m.time}</div></div></div>; })}
             </div>
@@ -1728,24 +1608,24 @@ export default function App() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Veículo</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Compra</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Custos</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Venda</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Lucro</th>
-                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim }}>Margem</th>
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Veículo</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Compra</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Custos</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Venda</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Lucro</th>
+                    <th style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: "#fff" }}>Margem</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(soldV || []).map(function(v) {
-                    return <tr key={v.id} style={{ borderBottom: "1px solid " + C.border }}>
-                      <td style={{ padding: "12px" }}>{v.make} {v.model} {v.year}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(v.purchasePrice || 0)}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{fmtFull(totalCosts(v))}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(v.soldPrice || v.salePrice || 0)}</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 700, color: vProfit(v) > 0 ? C.green : C.red }}>{fmtFull(vProfit(v))}</td>
-                      <td style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</td>
+                  {(soldV || []).map(function(v, i) {
+                    return <tr key={v.id} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "14px" }}>{v.make} {v.model} {v.year}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{fmtFull(v.purchasePrice || 0)}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{fmtFull(totalCosts(v))}</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 600 }}>{fmtFull(v.soldPrice || v.salePrice || 0)}</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 700, color: vProfit(v) > 0 ? C.green : C.red }}>{fmtFull(vProfit(v))}</td>
+                      <td style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: vMargin(v) >= 25 ? C.green : C.yellow }}>{vMargin(v)}%</td>
                     </tr>;
                   })}
                 </tbody>
@@ -1756,8 +1636,8 @@ export default function App() {
           {finSub === 'byloja' && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {(function() {
               var lojas = [
-                { label: "BrossMotors", location: "BrossMotors" },
-                { label: "BMCars", location: "BMCars" }
+                { label: "Loja A", location: "Loja A" },
+                { label: "Loja B", location: "Loja B" }
               ];
               return lojas.map(function(loja) {
                 var lojaVehicles = (vehicles || []).filter(function(v) { return v.location === loja.location; });
@@ -1811,18 +1691,18 @@ export default function App() {
             {finMonthlyData && finMonthlyData.length > 0 ? <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Descrição</th>
-                    <th style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: C.textDim }}>Valor</th>
-                    <th style={{ padding: "10px", textAlign: "left", fontWeight: 600, color: C.textDim }}>Tipo</th>
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Descrição</th>
+                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: "#fff" }}>Valor</th>
+                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: "#fff" }}>Tipo</th>
                   </tr>
                 </thead>
                 <tbody>
                   {finMonthlyData.map(function(t, i) {
-                    return <tr key={i} style={{ borderBottom: "1px solid " + C.border }}>
-                      <td style={{ padding: "10px" }}>{t.description || "-"}</td>
-                      <td style={{ padding: "10px", textAlign: "right", fontWeight: 600, color: t.type === 'income' ? C.green : C.red }}>{fmtFull(t.amount || 0)}</td>
-                      <td style={{ padding: "10px" }}>{t.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                    return <tr key={i} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "12px" }}>{t.description || "-"}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: t.type === 'income' ? C.green : C.red }}>{fmtFull(t.amount || 0)}</td>
+                      <td style={{ padding: "12px" }}>{t.type === 'income' ? 'Receita' : 'Despesa'}</td>
                     </tr>;
                   })}
                 </tbody>
@@ -1836,32 +1716,21 @@ export default function App() {
           <h2 style={{ margin: "0 0 18px", fontSize: 17, fontWeight: 600 }}>IPVA</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 20 }}>
-            {(function() {
-              var filteredIpva = dealer === "all" ? ipvaList : ipvaList.filter(i => i.location === dealer);
-              var pending = filteredIpva.filter(i => i.status !== 'paid').length;
-              var urgent = filteredIpva.filter(i => i.status !== 'paid' && i.due_date && Math.ceil((new Date(i.due_date) - new Date()) / 86400000) <= 15).length;
-              var paid = filteredIpva.filter(i => i.status === 'paid').length;
-              var pendingAmount = filteredIpva.filter(i => i.status !== 'paid').reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
-              var urgentAmount = filteredIpva.filter(i => i.status !== 'paid' && i.due_date && Math.ceil((new Date(i.due_date) - new Date()) / 86400000) <= 15).reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
-              var paidAmount = filteredIpva.filter(i => i.status === 'paid').reduce((a, i) => a + (Number(i.ipva_due) || 0), 0);
-              return [
-                <Card style={{ padding: 20 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Total Pendente</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: C.yellow }}>{pending}</div>
-                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(pendingAmount)}</div>
-                </Card>,
-                <Card style={{ padding: 20 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Urgente (&lt; 15d)</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: C.red }}>{urgent}</div>
-                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(urgentAmount)}</div>
-                </Card>,
-                <Card style={{ padding: 20 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Pagos</div>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: C.green }}>{paid}</div>
-                  <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull(paidAmount)}</div>
-                </Card>
-              ];
-            })()}
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Total Pendente</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.yellow }}>{ipvaSummary?.pending || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.pending_amount || 0))}</div>
+            </Card>
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Urgente (&lt; 15d)</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.red }}>{ipvaSummary?.urgent || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.urgent_amount || 0))}</div>
+            </Card>
+            <Card style={{ padding: 20 }}>
+              <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", marginBottom: 8 }}>Pagos</div>
+              <div style={{ fontSize: 28, fontWeight: 700, color: C.green }}>{ipvaSummary?.paid || 0}</div>
+              <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>{fmtFull((ipvaSummary?.paid_amount || 0))}</div>
+            </Card>
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -1870,14 +1739,7 @@ export default function App() {
             </button>
 
             {showIpvaForm && <Card style={{ padding: 16, marginTop: 12 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Loja</label>
-                  <select value={ipvaFormLocation || "BrossMotors"} onChange={function(e) { setIpvaFormLocation(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
-                    <option value="BrossMotors">BrossMotors</option>
-                    <option value="BMCars">BMCars</option>
-                  </select>
-                </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: C.textDim, display: "block", marginBottom: 4 }}>Veiculo</label>
                   <select value={ipvaFormVehicleId} onChange={function(e) { setIpvaFormVehicleId(e.target.value); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }}>
@@ -1903,7 +1765,7 @@ export default function App() {
                   <input type="number" value={ipvaFormYear} onChange={function(e) { setIpvaFormYear(Number(e.target.value)); }} style={{ width: "100%", padding: "8px 10px", border: "1px solid " + C.border, borderRadius: 6, fontSize: 12 }} />
                 </div>
               </div>
-              <button onClick={async function() { if (!ipvaFormVehicleId || !ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormVehicleId, { state: ipvaFormState, year: ipvaFormYear, location: ipvaFormLocation }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormVehicleId(''); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); setIpvaFormLocation('BrossMotors'); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
+              <button onClick={async function() { if (!ipvaFormVehicleId || !ipvaFormState || !ipvaFormYear) return; try { const result = await ipvaAPI.create(ipvaFormVehicleId, { state: ipvaFormState, year: ipvaFormYear }); setIpvaList([...ipvaList, result]); setShowIpvaForm(null); setIpvaFormVehicleId(''); setIpvaFormState('SP'); setIpvaFormYear(new Date().getFullYear()); alert('IPVA registrado com sucesso!'); } catch (err) { alert('Erro ao registrar IPVA: ' + err.message); } }} style={{ width: "100%", padding: "10px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Registrar</button>
             </Card>}
           </div>
 
@@ -1911,39 +1773,34 @@ export default function App() {
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: C.surfaceAlt, borderBottom: "1px solid " + C.border }}>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Veículo</th>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Loja</th>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Estado</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Alíquota</th>
-                    <th style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Valor</th>
-                    <th style={{ padding: "12px", textAlign: "left", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Vencimento</th>
-                    <th style={{ padding: "12px", textAlign: "center", fontWeight: 600, color: C.textDim, textTransform: "uppercase" }}>Status</th>
-                    <th style={{ padding: "12px", textAlign: "center" }} />
+                  <tr style={{ background: C.accent, borderBottom: "2px solid " + C.accent }}>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Veículo</th>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Estado</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Alíquota</th>
+                    <th style={{ padding: "14px", textAlign: "right", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Valor</th>
+                    <th style={{ padding: "14px", textAlign: "left", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Vencimento</th>
+                    <th style={{ padding: "14px", textAlign: "center", fontWeight: 600, color: "#fff", textTransform: "uppercase", fontSize: 11 }}>Status</th>
+                    <th style={{ padding: "14px", textAlign: "center" }} />
                   </tr>
                 </thead>
                 <tbody>
-                  {(function() {
-                    var filteredIpva = dealer === "all" ? ipvaList : ipvaList.filter(i => i.location === dealer);
-                    return filteredIpva.length === 0 ? <tr><td colSpan="8" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : filteredIpva.map(function(ipva) {
+                  {ipvaList.length === 0 ? <tr><td colSpan="7" style={{ padding: "20px", textAlign: "center", color: C.textDim }}>Sem registros</td></tr> : ipvaList.map(function(ipva, i) {
                     var daysTo = ipva.due_date ? Math.ceil((new Date(ipva.due_date) - new Date()) / 86400000) : 999;
                     var statusColor = ipva.status === 'paid' ? C.green : daysTo <= 15 ? C.red : C.yellow;
                     var statusLabel = ipva.status === 'paid' ? 'Pago' : daysTo <= 15 ? 'Urgente' : 'Pendente';
-                    return <tr key={ipva.id} style={{ borderBottom: "1px solid " + C.border, background: ipva.status === 'paid' ? C.surfaceAlt : "transparent" }}>
-                      <td style={{ padding: "12px", fontWeight: 600 }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
-                      <td style={{ padding: "12px", color: C.textMid, fontSize: 12 }}>{ipva.location || "-"}</td>
-                      <td style={{ padding: "12px" }}>{ipva.state || ""}</td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
-                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
-                      <td style={{ padding: "12px" }}>{ipva.due_date ? new Date(ipva.due_date).toLocaleDateString("pt-BR") : "-"}</td>
-                      <td style={{ padding: "12px", textAlign: "center" }}><span style={{ background: statusColor + "22", color: statusColor, padding: "4px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600 }}>{statusLabel}</span></td>
-                      <td style={{ padding: "12px", textAlign: "center" }}>
-                        {ipva.status !== 'paid' && <button onClick={async function() { try { await ipvaAPI.markPaid(ipva.id); setIpvaList(ipvaList.map(function(i) { return i.id === ipva.id ? Object.assign({}, i, { status: 'paid' }) : i; })); } catch (err) { alert('Erro: ' + err.message); } }} style={{ padding: "4px 8px", background: C.greenBg, color: C.green, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600, marginRight: 4 }}>Pagar</button>}
-                        <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "4px 8px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, cursor: "pointer", fontSize: 10, fontWeight: 600 }}>Deletar</button>
+                    return <tr key={ipva.id} style={{ background: i % 2 === 0 ? "#f9fafb" : "#ffffff", borderBottom: "1px solid " + C.border, transition: "background 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.background = "#f0f9ff"; }} onMouseLeave={function(e) { e.currentTarget.style.background = i % 2 === 0 ? "#f9fafb" : "#ffffff"; }}>
+                      <td style={{ padding: "14px" }}>{ipva.vehicle_make || ""} {ipva.vehicle_model || ""}</td>
+                      <td style={{ padding: "14px" }}>{ipva.state || ""}</td>
+                      <td style={{ padding: "14px", textAlign: "right" }}>{ipva.aliquota || 0}%</td>
+                      <td style={{ padding: "14px", textAlign: "right", fontWeight: 600 }}>{fmtFull(ipva.ipva_due || 0)}</td>
+                      <td style={{ padding: "14px" }}>{ipva.due_date ? new Date(ipva.due_date).toLocaleDateString("pt-BR") : "-"}</td>
+                      <td style={{ padding: "14px", textAlign: "center" }}><span style={{ background: statusColor + "22", color: statusColor, padding: "6px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600 }}>{statusLabel}</span></td>
+                      <td style={{ padding: "14px", textAlign: "center" }}>
+                        {ipva.status !== 'paid' && <button onClick={async function() { try { await ipvaAPI.markPaid(ipva.id); setIpvaList(ipvaList.map(function(i) { return i.id === ipva.id ? Object.assign({}, i, { status: 'paid' }) : i; })); } catch (err) { alert('Erro: ' + err.message); } }} style={{ padding: "6px 10px", background: C.greenBg, color: C.green, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 10, fontWeight: 600, marginRight: 4, transition: "opacity 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.opacity = "0.8"; }} onMouseLeave={function(e) { e.currentTarget.style.opacity = "1"; }}>Pagar</button>}
+                        <button onClick={async function() { if (confirm("Deletar IPVA?")) { try { await ipvaAPI.delete(ipva.id); setIpvaList(ipvaList.filter(function(i) { return i.id !== ipva.id; })); } catch (err) { alert('Erro: ' + err.message); } } }} style={{ padding: "6px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 6, cursor: "pointer", fontSize: 10, fontWeight: 600, transition: "opacity 0.2s" }} onMouseEnter={function(e) { e.currentTarget.style.opacity = "0.8"; }} onMouseLeave={function(e) { e.currentTarget.style.opacity = "1"; }}>Deletar</button>
                       </td>
                     </tr>;
-                    });
-                  })()}
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1957,18 +1814,12 @@ export default function App() {
             <button onClick={function() { setAddingExp(!addingExp); }} style={{ padding: "8px 18px", background: addingExp ? C.redBg : C.accent, color: addingExp ? C.red : "#fff", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{addingExp ? "Cancelar" : "+ Nova Despesa"}</button>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14, marginBottom: 20 }}>
-            {(function() {
-              var filteredExp = dealer === "all" ? expenses : expenses.filter(e => e.location === dealer);
-              return [
-                <Stat label="Total Despesas" value={fmtFull(filteredExp.reduce((a, e) => a + (Number(e.amount) || 0), 0))} accent />,
-                <Stat label="Pendente" value={fmtFull(filteredExp.filter(e => e.status !== "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />,
-                <Stat label="Pago" value={fmtFull(filteredExp.filter(e => e.status === "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
-              ];
-            })()}
+            <Stat label="Total Despesas" value={fmtFull(expenses.reduce((a, e) => a + (Number(e.amount) || 0), 0))} accent />
+            <Stat label="Pendente" value={fmtFull(expenses.filter(e => e.status !== "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
+            <Stat label="Pago" value={fmtFull(expenses.filter(e => e.status === "paid").reduce((a, e) => a + (Number(e.amount) || 0), 0))} />
           </div>
           {addingExp && <Card style={{ padding: 22, marginBottom: 16 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Loja</label><select value={expForm.location || "BrossMotors"} onChange={function(e) { setExpForm(Object.assign({}, expForm, { location: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="BrossMotors">BrossMotors</option><option value="BMCars">BMCars</option></select></div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Categoria</label><select value={expForm.category || "Operacional"} onChange={function(e) { setExpForm(Object.assign({}, expForm, { category: e.target.value, customCategory: "" })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option>Operacional</option><option>Aluguel</option><option>Financiamento</option><option>IPVA</option><option>Seguro</option><option value="__custom__">Personalizado...</option></select></div>
               {expForm.category === "__custom__" && <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Nome da Categoria</label><input type="text" value={expForm.customCategory || ""} onChange={function(e) { setExpForm(Object.assign({}, expForm, { customCategory: e.target.value })); }} placeholder="Ex: Manutenção, Publicidade..." style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>}
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Descricao</label><input value={expForm.description} onChange={function(e) { setExpForm(Object.assign({}, expForm, { description: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
@@ -1979,12 +1830,12 @@ export default function App() {
               <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Status</label><select value={expForm.status} onChange={function(e) { setExpForm(Object.assign({}, expForm, { status: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="pending">Pendente</option><option value="paid">Pago</option><option value="urgent">Urgente</option></select></div>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={async function() { if (!expForm.category || !expForm.amount) return; if (expForm.category === "__custom__" && !expForm.customCategory) { alert("Por favor, digite o nome da categoria personalizada"); return; } try { var finalForm = Object.assign({}, expForm); if (expForm.category === "__custom__") { finalForm.category = expForm.customCategory; delete finalForm.customCategory; } var result = await expensesAPI.create(finalForm); if (result && result.expense) { setExpenses(function(p) { return p.concat([result.expense]); }); setExpForm({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "", location: "BrossMotors" }); setAddingExp(false); } } catch (err) { alert("Erro ao adicionar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar Despesa</button>
+              <button onClick={async function() { if (!expForm.category || !expForm.amount) return; if (expForm.category === "__custom__" && !expForm.customCategory) { alert("Por favor, digite o nome da categoria personalizada"); return; } try { var finalForm = Object.assign({}, expForm); if (expForm.category === "__custom__") { finalForm.category = expForm.customCategory; delete finalForm.customCategory; } var result = await expensesAPI.create(finalForm); if (result && result.expense) { setExpenses(function(p) { return p.concat([result.expense]); }); setExpForm({ category: "Operacional", description: "", amount: 0, status: "pending", date: new Date().toISOString().split("T")[0], customCategory: "" }); setAddingExp(false); } } catch (err) { alert("Erro ao adicionar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Adicionar Despesa</button>
               <button onClick={function() { setAddingExp(false); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
             </div>
           </Card>}
           <div style={{ display: "grid", gap: 12 }}>
-            {expenses.length > 0 ? (dealer === "all" ? expenses : expenses.filter(e => e.location === dealer)).map(function(e) {
+            {expenses.length > 0 ? expenses.map(function(e) {
               var st = expStatusMap[e.status] || { label: e.status, color: C.textDim, bg: C.surfaceAlt };
               return <Card key={e.id} style={{ padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
@@ -1996,107 +1847,13 @@ export default function App() {
                     <div style={{ fontWeight: 700, fontSize: 16, color: C.red }}>{fmtFull(Number(e.amount))}</div>
                     <Tag color={st.color} bg={st.bg}>{st.label}</Tag>
                   </div>
-                  {editingExpId !== e.id && <>
-                    <button onClick={function() { setEditingExpId(e.id); setEditingExpData(Object.assign({}, e)); }} style={{ padding: "4px 10px", background: C.accentLight, color: C.accent, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Editar</button>
-                    <button onClick={async function() { if (confirm("Deletar esta despesa?")) { try { await expensesAPI.delete(e.id); setExpenses(function(p) { return p.filter(function(x) { return x.id !== e.id; }); }); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ padding: "4px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Del</button>
-                  </>}
+                  <button onClick={async function() { if (confirm("Deletar esta despesa?")) { try { await expensesAPI.delete(e.id); setExpenses(function(p) { return p.filter(function(x) { return x.id !== e.id; }); }); } catch (err) { alert("Erro ao deletar: " + (err instanceof APIError ? err.message : err.message)); } } }} style={{ padding: "4px 10px", background: C.redBg, color: C.red, border: "none", borderRadius: 4, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Del</button>
                 </div>
               </Card>;
             }) : <Card style={{ padding: 20, textAlign: "center", color: C.textDim }}>
               Nenhuma despesa registrada
             </Card>}
           </div>
-
-          {editingExpId && <Card style={{ padding: 22, marginTop: 20, background: C.accentLight, borderLeft: "4px solid " + C.accent }}>
-            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600 }}>Editar Despesa</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Loja</label><select value={editingExpData.location || "BrossMotors"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { location: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="BrossMotors">BrossMotors</option><option value="BMCars">BMCars</option></select></div>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Categoria</label><select value={editingExpData.category || "Operacional"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { category: e.target.value, customCategory: "" })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option>Operacional</option><option>Aluguel</option><option>Financiamento</option><option>IPVA</option><option>Seguro</option><option value="__custom__">Personalizado...</option></select></div>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Descricao</label><input value={editingExpData.description || ""} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { description: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Valor</label><input type="number" value={editingExpData.amount || 0} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { amount: Number(e.target.value) || 0 })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Data</label><input type="date" value={editingExpData.date || ""} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { date: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, outline: "none", boxSizing: "border-box" }} /></div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-              <div><label style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4, display: "block" }}>Status</label><select value={editingExpData.status || "pending"} onChange={function(e) { setEditingExpData(Object.assign({}, editingExpData, { status: e.target.value })); }} style={{ width: "100%", padding: "8px 12px", border: "1px solid " + C.border, borderRadius: 8, fontSize: 13, fontFamily: FONT, cursor: "pointer" }}><option value="pending">Pendente</option><option value="paid">Pago</option><option value="urgent">Urgente</option></select></div>
-            </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={async function() { if (!editingExpData.category || !editingExpData.amount) return; try { var finalForm = Object.assign({}, editingExpData); var result = await expensesAPI.update(editingExpId, finalForm); if (result && result.expense) { setExpenses(function(p) { return p.map(function(x) { return x.id === editingExpId ? result.expense : x; }); }); setEditingExpId(null); setEditingExpData({}); alert('Despesa atualizada com sucesso!'); } } catch (err) { alert("Erro ao atualizar despesa: " + (err instanceof APIError ? err.message : err.message)); } }} style={{ padding: "10px 24px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Salvar</button>
-              <button onClick={function() { setEditingExpId(null); setEditingExpData({}); }} style={{ padding: "10px 24px", background: C.redBg, color: C.red, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
-            </div>
-          </Card>}
-          {/* MODAL DE DETALHES DO VEÍCULO */}
-          {selectedSourceVehicle && <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }} onClick={function() { setSelectedSourceVehicle(null); }}>
-            <Card style={{ padding: 32, maxWidth: 500, maxHeight: "90vh", overflowY: "auto", position: "relative" }} onClick={function(e) { e.stopPropagation(); }}>
-              <button onClick={function() { setSelectedSourceVehicle(null); }} style={{ position: "absolute", top: 16, right: 16, background: C.surfaceAlt, border: "1px solid " + C.border, color: C.textMid, width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>×</button>
-
-              <h2 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700 }}>{selectedSourceVehicle.make} {selectedSourceVehicle.model} {selectedSourceVehicle.year}</h2>
-
-              <div style={{ display: "grid", gap: 14, marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Plataforma</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.platform}</div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Preço</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>R$ {(selectedSourceVehicle.price/1000).toFixed(0)}K</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>FIPE</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: C.textMid }}>R$ {(selectedSourceVehicle.fipe/1000).toFixed(0)}K</div>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Desconto vs FIPE</div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: selectedSourceVehicle.discount <= -15 ? C.green : C.yellow }}>{selectedSourceVehicle.discount.toFixed(1)}%</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Quilometragem</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.km.toLocaleString()} km</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Condição do Corpo</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.bodyCondition || "-"}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Histórico de Serviço</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.serviceHistory || "-"}</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Proprietários</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{selectedSourceVehicle.owners || 0} proprietário(s)</div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Sinistros</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: selectedSourceVehicle.accidents > 0 ? C.red : C.green }}>{selectedSourceVehicle.accidents || 0} sinistro(s)</div>
-                </div>
-
-                {selectedSourceVehicle.phone && <div style={{ background: C.surfaceAlt, padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Telefone do Vendedor</div>
-                  <a href={"tel:" + selectedSourceVehicle.phone} style={{ fontSize: 14, fontWeight: 600, color: C.accent, textDecoration: "none" }}>{selectedSourceVehicle.phone}</a>
-                </div>}
-
-                {selectedSourceVehicle.url && <div style={{ background: C.surfaceAlt, padding: 12, borderRadius: 8 }}>
-                  <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", fontWeight: 600, marginBottom: 6 }}>Link do Anúncio</div>
-                  <a href={selectedSourceVehicle.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: C.accent, textDecoration: "none", wordBreak: "break-all" }}>Ver anúncio →</a>
-                </div>}
-
-                <div style={{ background: C.accentLight, padding: 12, borderRadius: 8, textAlign: "center" }}>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: sColor(selectedSourceVehicle.score) }}>{selectedSourceVehicle.score}</div>
-                  <div style={{ fontSize: 12, color: sColor(selectedSourceVehicle.score), fontWeight: 600 }}>{sLabel(selectedSourceVehicle.score)}</div>
-                </div>
-              </div>
-
-              <button onClick={function() { setSelectedSourceVehicle(null); }} style={{ width: "100%", padding: "12px 16px", background: C.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Fechar</button>
-            </Card>
-          </div>}
         </div>}
 
         {tab === "crm" && <CrmTab customers={customers} setCustomers={setCustomers} />}
