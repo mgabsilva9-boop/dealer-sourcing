@@ -693,6 +693,14 @@ router.post('/ai-search', authMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'Query é obrigatória' });
     }
 
+    // CRITICAL: Verificar se GEMINI_API_KEY está configurada
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({
+        error: 'Busca IA indisponível. Configure GEMINI_API_KEY.',
+        code: 'GEMINI_API_KEY_NOT_SET'
+      });
+    }
+
     // 1. Gemini extrai filtros do texto natural
     const filters = await extractFiltersFromText(query);
 
