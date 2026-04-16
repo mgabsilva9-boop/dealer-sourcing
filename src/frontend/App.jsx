@@ -1121,10 +1121,10 @@ export default function App() {
 
       {/* TABS */}
       <div style={{ background: C.surface, borderBottom: "1px solid " + C.border, padding: "0 40px", display: "flex", gap: 0, overflowX: "auto" }}>
-        {tabList.map(function(t) { return <button key={t[0]} onClick={function() { setTab(t[0]); setSelV(null); setShowCosts(false); setAddingV(false); }} style={{ padding: "12px 16px", border: "none", borderBottom: tab === t[0] ? "2px solid " + C.accent : "2px solid transparent", background: "transparent", color: tab === t[0] ? C.accent : C.textDim, fontSize: 12, fontWeight: tab === t[0] ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap" }}>{t[1]}</button>; })}
+        {tabList.map(function(t) { return <button key={t[0]} onClick={function() { setTab(t[0]); setSelV(null); setShowCosts(false); setAddingV(false); }} style={{ padding: "14px 18px", border: "none", borderBottom: tab === t[0] ? "3px solid " + C.accent : "3px solid transparent", background: tab === t[0] ? C.accentLight : "transparent", color: tab === t[0] ? C.accent : C.textDim, fontSize: 12, fontWeight: tab === t[0] ? 600 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.2s ease" }} onMouseEnter={tab !== t[0] ? function(e) { e.currentTarget.style.color = C.text; e.currentTarget.style.background = C.surfaceAlt; } : undefined} onMouseLeave={tab !== t[0] ? function(e) { e.currentTarget.style.color = C.textDim; e.currentTarget.style.background = "transparent"; } : undefined}>{t[1]}</button>; })}
       </div>
 
-      <div style={{ padding: "32px 40px", maxWidth: 1280, margin: "0 auto" }}>
+      <div style={{ padding: "40px 48px", maxWidth: 1380, margin: "0 auto" }}>
 
         {/* DASHBOARD */}
         {tab === "dashboard" && (function() {
