@@ -76,7 +76,7 @@ app.use(cors({
 // Rate limiting (CRÍTICO #4)
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // 100 requests por janela
+  max: isDev ? 9999 : 100, // 9999 em dev (sem limite prático), 100 em produção
   message: 'Muitas requisições deste IP, tente novamente depois',
   standardHeaders: true,
   legacyHeaders: false,
